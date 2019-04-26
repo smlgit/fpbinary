@@ -1,0 +1,1506 @@
+#include "fpbinarylarge.h"
+
+#include "fpbinarycommon.h"
+#include <math.h>
+
+/*
+ * Often used values.
+ */
+static PyObject *fpbinarylarge_minus_one;
+
+static FP_UINT_TYPE
+get_total_bits_uint(PyObject *int_bits, PyObject *frac_bits)
+{
+    PyObject *total = FP_NUM_METHOD(int_bits, nb_add)(int_bits, frac_bits);
+    FP_UINT_TYPE result = pylong_as_fp_uint(total);
+
+    Py_DECREF(total);
+    return result;
+}
+
+static PyObject *
+get_total_bits_mask(PyObject *total_bits)
+{
+    /*
+     * total bits mask is (1 << total_bits) - 1
+     */
+    PyObject *result_tmp = FP_NUM_METHOD(py_one, nb_lshift)(py_one, total_bits);
+    PyObject *result =
+        FP_NUM_METHOD(result_tmp, nb_subtract)(result_tmp, py_one);
+    Py_DECREF(result_tmp);
+    return result;
+}
+
+static PyObject *
+get_frac_bits_mask(PyObject *frac_bits)
+{
+    if (PyLong_AsLong(frac_bits) == 0)
+    {
+        return py_zero;
+    }
+
+    return get_total_bits_mask(frac_bits);
+}
+
+static PyObject *
+get_sign_bit(PyObject *total_bits)
+{
+    /*
+     * Sign bit is (1 << (total_bits - 1) )
+     */
+    PyObject *sign_bit = FP_NUM_METHOD(py_one, nb_lshift)(py_one, total_bits);
+    PyObject *result = FP_NUM_METHOD(sign_bit, nb_rshift)(sign_bit, py_one);
+    Py_DECREF(sign_bit);
+    return result;
+}
+
+/*
+* Returns a PyLong that gives the largest value representable (after conversion
+* to scaled
+* int representation) given total_bits.
+*/
+static PyObject *
+get_max_scaled_value(PyObject *total_bits, bool is_signed)
+{
+    PyObject *total_bits_mask = get_total_bits_mask(total_bits);
+
+    if (is_signed)
+    {
+        PyObject *result =
+            FP_NUM_METHOD(total_bits_mask, nb_rshift)(total_bits_mask, py_one);
+        Py_DECREF(total_bits_mask);
+        return result;
+    }
+
+    return total_bits_mask;
+}
+
+/*
+* Returns a PyLong that gives the smallest value representable (after conversion
+* to scaled
+* int representation) given total_bits.
+*/
+static PyObject *
+get_min_scaled_value(PyObject *total_bits, bool is_signed)
+{
+    if (is_signed)
+    {
+        /*
+         * For signed numbers, the min value is the unsigned value of the "sign
+         * bit"
+         * negated.
+         */
+        PyObject *sign_bit = get_sign_bit(total_bits);
+        PyObject *result =
+            FP_NUM_METHOD(sign_bit, nb_multiply)(sign_bit, py_minus_one);
+        Py_DECREF(sign_bit);
+        return result;
+    }
+    else
+    {
+        Py_INCREF(py_zero);
+        return py_zero;
+    }
+}
+
+static inline PyObject *
+apply_overflow_wrap(PyObject *value, PyObject *min_value, PyObject *max_value,
+                    PyObject *sign_bit, bool is_signed)
+{
+    /* If we overflowed into the negative range, add the min value
+     * to the magnitude-masked value. If we overflowed into the
+     * positive range, just mask with the magnitude bits only. */
+
+    if (is_signed)
+    {
+        PyObject *sign_bit_value =
+            FP_NUM_METHOD(value, nb_and)(value, sign_bit);
+
+        if (sign_bit_value != NULL)
+        {
+
+            if (FpBinary_TpCompare(sign_bit_value, py_zero) != 0)
+            {
+                /*
+                 * Wrapping into a negative value:
+                 *
+                 * return min_value + (value & max_value);
+                 */
+                PyObject *masked =
+                    FP_NUM_METHOD(value, nb_and)(value, max_value);
+                PyObject *result =
+                    FP_NUM_METHOD(masked, nb_add)(masked, min_value);
+
+                Py_DECREF(masked);
+                Py_DECREF(sign_bit_value);
+
+                return result;
+            }
+
+            Py_DECREF(sign_bit_value);
+
+            /* If wrapped into positive value, just need to mask out the
+             * magnitude bits (same as unsigned).
+             */
+        }
+    }
+
+    return FP_NUM_METHOD(value, nb_and)(value, max_value);
+}
+
+/*
+ * Sets the pointers in self to point to scaled_value, int_bits and frac_bits.
+ * WILL increment the reference counters for these objects and WILL decrement
+ * the reference counters for the old objects (if they exist).
+ * Also sets the is_signed flag.
+ */
+static inline void
+set_object_fields(FpBinaryLargeObject *self, PyObject *scaled_value,
+                  PyObject *int_bits, PyObject *frac_bits, bool is_signed)
+{
+    FP_ASSIGN_PY_FIELD(self, scaled_value, scaled_value);
+    FP_ASSIGN_PY_FIELD(self, int_bits, int_bits);
+    FP_ASSIGN_PY_FIELD(self, frac_bits, frac_bits);
+    self->is_signed = is_signed;
+}
+
+/*
+ * Any PyObject pointers in from_obj will be directly applied to to_obj
+ * and WILL have their ref counters incremented (and the old pointers
+ * decremented).
+ */
+static void
+copy_fields(FpBinaryLargeObject *from_obj, FpBinaryLargeObject *to_obj)
+{
+    set_object_fields(to_obj, from_obj->scaled_value, from_obj->int_bits,
+                      from_obj->frac_bits, from_obj->is_signed);
+}
+
+/*
+ * Will check the fields in obj for overflow and will modify act on the
+ * fields of obj or raise an exception depending on overflow_mode.
+ * If there was no exception raised, non-zero is returned.
+ * Otherwise, 0 is returned.
+ */
+static int
+check_overflow(FpBinaryLargeObject *self, fp_overflow_mode_t overflow_mode)
+{
+    bool result = true;
+    PyObject *new_scaled_value = NULL;
+    PyObject *min_value, *max_value;
+    PyObject *total_bits =
+        FP_NUM_METHOD(self->int_bits, nb_add)(self->int_bits, self->frac_bits);
+    PyObject *sign_bit = get_sign_bit(total_bits);
+    int value_compare;
+
+    min_value = get_min_scaled_value(total_bits, self->is_signed);
+    max_value = get_max_scaled_value(total_bits, self->is_signed);
+
+    value_compare = FpBinary_TpCompare(self->scaled_value, max_value);
+
+    if (value_compare > 0)
+    {
+        if (overflow_mode == OVERFLOW_WRAP)
+        {
+            new_scaled_value =
+                apply_overflow_wrap(self->scaled_value, min_value, max_value,
+                                    sign_bit, self->is_signed);
+        }
+        else if (overflow_mode == OVERFLOW_SAT)
+        {
+            Py_INCREF(max_value);
+            new_scaled_value = max_value;
+        }
+        else
+        {
+            PyErr_SetString(FpBinaryOverflowException,
+                            "Fixed point resize overflow.");
+            result = false;
+        }
+    }
+    else
+    {
+        value_compare = FpBinary_TpCompare(self->scaled_value, min_value);
+        if (value_compare < 0)
+        {
+            if (overflow_mode == OVERFLOW_WRAP)
+            {
+                new_scaled_value =
+                    apply_overflow_wrap(self->scaled_value, min_value,
+                                        max_value, sign_bit, self->is_signed);
+            }
+            else if (overflow_mode == OVERFLOW_SAT)
+            {
+                Py_INCREF(min_value);
+                new_scaled_value = min_value;
+            }
+            else
+            {
+                PyErr_SetString(FpBinaryOverflowException,
+                                "Fixed point resize overflow.");
+                result = false;
+            }
+        }
+        else
+        {
+            Py_INCREF(self->scaled_value);
+            new_scaled_value = self->scaled_value;
+        }
+    }
+
+    if (result)
+    {
+        set_object_fields(self, new_scaled_value, self->int_bits,
+                          self->frac_bits, self->is_signed);
+        Py_DECREF(new_scaled_value);
+    }
+
+    Py_DECREF(min_value);
+    Py_DECREF(max_value);
+    Py_DECREF(total_bits);
+    Py_DECREF(sign_bit);
+
+    return result;
+}
+
+/*
+ * Will convert the passed PyFloat to a fixed point object and apply
+ * the result to output_obj.
+ * Returns 0 if (there was an overflow AND round_mode is OVERFLOW_EXCEP) OR
+ *              (the passed value can't be represented on this CPU using a
+ * FP_INT_TYPE).
+ * In this case, the PyErr_SetString WON"T BE SET. Callers must decide
+ * if they care.
+ * Otherwise, non zero is returned.
+ */
+static int
+build_from_pyfloat(PyObject *value, PyObject *int_bits, PyObject *frac_bits,
+                   bool is_signed, fp_overflow_mode_t overflow_mode,
+                   fp_round_mode_t round_mode, FpBinaryLargeObject *output_obj)
+{
+    PyObject *py_scaled_value_long = NULL;
+    PyObject *py_scale_factor =
+        FP_NUM_METHOD(py_one, nb_lshift)(py_one, frac_bits);
+    PyObject *py_scaled_value =
+        FP_NUM_METHOD(value, nb_multiply)(value, py_scale_factor);
+    double dbl_scaled_value = PyFloat_AsDouble(py_scaled_value);
+
+    if (round_mode == ROUNDING_NEAR_POS_INF)
+    {
+        dbl_scaled_value += 0.5;
+    }
+
+    dbl_scaled_value = floor(dbl_scaled_value);
+    py_scaled_value_long = PyLong_FromDouble(dbl_scaled_value);
+
+    set_object_fields(output_obj, py_scaled_value_long, int_bits, frac_bits,
+                      is_signed);
+
+    Py_DECREF(py_scaled_value_long);
+    Py_DECREF(py_scale_factor);
+    Py_DECREF(py_scaled_value);
+
+    return check_overflow(output_obj, overflow_mode);
+}
+
+static double
+fpbinarylarge_to_double(FpBinaryLargeObject *obj)
+{
+    double result;
+    FpBinaryLargeObject *cast_obj = (FpBinaryLargeObject *)obj;
+    PyObject *py_scale_factor =
+        FP_NUM_METHOD(py_one, nb_lshift)(py_one, cast_obj->frac_bits);
+    double dbl_scale_factor = PyLong_AsDouble(py_scale_factor);
+    double dbl_scaled_value = PyLong_AsDouble(cast_obj->scaled_value);
+
+    result = dbl_scaled_value / dbl_scale_factor;
+
+    Py_DECREF(py_scale_factor);
+    return result;
+}
+
+/*
+ * Will resize self to the format specified by new_int_bits and
+ * new_frac_bits and take action based on overflow_mode and
+ * round_mode.
+ * If overflow_mode is OVERFLOW_EXCEP, an exception string will
+ * be written and 0 will be returned. Otherwise, non-zero is
+ * returned.
+ */
+static int
+resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
+              PyObject *new_frac_bits, fp_overflow_mode_t overflow_mode,
+              fp_round_mode_t round_mode)
+{
+    PyObject *new_scaled_value = NULL;
+    PyObject *right_shifts = FP_NUM_METHOD(self->frac_bits, nb_subtract)(
+        self->frac_bits, new_frac_bits);
+
+    /* Rounding */
+    if (FpBinary_TpCompare(right_shifts, py_zero) > 0)
+    {
+        if (round_mode == ROUNDING_NEAR_POS_INF)
+        {
+            /* Add "new value 0.5" to the old sized value and then truncate
+             * Here, we are doing:
+             *     new_scaled_value = scaled_value + (1 << (right_shifts - 1) )
+             */
+            PyObject *inc_value_tmp =
+                FP_NUM_METHOD(py_one, nb_lshift)(py_one, right_shifts);
+            PyObject *inc_value =
+                FP_NUM_METHOD(inc_value_tmp, nb_rshift)(inc_value_tmp, py_one);
+            PyObject *new_scaled_value_tmp = FP_NUM_METHOD(
+                self->scaled_value, nb_add)(self->scaled_value, inc_value);
+            new_scaled_value = FP_NUM_METHOD(new_scaled_value_tmp, nb_rshift)(
+                new_scaled_value_tmp, right_shifts);
+
+            Py_DECREF(inc_value_tmp);
+            Py_DECREF(inc_value);
+            Py_DECREF(new_scaled_value_tmp);
+        }
+        else if (round_mode == ROUNDING_NEAR_ZERO)
+        {
+            /* This is "floor" functionality. So if we are positive, truncation
+             * works.
+             * If we are negative, need to add 1 to the new lowest int bit if
+             * the old
+             * frac bits are non zero, and then truncate.
+             */
+            PyObject *inc_value = py_zero;
+            PyObject *initial_shifted_val =
+                FP_NUM_METHOD(self->scaled_value, nb_rshift)(self->scaled_value,
+                                                             right_shifts);
+
+            if (FpBinary_TpCompare(self->scaled_value, py_zero) < 0)
+            {
+                PyObject *frac_bits_mask = get_frac_bits_mask(right_shifts);
+                PyObject *frac_bits = FP_NUM_METHOD(self->scaled_value, nb_and)(
+                    self->scaled_value, frac_bits_mask);
+                if (FpBinary_TpCompare(frac_bits, py_zero) != 0)
+                {
+                    inc_value = py_one;
+                }
+            }
+
+            new_scaled_value = FP_NUM_METHOD(initial_shifted_val, nb_add)(
+                initial_shifted_val, inc_value);
+        }
+        else
+        {
+            /* Default to truncate (ROUNDING_DIRECT_NEG_INF) */
+            new_scaled_value = FP_NUM_METHOD(self->scaled_value, nb_rshift)(
+                self->scaled_value, right_shifts);
+        }
+    }
+    else
+    {
+        PyObject *lshifts =
+            FP_NUM_METHOD(right_shifts, nb_negative)(right_shifts);
+        new_scaled_value = FP_NUM_METHOD(self->scaled_value, nb_lshift)(
+            self->scaled_value, lshifts);
+        Py_DECREF(lshifts);
+    }
+
+    set_object_fields(self, new_scaled_value, new_int_bits, new_frac_bits,
+                      self->is_signed);
+
+    Py_DECREF(new_scaled_value);
+    Py_DECREF(right_shifts);
+
+    return check_overflow(self, overflow_mode);
+}
+
+static FpBinaryLargeObject *
+fpbinarylarge_create_mem(PyTypeObject *type)
+{
+    FpBinaryLargeObject *self = (FpBinaryLargeObject *)type->tp_alloc(type, 0);
+    if (self)
+    {
+        self->fpbinary_base.private_iface = &FpBinary_LargePrvIface;
+        set_object_fields(self, py_zero, py_one, py_zero, true);
+    }
+
+    return self;
+}
+
+static PyObject *
+fpbinarylarge_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    FpBinaryLargeObject *self = NULL;
+    PyObject *bit_field = NULL, *format_instance = NULL;
+    long int_bits = 1, frac_bits = 0;
+    double value = 0.0;
+    bool is_signed = true;
+
+    if (!fp_binary_new_params_parse(args, kwds, &int_bits, &frac_bits,
+                                    &is_signed, &value, &bit_field,
+                                    &format_instance))
+    {
+        return NULL;
+    }
+
+    if (format_instance)
+    {
+        if (!FpBinaryLarge_Check(format_instance))
+        {
+            PyErr_SetString(
+                PyExc_TypeError,
+                "format_inst must be an instance of FpBinaryLarge.");
+            return NULL;
+        }
+    }
+
+    if (format_instance)
+    {
+        int_bits = pylong_as_fp_uint(
+            ((FpBinaryLargeObject *)format_instance)->int_bits);
+        frac_bits = pylong_as_fp_uint(
+            ((FpBinaryLargeObject *)format_instance)->frac_bits);
+    }
+
+    if (bit_field)
+    {
+        self = (FpBinaryLargeObject *)FpBinaryLarge_FromBitsPylong(
+            bit_field, int_bits, frac_bits, is_signed);
+    }
+    else
+    {
+        self = (FpBinaryLargeObject *)FpBinaryLarge_FromDouble(
+            value, int_bits, frac_bits, is_signed, OVERFLOW_SAT,
+            ROUNDING_NEAR_POS_INF);
+    }
+
+    return (PyObject *)self;
+}
+
+static PyObject *
+fpbinarylarge_copy(FpBinaryLargeObject *self, PyObject *args)
+{
+    FpBinaryLargeObject *new_obj =
+        fpbinarylarge_create_mem(&FpBinary_LargeType);
+    if (new_obj)
+    {
+        copy_fields(self, new_obj);
+    }
+
+    return (PyObject *)new_obj;
+}
+
+/*
+ * Returns a new FpBinaryLarge object where the value is the same
+ * as obj but:
+ *     if obj is unsigned, an extra bit is added to int_bits.
+ *     if obj is signed, no change to value or format.
+ */
+static PyObject *
+fpbinarylarge_to_signed(PyObject *obj, PyObject *args)
+{
+    FpBinaryLargeObject *result = NULL;
+    FpBinaryLargeObject *cast_obj = (FpBinaryLargeObject *)obj;
+    PyObject *new_int_bits = NULL;
+
+    if (!FpBinaryLarge_Check(obj))
+    {
+        FPBINARY_RETURN_NOT_IMPLEMENTED;
+    }
+
+    if (cast_obj->is_signed)
+    {
+        return fpbinarylarge_copy(cast_obj, NULL);
+    }
+
+    /* Input is an unsigned FpBinarySmall object. */
+
+    result = fpbinarylarge_create_mem(&FpBinary_LargeType);
+    new_int_bits =
+        FP_NUM_METHOD(cast_obj->int_bits, nb_add)(cast_obj->int_bits, py_one);
+    set_object_fields(result, cast_obj->scaled_value, new_int_bits,
+                      cast_obj->frac_bits, true);
+
+    return (PyObject *)result;
+}
+
+/*
+ * Convenience function to make sure the operands of a two operand operation
+ * are FpBinaryLargeObject instances and of the same signed type.
+ */
+static bool
+check_binary_ops(PyObject *op1, PyObject *op2)
+{
+    if (!FpBinaryLarge_Check(op1) || !FpBinaryLarge_Check(op2))
+    {
+        return false;
+    }
+
+    if (((FpBinaryLargeObject *)op1)->is_signed !=
+        ((FpBinaryLargeObject *)op2)->is_signed)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+/*
+ * NOTE: The calling function is expected to decrement the reference counters
+ * of output_op1, output_op2.
+ */
+static void
+make_binary_ops_same_format(PyObject *op1, PyObject *op2,
+                            FpBinaryLargeObject **output_op1,
+                            FpBinaryLargeObject **output_op2)
+{
+    FpBinaryLargeObject *cast_op1 = (FpBinaryLargeObject *)op1;
+    FpBinaryLargeObject *cast_op2 = (FpBinaryLargeObject *)op2;
+    int compare_val =
+        FpBinary_TpCompare(cast_op1->frac_bits, cast_op2->frac_bits);
+
+    /* Frac bits. */
+    if (compare_val > 0)
+    {
+        FpBinaryLargeObject *new_op =
+            fpbinarylarge_create_mem(&FpBinary_LargeType);
+        PyObject *frac_bits_diff =
+            FP_NUM_METHOD(cast_op1->frac_bits, nb_subtract)(
+                cast_op1->frac_bits, cast_op2->frac_bits);
+        PyObject *new_scaled_value =
+            FP_NUM_METHOD(cast_op2->scaled_value,
+                          nb_lshift)(cast_op2->scaled_value, frac_bits_diff);
+
+        set_object_fields(new_op, new_scaled_value, cast_op2->int_bits,
+                          cast_op1->frac_bits, cast_op2->is_signed);
+
+        Py_DECREF(frac_bits_diff);
+        Py_DECREF(new_scaled_value);
+
+        *output_op2 = new_op;
+        Py_INCREF(cast_op1);
+        *output_op1 = cast_op1;
+    }
+    else if (compare_val < 0)
+    {
+        FpBinaryLargeObject *new_op =
+            fpbinarylarge_create_mem(&FpBinary_LargeType);
+        PyObject *frac_bits_diff =
+            FP_NUM_METHOD(cast_op2->frac_bits, nb_subtract)(
+                cast_op2->frac_bits, cast_op1->frac_bits);
+        PyObject *new_scaled_value =
+            FP_NUM_METHOD(cast_op1->scaled_value,
+                          nb_lshift)(cast_op1->scaled_value, frac_bits_diff);
+
+        set_object_fields(new_op, new_scaled_value, cast_op1->int_bits,
+                          cast_op2->frac_bits, cast_op1->is_signed);
+
+        Py_DECREF(frac_bits_diff);
+        Py_DECREF(new_scaled_value);
+
+        *output_op1 = new_op;
+        Py_INCREF(cast_op2);
+        *output_op2 = cast_op2;
+    }
+    else
+    {
+        Py_INCREF(cast_op1);
+        Py_INCREF(cast_op2);
+        *output_op1 = cast_op1;
+        *output_op2 = cast_op2;
+    }
+
+    /* Int bits. */
+    compare_val = FpBinary_TpCompare(cast_op1->int_bits, cast_op2->int_bits);
+    if (compare_val > 0)
+    {
+        FP_ASSIGN_PY_FIELD(cast_op2, cast_op1->frac_bits, int_bits);
+    }
+    else if (compare_val < 0)
+    {
+        FP_ASSIGN_PY_FIELD(cast_op1, cast_op2->frac_bits, int_bits);
+    }
+}
+
+static PyObject *
+fpbinarylarge_resize(FpBinaryLargeObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *format;
+    PyObject *result = NULL;
+    int overflow_mode = OVERFLOW_WRAP;
+    int round_mode = ROUNDING_DIRECT_NEG_INF;
+    static char *kwlist[] = {"format", "overflow_mode", "round_mode", NULL};
+    PyObject *new_int_bits = self->int_bits, *new_frac_bits = self->frac_bits;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|ii", kwlist, &format,
+                                     &overflow_mode, &round_mode))
+        return NULL;
+
+    /* FP format is defined by a python tuple: (int_bits, frac_bits) */
+    if (PyTuple_Check(format))
+    {
+        if (!extract_fp_format_from_tuple(format, &new_int_bits,
+                                          &new_frac_bits))
+        {
+            return NULL;
+        }
+    }
+    else if (FpBinaryLarge_Check(format))
+    {
+        /* Format is an instance of FpBinaryLarge, so use its format */
+        Py_INCREF(((FpBinaryLargeObject *)format)->int_bits);
+        Py_INCREF(((FpBinaryLargeObject *)format)->frac_bits);
+        new_int_bits = ((FpBinaryLargeObject *)format)->int_bits;
+        new_frac_bits = ((FpBinaryLargeObject *)format)->frac_bits;
+    }
+    else
+    {
+        PyErr_SetString(PyExc_TypeError,
+                        "The format parameter type is not supported.");
+        return NULL;
+    }
+
+    if (resize_object(self, new_int_bits, new_frac_bits, overflow_mode,
+                      round_mode))
+    {
+        Py_INCREF(self);
+        result = (PyObject *)self;
+    }
+
+    Py_DECREF(new_int_bits);
+    Py_DECREF(new_frac_bits);
+    return result;
+}
+
+/*
+ * The bits represented in the passed fixed point object are interpreted as
+ * a signed 2's complement integer and returned as a PyLong.
+ * NOTE: if self is an unsigned object, the MSB, as defined by the int_bits
+ * and frac_bits values, will be considered a sign bit.
+ */
+static PyObject *
+fpbinarylarge_bits_to_signed(FpBinaryLargeObject *self, PyObject *args)
+{
+    PyObject *result = NULL;
+
+    if (self->is_signed)
+    {
+        Py_INCREF(self->scaled_value);
+        result = self->scaled_value;
+    }
+    else
+    {
+        /* Just mask scaled_value - this should convert the bits to an unsigned
+         * value. */
+        PyObject *total_bits = FP_NUM_METHOD(self->int_bits, nb_add)(
+            self->int_bits, self->frac_bits);
+        PyObject *sign_bit = get_sign_bit(total_bits);
+
+        if (FpBinary_TpCompare(self->scaled_value, sign_bit) < 0)
+        {
+            Py_INCREF(self->scaled_value);
+            result = self->scaled_value;
+        }
+        else
+        {
+            /* If scaled_value is >= sign bit, it must have its sign bit set.
+             * This means we
+             * have to interpret the value as negative, but with the "magnitude"
+             * bits
+             * unchanged. We can do this by subtracting the next highest sign
+             * bit value
+             * from the value.
+             */
+            PyObject *next_sign_bit =
+                FP_NUM_METHOD(sign_bit, nb_lshift)(sign_bit, py_one);
+            result = FP_NUM_METHOD(self->scaled_value, nb_subtract)(
+                self->scaled_value, next_sign_bit);
+            Py_DECREF(next_sign_bit);
+        }
+
+        Py_DECREF(total_bits);
+        Py_DECREF(sign_bit);
+    }
+
+    return result;
+}
+
+/*
+ *
+ * Numeric methods implementation
+ *
+ */
+static PyObject *
+fpbinarylarge_add(PyObject *op1, PyObject *op2)
+{
+    FpBinaryLargeObject *cast_op1, *cast_op2;
+    FpBinaryLargeObject *result;
+    PyObject *new_scaled_value = NULL, *new_int_bits = NULL;
+
+    if (!check_binary_ops(op1, op2))
+    {
+        FPBINARY_RETURN_NOT_IMPLEMENTED;
+    }
+
+    /* Add requires the fractional bits to be lined up */
+    make_binary_ops_same_format(op1, op2, &cast_op1, &cast_op2);
+
+    new_scaled_value = FP_NUM_METHOD(cast_op1->scaled_value, nb_add)(
+        cast_op1->scaled_value, cast_op2->scaled_value);
+    new_int_bits =
+        FP_NUM_METHOD(cast_op1->int_bits, nb_add)(cast_op1->int_bits, py_one);
+
+    result =
+        (FpBinaryLargeObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
+    set_object_fields(result, new_scaled_value, new_int_bits,
+                      cast_op1->frac_bits, cast_op1->is_signed);
+
+    Py_DECREF(new_scaled_value);
+    Py_DECREF(new_int_bits);
+    Py_DECREF(cast_op1);
+    Py_DECREF(cast_op2);
+
+    return (PyObject *)result;
+}
+
+static PyObject *
+fpbinarylarge_subtract(PyObject *op1, PyObject *op2)
+{
+    FpBinaryLargeObject *cast_op1, *cast_op2;
+    FpBinaryLargeObject *result;
+    PyObject *new_scaled_value = NULL, *new_int_bits = NULL;
+
+    if (!check_binary_ops(op1, op2))
+    {
+        FPBINARY_RETURN_NOT_IMPLEMENTED;
+    }
+
+    /* Add requires the fractional bits to be lined up */
+    make_binary_ops_same_format(op1, op2, &cast_op1, &cast_op2);
+
+    new_scaled_value = FP_NUM_METHOD(cast_op1->scaled_value, nb_subtract)(
+        cast_op1->scaled_value, cast_op2->scaled_value);
+    new_int_bits =
+        FP_NUM_METHOD(cast_op1->int_bits, nb_add)(cast_op1->int_bits, py_one);
+
+    result =
+        (FpBinaryLargeObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
+    set_object_fields(result, new_scaled_value, new_int_bits,
+                      cast_op1->frac_bits, cast_op1->is_signed);
+
+    /* Need to deal with negative numbers and wrapping if we are unsigned type.
+     */
+    if (!result->is_signed)
+    {
+        check_overflow(result, OVERFLOW_WRAP);
+    }
+
+    Py_DECREF(new_scaled_value);
+    Py_DECREF(new_int_bits);
+    Py_DECREF(cast_op1);
+    Py_DECREF(cast_op2);
+
+    return (PyObject *)result;
+}
+
+static PyObject *
+fpbinarylarge_multiply(PyObject *op1, PyObject *op2)
+{
+    FpBinaryLargeObject *cast_op1 = (FpBinaryLargeObject *)op1;
+    FpBinaryLargeObject *cast_op2 = (FpBinaryLargeObject *)op2;
+    PyObject *new_scaled_value = NULL, *new_int_bits = NULL,
+             *new_frac_bits = NULL;
+    FpBinaryLargeObject *result = NULL;
+
+    if (!check_binary_ops(op1, op2))
+    {
+        FPBINARY_RETURN_NOT_IMPLEMENTED;
+    }
+
+    /* Multiply produces the addition of the int/frac bit format */
+
+    new_int_bits = FP_NUM_METHOD(cast_op1->int_bits, nb_add)(
+        cast_op1->int_bits, cast_op2->int_bits);
+    new_frac_bits = FP_NUM_METHOD(cast_op1->frac_bits, nb_add)(
+        cast_op1->frac_bits, cast_op2->frac_bits);
+
+    /* Do multiply */
+    new_scaled_value = FP_NUM_METHOD(cast_op1->scaled_value, nb_multiply)(
+        cast_op1->scaled_value, cast_op2->scaled_value);
+
+    result =
+        (FpBinaryLargeObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
+    set_object_fields(result, new_scaled_value, new_int_bits, new_frac_bits,
+                      cast_op1->is_signed);
+
+    Py_DECREF(new_scaled_value);
+    Py_DECREF(new_int_bits);
+    Py_DECREF(new_frac_bits);
+
+    return (PyObject *)result;
+}
+
+/*
+ * Divide is a bit odd with fixed point. Currently convert to doubles,
+ * do a divide and convert back to fixed point with the same format as
+ * a multiply.
+ */
+static PyObject *
+fpbinarylarge_divide(PyObject *op1, PyObject *op2)
+{
+    FpBinaryLargeObject *cast_op1 = (FpBinaryLargeObject *)op1;
+    FpBinaryLargeObject *cast_op2 = (FpBinaryLargeObject *)op2;
+    PyObject *result_pyfloat = NULL;
+    FpBinaryLargeObject *result = NULL;
+    double op1_dbl = 0.0, op2_dbl = 1.0;
+
+    if (!check_binary_ops(op1, op2))
+    {
+        FPBINARY_RETURN_NOT_IMPLEMENTED;
+    }
+
+    op1_dbl = fpbinarylarge_to_double(cast_op1);
+    op2_dbl = fpbinarylarge_to_double(cast_op2);
+
+    result_pyfloat = PyFloat_FromDouble(op1_dbl / op2_dbl);
+
+    if (result_pyfloat)
+    {
+        PyObject *new_int_bits = FP_NUM_METHOD(cast_op1->int_bits, nb_add)(
+            cast_op1->int_bits, cast_op2->int_bits);
+        PyObject *new_frac_bits = FP_NUM_METHOD(cast_op1->frac_bits, nb_add)(
+            cast_op1->frac_bits, cast_op2->frac_bits);
+
+        result = (FpBinaryLargeObject *)fpbinarylarge_create_mem(
+            &FpBinary_LargeType);
+        build_from_pyfloat(result_pyfloat, new_int_bits, new_frac_bits,
+                           cast_op1->is_signed, OVERFLOW_WRAP,
+                           ROUNDING_DIRECT_NEG_INF, result);
+
+        Py_DECREF(result_pyfloat);
+        Py_DECREF(new_int_bits);
+        Py_DECREF(new_frac_bits);
+    }
+
+    return (PyObject *)result;
+}
+
+static PyObject *
+fpbinarylarge_negative(PyObject *self)
+{
+    return fpbinarylarge_multiply(self, fpbinarylarge_minus_one);
+}
+
+static PyObject *
+fpbinarylarge_long(PyObject *self)
+{
+    /*
+     * Just resize to just the int bits with towards zero rounding
+     * and return the scaled value;
+     */
+    FpBinaryLargeObject *resized = (FpBinaryLargeObject *)fpbinarylarge_copy(
+        (FpBinaryLargeObject *)self, NULL);
+    resize_object(resized, resized->int_bits, py_zero, OVERFLOW_WRAP,
+                  ROUNDING_NEAR_ZERO);
+
+    Py_INCREF(resized->scaled_value);
+    Py_DECREF(resized);
+
+    return resized->scaled_value;
+}
+
+static PyObject *
+fpbinarylarge_int(PyObject *self)
+{
+    return fpbinarylarge_long(self);
+}
+
+static PyObject *
+fpbinarylarge_float(PyObject *self)
+{
+    return PyFloat_FromDouble(
+        fpbinarylarge_to_double((FpBinaryLargeObject *)self));
+}
+
+static PyObject *
+fpbinarylarge_abs(PyObject *self)
+{
+    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
+    FpBinaryLargeObject *copied =
+        (FpBinaryLargeObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
+    copy_fields(cast_self, copied);
+
+    if (FpBinary_TpCompare(copied->scaled_value, py_zero) >= 0)
+    {
+        return (PyObject *)copied;
+    }
+    else
+    {
+        /* Negative -> abs = self * -1. */
+        PyObject *result =
+            FP_NUM_METHOD(copied, nb_negative)((PyObject *)copied);
+        Py_DECREF(copied);
+        return result;
+    }
+}
+
+static PyObject *
+fpbinarylarge_lshift(PyObject *self, PyObject *lshift)
+{
+    FpBinaryLargeObject *result = NULL;
+
+    if (!PyLong_Check(lshift))
+    {
+        FPBINARY_RETURN_NOT_IMPLEMENTED;
+    }
+
+    if (lshift)
+    {
+        FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
+        PyObject *masked_shifted_value = NULL;
+        PyObject *shifted_value_sign = NULL;
+        PyObject *total_bits = FP_NUM_METHOD(cast_self->int_bits, nb_add)(
+            cast_self->int_bits, cast_self->frac_bits);
+        PyObject *sign_bit = get_sign_bit(total_bits);
+        PyObject *mask = get_total_bits_mask(total_bits);
+
+        PyObject *shifted_value =
+            FP_NUM_METHOD(cast_self->scaled_value,
+                          nb_lshift)(cast_self->scaled_value, lshift);
+
+        /*
+         * For left shifting, we need to make sure the bits above our sign
+         * bit are the correct value. I.e. zeros if the result is positive
+         * and ones if the result is negative. This is because we rely on
+         * the signed value of the underlying scaled_value integer.
+         */
+        shifted_value_sign =
+            FP_NUM_METHOD(shifted_value, nb_and)(shifted_value, sign_bit);
+
+        if (cast_self->is_signed &&
+            (FpBinary_TpCompare(shifted_value_sign, py_zero) != 0))
+        {
+            PyObject *mask_complement = FP_NUM_METHOD(mask, nb_invert)(mask);
+            masked_shifted_value = FP_NUM_METHOD(shifted_value, nb_or)(
+                shifted_value, mask_complement);
+
+            Py_DECREF(mask_complement);
+        }
+        else
+        {
+            masked_shifted_value =
+                FP_NUM_METHOD(shifted_value, nb_and)(shifted_value, mask);
+        }
+
+        result = (FpBinaryLargeObject *)fpbinarylarge_create_mem(
+            &FpBinary_LargeType);
+        set_object_fields(result, masked_shifted_value, cast_self->int_bits,
+                          cast_self->frac_bits, cast_self->is_signed);
+
+        Py_DECREF(masked_shifted_value);
+        Py_DECREF(shifted_value_sign);
+        Py_DECREF(total_bits);
+        Py_DECREF(sign_bit);
+        Py_DECREF(mask);
+        Py_DECREF(shifted_value);
+
+        return (PyObject *)result;
+    }
+
+    FPBINARY_RETURN_NOT_IMPLEMENTED;
+}
+
+static PyObject *
+fpbinarylarge_rshift(PyObject *self, PyObject *rshift)
+{
+    FpBinaryLargeObject *result = NULL;
+
+    if (!PyLong_Check(rshift))
+    {
+        FPBINARY_RETURN_NOT_IMPLEMENTED;
+    }
+
+    if (rshift)
+    {
+        FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
+        PyObject *shifted_value =
+            FP_NUM_METHOD(cast_self->scaled_value,
+                          nb_rshift)(cast_self->scaled_value, rshift);
+
+        result = (FpBinaryLargeObject *)fpbinarylarge_create_mem(
+            &FpBinary_LargeType);
+        set_object_fields(result, shifted_value, cast_self->int_bits,
+                          cast_self->frac_bits, cast_self->is_signed);
+
+        Py_DECREF(shifted_value);
+
+        return (PyObject *)result;
+    }
+
+    FPBINARY_RETURN_NOT_IMPLEMENTED;
+}
+
+int
+fpbinarylarge_nonzero(PyObject *self)
+{
+    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
+    return (self && FpBinary_TpCompare(cast_self->scaled_value, py_zero) != 0);
+}
+
+/*
+ *
+ * Sequence methods implementation
+ *
+ */
+
+static Py_ssize_t
+fpbinarylarge_sq_length(PyObject *self)
+{
+    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
+    PyObject *len_pylong = FP_NUM_METHOD(cast_self->int_bits, nb_add)(
+        cast_self->int_bits, cast_self->frac_bits);
+    Py_ssize_t result = PyLong_AsSsize_t(len_pylong);
+
+    Py_DECREF(len_pylong);
+    return result;
+}
+
+/*
+ * A get item on an fpbinaryobject returns a bool (True for 1, False for 0).
+ */
+static PyObject *
+fpbinarylarge_sq_item(PyObject *self, Py_ssize_t py_index)
+{
+    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
+    PyObject *index = PyLong_FromSize_t(py_index);
+    PyObject *bit = FP_NUM_METHOD(py_one, nb_lshift)(py_one, index);
+    PyObject *and = FP_NUM_METHOD(bit, nb_and)(bit, cast_self->scaled_value);
+    int compare = FpBinary_TpCompare(and, py_zero);
+
+    Py_DECREF(index);
+    Py_DECREF(bit);
+    Py_DECREF(and);
+
+    if (compare == 0)
+    {
+        Py_RETURN_FALSE;
+    }
+
+    Py_RETURN_TRUE;
+}
+
+/*
+ * If slice notation is invoked on an fpbinarylargeobject, a new
+ * fpbinarylargeobject is created as an unsigned integer where the value is the
+ * value of the selected bits.
+ *
+ * This is useful for digital logic implementations of NCOs and trig lookup
+ * tables.
+ */
+static PyObject *
+fpbinarylarge_sq_slice(PyObject *self, Py_ssize_t index1, Py_ssize_t index2)
+{
+    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self, *result;
+    PyObject *total_bits, *mask, *masked_val, *shifted_val;
+    PyObject *low_index;
+    Py_ssize_t total_bits_ssize, high_index_ssize, low_index_ssize;
+
+    total_bits = FP_NUM_METHOD(cast_self->int_bits, nb_add)(
+        cast_self->int_bits, cast_self->frac_bits);
+    total_bits_ssize = PyLong_AsSsize_t(total_bits);
+    Py_DECREF(total_bits);
+
+    /* To allow for the (reasonably) common convention of "high-to-low" bit
+     * array ordering in languages like VHDL, the user can have index 1 higher
+     * than index 2 - we always just assume the highest value is the MSB
+     * desired. */
+    if (index1 > index2)
+    {
+        high_index_ssize = index1;
+        low_index_ssize = index2;
+    }
+    else
+    {
+        high_index_ssize = index2;
+        low_index_ssize = index1;
+    }
+
+    if (high_index_ssize > low_index_ssize + total_bits_ssize - 1)
+    {
+        /* Rail index to max possible. */
+        high_index_ssize = low_index_ssize + total_bits_ssize - 1;
+    }
+
+    low_index = PyLong_FromSsize_t(low_index_ssize);
+    shifted_val = FP_NUM_METHOD(cast_self->scaled_value,
+                                nb_rshift)(cast_self->scaled_value, low_index);
+    total_bits = PyLong_FromSsize_t(high_index_ssize - low_index_ssize + 1);
+    mask = get_total_bits_mask(total_bits);
+    masked_val = FP_NUM_METHOD(shifted_val, nb_and)(shifted_val, mask);
+
+    result = fpbinarylarge_create_mem(&FpBinary_LargeType);
+    set_object_fields(result, masked_val, total_bits, py_zero, false);
+
+    Py_DECREF(total_bits);
+    Py_DECREF(mask);
+    Py_DECREF(masked_val);
+    Py_DECREF(shifted_val);
+    Py_DECREF(low_index);
+
+    return (PyObject *)result;
+}
+
+static PyObject *
+fpbinarylarge_subscript(PyObject *self, PyObject *item)
+{
+    FpBinaryLargeObject *cast_self = ((FpBinaryLargeObject *)self);
+    Py_ssize_t index, start, stop;
+
+    if (fp_binary_subscript_get_item_index(item, &index))
+    {
+        return fpbinarylarge_sq_item(self, index);
+    }
+
+    if (fp_binary_subscript_get_item_start_stop(
+            item, &start, &stop,
+            get_total_bits_uint(cast_self->int_bits, cast_self->frac_bits)))
+    {
+        return fpbinarylarge_sq_slice(self, start, stop);
+    }
+
+    return NULL;
+}
+
+static PyObject *
+fpbinarylarge_str(PyObject *obj)
+{
+    PyObject *result;
+    PyObject *double_val = fpbinarylarge_float(obj);
+    result = Py_TYPE(double_val)->tp_str(double_val);
+
+    Py_DECREF(double_val);
+    return result;
+}
+
+static PyObject *
+fpbinarylarge_str_ex(PyObject *self)
+{
+    FpBinaryLargeObject *cast_self = ((FpBinaryLargeObject *)self);
+    return scaled_long_to_float_str(cast_self->scaled_value,
+                                    cast_self->int_bits, cast_self->frac_bits);
+}
+
+static PyObject *
+fpbinarylarge_richcompare(PyObject *op1, PyObject *op2, int operator)
+{
+    bool eval = false;
+    int compare;
+    FpBinaryLargeObject *resized_op1, *resized_op2;
+
+    if (!FpBinaryLarge_Check(op1) || !FpBinaryLarge_Check(op2))
+    {
+        FPBINARY_RETURN_NOT_IMPLEMENTED;
+    }
+
+    make_binary_ops_same_format(op1, op2, &resized_op1, &resized_op2);
+    compare = FpBinary_TpCompare(resized_op1->scaled_value,
+                                 resized_op2->scaled_value);
+
+    switch (operator)
+    {
+        case Py_LT: eval = (compare < 0); break;
+        case Py_LE: eval = (compare <= 0); break;
+        case Py_EQ: eval = (compare == 0); break;
+        case Py_NE: eval = (compare != 0); break;
+        case Py_GT: eval = (compare > 0); break;
+        case Py_GE: eval = (compare >= 0); break;
+        default: FPBINARY_RETURN_NOT_IMPLEMENTED; break;
+    }
+
+    if (eval)
+        Py_RETURN_TRUE;
+    else
+        Py_RETURN_FALSE;
+}
+
+static void
+fpbinarylarge_dealloc(FpBinaryLargeObject *self)
+{
+    Py_XDECREF(self->int_bits);
+    Py_XDECREF(self->frac_bits);
+    Py_XDECREF(self->scaled_value);
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+static PyObject *
+fpbinarylarge_getformat(PyObject *self, void *closure)
+{
+    PyObject *result_tuple;
+
+    Py_INCREF(((FpBinaryLargeObject *)self)->int_bits);
+    Py_INCREF(((FpBinaryLargeObject *)self)->frac_bits);
+
+    result_tuple = PyTuple_Pack(2, ((FpBinaryLargeObject *)self)->int_bits,
+                                ((FpBinaryLargeObject *)self)->frac_bits);
+
+    if (!result_tuple)
+    {
+        Py_DECREF(((FpBinaryLargeObject *)self)->int_bits);
+        Py_DECREF(((FpBinaryLargeObject *)self)->frac_bits);
+    }
+
+    return result_tuple;
+}
+
+static PyObject *
+fpbinarylarge_is_signed(PyObject *self, void *closure)
+{
+    if (((FpBinaryLargeObject *)self)->is_signed)
+        Py_RETURN_TRUE;
+    else
+        Py_RETURN_FALSE;
+}
+
+/*
+ * Returns the maximum bit width of fixed point numbers this object can
+ * represent. If there is no limit, None is returned.
+ */
+static PyObject *
+fpbinarylarge_get_max_bits(PyTypeObject *cls)
+{
+    Py_RETURN_NONE;
+}
+
+/* Helper functions for use of top client object. */
+
+static FP_UINT_TYPE
+fpbinarylarge_get_total_bits(PyObject *obj)
+{
+    FpBinaryLargeObject *cast_obj = (FpBinaryLargeObject *)obj;
+    /* Assume the number of int and frac bits aren't insanely massive
+     * and just convert.
+     */
+    return (FP_UINT_TYPE)(PyLong_AsLongLong(cast_obj->int_bits) +
+                          PyLong_AsLongLong(cast_obj->frac_bits));
+}
+
+void
+FpBinaryLarge_FormatAsUints(PyObject *self, FP_UINT_TYPE *out_int_bits,
+                            FP_UINT_TYPE *out_frac_bits)
+{
+    *out_int_bits = (FP_UINT_TYPE)PyLong_AsUnsignedLongLong(
+        ((FpBinaryLargeObject *)self)->int_bits);
+    *out_frac_bits = (FP_UINT_TYPE)PyLong_AsUnsignedLongLong(
+        ((FpBinaryLargeObject *)self)->frac_bits);
+}
+
+/*
+ * Returns a PyLong* who's bits are those of the underlying FpBinaryLargeObject
+ * instance. This means that if the object represents a negative value, the
+ * sign bit (as defined by int_bits and frac_bits) will be 1 (i.e. the bits
+ * will be in 2's complement format). However, don't assume the PyLong returned
+ * will or won't be negative.
+ *
+ * No need to increment the reference counter on the returned object.
+ */
+PyObject *
+FpBinaryLarge_BitsAsPylong(PyObject *obj)
+{
+    Py_INCREF(((FpBinaryLargeObject *)obj)->scaled_value);
+    return ((FpBinaryLargeObject *)obj)->scaled_value;
+}
+
+bool
+FpBinaryLarge_IsSigned(PyObject *obj)
+{
+    return ((FpBinaryLargeObject *)obj)->is_signed;
+}
+
+/*
+ * Will return a new FpBinaryLargeObject with the underlying fixed point value
+ * defined by bits, int_bits and frac_bits. Note that bits is
+ * expected to be a group of bits that reflect the 2's complement representation
+ * of the fixed point value * 2^frac_bits. I.e. the signed bit would be 1 for
+ * a negative fixed point number. However, it is NOT assumed that bits
+ * is negative (i.e. only int_bits + frac_bits bits will be used so sign
+ * extension is not required).
+ *
+ * This function is useful for creating an object that has a large number of
+ * fixed point bits and the double type is too small to represent the the
+ * init value.
+ *
+ * NOTE: It is assumed that the inputs are correct such that the number of
+ * format bits are enough to represent the size of bits.
+ */
+PyObject *
+FpBinaryLarge_FromBitsPylong(PyObject *bits, FP_UINT_TYPE int_bits,
+                             FP_UINT_TYPE frac_bits, bool is_signed)
+{
+    PyObject *result =
+        (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
+    PyObject *int_bits_py = PyLong_FromUnsignedLongLong(int_bits);
+    PyObject *frac_bits_py = PyLong_FromUnsignedLongLong(frac_bits);
+    PyObject *total_bits =
+        FP_NUM_METHOD(int_bits_py, nb_add)(int_bits_py, frac_bits_py);
+    PyObject *mask = get_total_bits_mask(total_bits);
+    PyObject *masked_val = FP_NUM_METHOD(bits, nb_and)(bits, mask);
+    PyObject *sign_bit = get_sign_bit(total_bits);
+    PyObject *scaled_value = NULL;
+
+    if (is_signed && FpBinary_TpCompare(masked_val, sign_bit) >= 0)
+    {
+        /* scaled_value represents a negative value. Subtract "next" sign bit
+         * to convert to negative pylong.
+         */
+        PyObject *next_sign_bit =
+            FP_NUM_METHOD(sign_bit, nb_lshift)(sign_bit, py_one);
+        scaled_value =
+            FP_NUM_METHOD(masked_val, nb_subtract)(masked_val, next_sign_bit);
+        Py_DECREF(next_sign_bit);
+    }
+    else
+    {
+        Py_INCREF(masked_val);
+        scaled_value = masked_val;
+    }
+
+    set_object_fields((FpBinaryLargeObject *)result, scaled_value, int_bits_py,
+                      frac_bits_py, is_signed);
+
+    Py_DECREF(total_bits);
+    Py_DECREF(mask);
+    Py_DECREF(masked_val);
+    Py_DECREF(sign_bit);
+    Py_DECREF(scaled_value);
+    Py_DECREF(int_bits_py);
+    Py_DECREF(frac_bits_py);
+
+    return result;
+}
+
+PyObject *
+FpBinaryLarge_FromDouble(double value, FP_UINT_TYPE int_bits,
+                         FP_UINT_TYPE frac_bits, bool is_signed,
+                         fp_overflow_mode_t overflow_mode,
+                         fp_round_mode_t round_mode)
+{
+    PyObject *value_py = PyFloat_FromDouble(value);
+    PyObject *int_bits_py = PyLong_FromLong(int_bits);
+    PyObject *frac_bits_py = PyLong_FromLong(frac_bits);
+    FpBinaryLargeObject *result = fpbinarylarge_create_mem(&FpBinary_LargeType);
+
+    build_from_pyfloat(value_py, int_bits_py, frac_bits_py, is_signed,
+                       overflow_mode, round_mode, result);
+
+    Py_DECREF(value_py);
+    Py_DECREF(int_bits_py);
+    Py_DECREF(frac_bits_py);
+
+    return (PyObject *)result;
+}
+
+static PyMethodDef fpbinarylarge_methods[] = {
+    {"resize", (PyCFunction)fpbinarylarge_resize, METH_VARARGS | METH_KEYWORDS,
+     "Resize the fixed point binary object."},
+    {"str_ex", (PyCFunction)fpbinarylarge_str_ex, METH_NOARGS,
+     "Extended version of str that provides max precision."},
+    {"to_signed", (PyCFunction)fpbinarylarge_to_signed, METH_NOARGS,
+     "Copies the input value, adds an int bit and makes signed."},
+    {"bits_to_signed", (PyCFunction)fpbinarylarge_bits_to_signed, METH_NOARGS,
+     "Interpret the bits of the fixed point binary object as a 2's complement "
+     "long integer."},
+    {"__copy__", (PyCFunction)fpbinarylarge_copy, METH_NOARGS,
+     "Shallow copy the fixed point binary object."},
+    {"get_max_bits", (PyCFunction)fpbinarylarge_get_max_bits, METH_CLASS,
+     "Returns max number of bits representable with this object."},
+
+    {"__getitem__", (PyCFunction)fpbinarylarge_subscript, METH_O, NULL},
+
+    {NULL} /* Sentinel */
+};
+
+static PyGetSetDef fpbinarylarge_getsetters[] = {
+    {"format", (getter)fpbinarylarge_getformat, NULL, "Format tuple", NULL},
+    {"is_signed", (getter)fpbinarylarge_is_signed, NULL,
+     "Returns True if signed.", NULL},
+    {NULL} /* Sentinel */
+};
+
+static PyNumberMethods fpbinarylarge_as_number = {
+    .nb_add = (binaryfunc)fpbinarylarge_add,
+    .nb_subtract = (binaryfunc)fpbinarylarge_subtract,
+    .nb_multiply = (binaryfunc)fpbinarylarge_multiply,
+    .nb_true_divide = (binaryfunc)fpbinarylarge_divide,
+    .nb_negative = (unaryfunc)fpbinarylarge_negative,
+    .nb_int = (unaryfunc)fpbinarylarge_int,
+
+#if PY_MAJOR_VERSION < 3
+    .nb_divide = (binaryfunc)fpbinarylarge_divide,
+    .nb_long = (unaryfunc)fpbinarylarge_long,
+#endif
+
+    .nb_float = (unaryfunc)fpbinarylarge_float,
+    .nb_absolute = (unaryfunc)fpbinarylarge_abs,
+    .nb_lshift = (binaryfunc)fpbinarylarge_lshift,
+    .nb_rshift = (binaryfunc)fpbinarylarge_rshift,
+    .nb_nonzero = (inquiry)fpbinarylarge_nonzero,
+};
+
+static PySequenceMethods fpbinarylarge_as_sequence = {
+    .sq_length = (lenfunc)fpbinarylarge_sq_length,
+    .sq_item = (ssizeargfunc)fpbinarylarge_sq_item,
+
+#if PY_MAJOR_VERSION < 3
+
+    .sq_slice = (ssizessizeargfunc)fpbinarylarge_sq_slice,
+
+#endif
+};
+
+static PyMappingMethods fpbinarylarge_as_mapping = {
+    .mp_length = fpbinarylarge_sq_length,
+    .mp_subscript = (binaryfunc)fpbinarylarge_subscript,
+};
+
+PyTypeObject FpBinary_LargeType = {
+    PyVarObject_HEAD_INIT(NULL, 0).tp_name = "fpbinary.FpBinaryLarge",
+    .tp_doc = "Fixed point binary large objects",
+    .tp_basicsize = sizeof(FpBinaryLargeObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES,
+    .tp_methods = fpbinarylarge_methods,
+    .tp_getset = fpbinarylarge_getsetters,
+    .tp_as_number = &fpbinarylarge_as_number,
+    .tp_as_sequence = &fpbinarylarge_as_sequence,
+    .tp_as_mapping = &fpbinarylarge_as_mapping,
+    .tp_new = (newfunc)fpbinarylarge_new,
+    .tp_dealloc = (destructor)fpbinarylarge_dealloc,
+    .tp_str = fpbinarylarge_str,
+    .tp_repr = fpbinarylarge_str,
+    .tp_richcompare = fpbinarylarge_richcompare,
+};
+
+fpbinary_private_iface_t FpBinary_LargePrvIface = {
+    .get_total_bits = fpbinarylarge_get_total_bits,
+    .is_signed = FpBinaryLarge_IsSigned,
+    .resize = (PyCFunctionWithKeywords)fpbinarylarge_resize,
+    .str_ex = fpbinarylarge_str_ex,
+    .to_signed = fpbinarylarge_to_signed,
+    .bits_to_signed = (PyCFunction)fpbinarylarge_bits_to_signed,
+    .copy = (PyCFunction)fpbinarylarge_copy,
+    .fp_getformat = fpbinarylarge_getformat,
+
+    .fp_from_double = FpBinaryLarge_FromDouble,
+    .fp_from_bits_pylong = FpBinaryLarge_FromBitsPylong,
+
+    .getitem = fpbinarylarge_subscript,
+};
+
+void
+FpBinaryLarge_InitModule(void)
+{
+    PyObject *minus_one_pyfloat = PyFloat_FromDouble(-1.0);
+    fpbinarylarge_minus_one =
+        (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
+    build_from_pyfloat(minus_one_pyfloat, py_one, py_zero, true, OVERFLOW_WRAP,
+                       ROUNDING_DIRECT_NEG_INF,
+                       (FpBinaryLargeObject *)fpbinarylarge_minus_one);
+
+    Py_DECREF(minus_one_pyfloat);
+}
