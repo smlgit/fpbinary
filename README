@@ -1,0 +1,1 @@
+fpbinary is a Python module that provides binary fixed point functionality. This module is written as a CPython extension in order to maximise speed.
