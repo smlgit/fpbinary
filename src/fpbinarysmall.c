@@ -884,6 +884,19 @@ fpbinarysmall_int(PyObject *self)
     return result;
 }
 
+/*
+ * Creating indexes from a fixed point number number is just returning
+ * an unsigned int from the bits in the number.
+ */
+static PyObject *
+fpbinarysmall_index(PyObject *self)
+{
+    FpBinarySmallObject *cast_self = (FpBinarySmallObject *)self;
+    return fp_uint_as_pylong(
+        cast_self->scaled_value &
+        get_total_bits_mask(cast_self->int_bits + cast_self->frac_bits));
+}
+
 static PyObject *
 fpbinarysmall_float(PyObject *self)
 {
@@ -1385,6 +1398,7 @@ static PyNumberMethods fpbinarysmall_as_number = {
     .nb_true_divide = (binaryfunc)fpbinarysmall_divide,
     .nb_negative = (unaryfunc)fpbinarysmall_negative,
     .nb_int = (unaryfunc)fpbinarysmall_int,
+    .nb_index = (unaryfunc)fpbinarysmall_index,
 
 #if PY_MAJOR_VERSION < 3
     .nb_divide = (binaryfunc)fpbinarysmall_divide,

@@ -660,6 +660,13 @@ fpbinary_long(PyObject *self)
 #endif
 
 static PyObject *
+fpbinary_index(PyObject *self)
+{
+    return FP_NUM_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(self),
+                         nb_index)(PYOBJ_TO_BASE_FP_PYOBJ(self));
+}
+
+static PyObject *
 fpbinary_float(PyObject *self)
 {
     return FP_NUM_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(self),
@@ -926,6 +933,7 @@ static PyNumberMethods fpbinary_as_number = {
     .nb_true_divide = (binaryfunc)fpbinary_divide,
     .nb_negative = (unaryfunc)fpbinary_negative,
     .nb_int = (unaryfunc)fpbinary_int,
+    .nb_index = (unaryfunc)fpbinary_index,
 
 #if PY_MAJOR_VERSION < 3
     .nb_divide = (binaryfunc)fpbinary_divide,

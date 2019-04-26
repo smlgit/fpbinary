@@ -789,7 +789,27 @@ class AbstractTestHider(object):
                         test_case, cur_val
                     ))
                     cur_val += inc
-                    #print(fpNum.__getitem__(slice(0,1)))
+
+        def testIndex(self):
+            """When converting to binary sting, the assumption is that only the bits
+               defined by the format are relevant, leading zeros are not shown and
+               the bits are always considered "unsigned."""
+
+            # b00101.0101
+            fpNum = self.fp_binary_class(5, 4, signed=True, value=5.3125)
+            self.assertTrue(bin(fpNum) == '0b1010101')
+
+            # b11001.1010
+            fpNum = self.fp_binary_class(5, 4, signed=True, value=-6.375)
+            self.assertTrue(bin(fpNum) == '0b110011010')
+
+            # b00101.0101
+            fpNum = self.fp_binary_class(5, 4, signed=False, value=5.3125)
+            self.assertTrue(bin(fpNum) == '0b1010101')
+
+            # b11001.1010
+            fpNum = self.fp_binary_class(5, 4, signed=False, value=25.625)
+            self.assertTrue(bin(fpNum) == '0b110011010')
 
 
 class FpBinarySmallTests(AbstractTestHider.BaseClassesTestAbstract):

@@ -686,8 +686,6 @@ fpbinarylarge_bits_to_signed(FpBinaryLargeObject *self, PyObject *args)
     }
     else
     {
-        /* Just mask scaled_value - this should convert the bits to an unsigned
-         * value. */
         PyObject *total_bits = FP_NUM_METHOD(self->int_bits, nb_add)(
             self->int_bits, self->frac_bits);
         PyObject *sign_bit = get_sign_bit(total_bits);
@@ -718,6 +716,30 @@ fpbinarylarge_bits_to_signed(FpBinaryLargeObject *self, PyObject *args)
         Py_DECREF(sign_bit);
     }
 
+    return result;
+}
+
+/*
+ * Creating indexes from a fixed point number number is just returning
+ * an unsigned int from the bits in the number.
+ */
+static PyObject *
+fpbinarylarge_index(PyObject *self)
+{
+    PyObject *result = NULL;
+    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
+
+    /* Just mask scaled_value - this should convert the bits to an unsigned
+     * value. */
+    PyObject *total_bits = FP_NUM_METHOD(cast_self->int_bits, nb_add)(
+        cast_self->int_bits, cast_self->frac_bits);
+    PyObject *mask = get_total_bits_mask(total_bits);
+
+    result = FP_NUM_METHOD(cast_self->scaled_value,
+                           nb_and)(cast_self->scaled_value, mask);
+
+    Py_DECREF(total_bits);
+    Py_DECREF(mask);
     return result;
 }
 
@@ -1429,6 +1451,7 @@ static PyNumberMethods fpbinarylarge_as_number = {
     .nb_true_divide = (binaryfunc)fpbinarylarge_divide,
     .nb_negative = (unaryfunc)fpbinarylarge_negative,
     .nb_int = (unaryfunc)fpbinarylarge_int,
+    .nb_index = (unaryfunc)fpbinarylarge_index,
 
 #if PY_MAJOR_VERSION < 3
     .nb_divide = (binaryfunc)fpbinarylarge_divide,
