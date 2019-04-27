@@ -487,9 +487,71 @@ fpbinary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static PyObject *
 fpbinary_resize(FpBinaryObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *result = FP_BASE_METHOD(self->base_obj, resize)(
-        (PyObject *)self->base_obj, args, kwds);
+    /*
+     * Need to extract the format object so we know what the final
+     * base type needs to be.
+     */
+    PyObject *result = NULL;
+    PyObject *format_inst;
+    PyObject *new_int_bits_py, *new_frac_bits_py;
+    long new_int_bits, new_frac_bits;
+    fp_overflow_mode_t overflow_mode = OVERFLOW_WRAP;
+    fp_round_mode_t round_mode = ROUNDING_DIRECT_NEG_INF;
 
+    static char *kwlist[] = {"format", "overflow_mode", "round_mode", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|ii", kwlist, &format_inst,
+                                     &overflow_mode, &round_mode))
+        return NULL;
+
+    if (check_fp_type(format_inst))
+    {
+        format_inst =
+            FP_BASE_METHOD(format_inst, fp_getformat)(format_inst, NULL);
+    }
+    else if (FpBinary_Check(format_inst))
+    {
+        format_inst = FP_BASE_METHOD(((FpBinaryObject *)format_inst)->base_obj,
+                                     fp_getformat)(
+            (PyObject *)((FpBinaryObject *)format_inst)->base_obj, NULL);
+    }
+    else
+    {
+        /* Because we are decrefing at the end */
+        Py_INCREF(format_inst);
+    }
+
+    if (!format_inst || !PyTuple_Check(format_inst))
+    {
+        PyErr_SetString(PyExc_TypeError, "Unsupported type for format.");
+        return false;
+        return NULL;
+    }
+
+    if (!extract_fp_format_from_tuple(format_inst, &new_int_bits_py,
+                                      &new_frac_bits_py))
+    {
+        return NULL;
+    }
+
+    new_int_bits = pylong_as_fp_uint(new_int_bits_py);
+    new_frac_bits = pylong_as_fp_uint(new_frac_bits_py);
+
+    if (FpBinarySmall_Check(self->base_obj) &&
+        ((unsigned long long)(new_int_bits + new_frac_bits)) >
+            FP_SMALL_MAX_BITS)
+    {
+        PyObject *tmp = (PyObject *)self->base_obj;
+        self->base_obj = (fpbinary_base_t *)cast_to_fplarge(tmp);
+        Py_DECREF(tmp);
+    }
+
+    result = FP_BASE_METHOD(self->base_obj, resize)(
+        (PyObject *)self->base_obj,
+        Py_BuildValue("(Oii)", format_inst, overflow_mode, round_mode), NULL);
+    Py_DECREF(format_inst);
+
+    /* Now check if we can reduce down to a small type */
     if (result)
     {
         Py_DECREF(self->base_obj);

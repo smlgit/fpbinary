@@ -252,11 +252,17 @@ fpbinaryswitchable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             dbl_val = PyFloat_AsDouble(val_pyfloat);
             Py_DECREF(val_pyfloat);
         }
+        else if (!float_value_in)
+        {
+            /* If the user didn't give any args, default to zero */
+            dbl_val = 0.0;
+        }
         else
         {
             PyErr_SetString(
                 PyExc_TypeError,
                 "Floating point mode value must be convertable to float.");
+            return NULL;
         }
     }
 
