@@ -15,7 +15,6 @@ filter_coeffs = int(filter_len / 2) * [FpBinary(2, 30, value=0.0)] + \
 # 32 bit data
 delay_line = deque(filter_len * [FpBinary(2, 30, value=0.0)], filter_len)
 
-
 def fir_next_sample(sample):
     # Allow for hardware specs
     guard_bits = int(math.log(filter_len, 2)) + 1
@@ -35,7 +34,7 @@ def fir_next_sample(sample):
 
 if __name__ == '__main__':
     for i in range(-10, 10):
-        next_sample = fir_next_sample(FpBinary(int_bits=2, frac_bits=30, value=i / 100))
+        next_sample = fir_next_sample(FpBinary(int_bits=2, frac_bits=30, value=i / 10.0))
         print(next_sample, next_sample.format)
 
 
