@@ -1,3 +1,13 @@
+/******************************************************************************
+ * Licensed under GNU General Public License 2.0 - see LICENSE
+ *****************************************************************************/
+
+/******************************************************************************
+ *
+ * Packaging up of publicly accessible objects into the fpbinary Python module.
+ *
+ *****************************************************************************/
+
 #include "fpbinaryenums.h"
 #include "fpbinarylarge.h"
 #include "fpbinaryobject.h"

@@ -1,3 +1,7 @@
+/******************************************************************************
+ * Licensed under GNU General Public License 2.0 - see LICENSE
+ *****************************************************************************/
+
 #ifndef FPBINARYSMALL_H
 #define FPBINARYSMALL_H
 

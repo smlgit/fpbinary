@@ -1,3 +1,7 @@
+/******************************************************************************
+ * Licensed under GNU General Public License 2.0 - see LICENSE
+ *****************************************************************************/
+
 #ifndef FPBINARYSWITCHABLE_H
 #define FPBINARYSWITCHABLE_H
 

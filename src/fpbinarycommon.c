@@ -1,3 +1,13 @@
+/******************************************************************************
+ * Licensed under GNU General Public License 2.0 - see LICENSE
+ *****************************************************************************/
+
+/******************************************************************************
+ *
+ * Useful functions available to all fpbinary source.
+ *
+ *****************************************************************************/
+
 #include "fpbinarycommon.h"
 #include <float.h>
 #include <math.h>
@@ -10,6 +20,8 @@ PyObject *py_five;
 
 /*
  * FFS, this does what the 2.7 PyString concat does...
+ *
+ * Probably could change all code to use unicode.
  *
  * The reference in left is stolen and reassigned to the result of the
  * concatenation.

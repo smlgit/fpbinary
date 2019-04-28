@@ -1,3 +1,7 @@
+/******************************************************************************
+ * Licensed under GNU General Public License 2.0 - see LICENSE
+ *****************************************************************************/
+
 #ifndef FPBINARYCOMMON_H_
 #define FPBINARYCOMMON_H_
 
@@ -35,6 +39,9 @@
 #define FP_MP_METHOD(ob, method_name) Py_TYPE(ob)->tp_as_mapping->method_name
 #define FP_NUM_METHOD_PRESENT(ob, method_name)                                 \
     (ob && (Py_TYPE(ob)->tp_as_number && FP_NUM_METHOD(ob, method_name)))
+
+#define FP_GLOBAL_Doc_VAR(name) char name[]
+#define FP_GLOBAL_Doc_STRVAR(name, str) FP_GLOBAL_Doc_VAR(name) = PyDoc_STR(str)
 
 /* Packaging up code that changes the point of a PyObject field */
 #define FP_ASSIGN_PY_FIELD(obj, value, field)                                  \

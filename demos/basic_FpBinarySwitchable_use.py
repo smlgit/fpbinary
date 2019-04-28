@@ -24,7 +24,7 @@ print('{} + {} == {}   {} * {} = {} (type: {})'.format(
 
 
 print('FpBinarySwitchable is so called because you can switch operation between fixed and floating point, '
-      'simply by flicking a constructor variable. Operations that aren\'t supported by normal numberical '
+      'simply by flicking a constructor variable. Operations that aren\'t supported by normal numerical '
       'objects (like resize) can still be called in floating point mode without an exception:')
 
 for i in range(0, 2):

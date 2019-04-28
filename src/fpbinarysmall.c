@@ -1,14 +1,35 @@
+/******************************************************************************
+ * Licensed under GNU General Public License 2.0 - see LICENSE
+ *****************************************************************************/
+
+/******************************************************************************
+ *
+ * _FpBinarySmall object (not meant for Python users, FpBinary wraps it).
+ *
+ * This object exists to maximise speed. Most use cases will not require more
+ * than 64 bit fixed point numbers. So instead of using the arbitrary length
+ * PyLong object, this object does most things using native C types.
+ *
+ * A real number is represented by the scaled_value field, type unsigned long
+ *long.
+ * This is the real value * 2**frac_bits. scaled_value can then be used for math
+ * operations by using integer arithmetic. Negative numbers are converted to
+ * 2's complement bit representation on entry. From there, the maths comes out
+ * in the wash. Note that the C standard guarantees wrapping behavior for
+ * unsigned types.
+ *
+ * All math operations result in a new object with the int_bits and frac_bits
+ * fields expanded to ensure no overflow. The resize method can be used by
+ * the user to reduce (or increase for some reason) the number of bits.
+ * Multiple overflow and rounding modes are available (see OverflowEnumType
+ * and RoundingEnumType).
+ *
+ *****************************************************************************/
+
 #include "fpbinarysmall.h"
 #include "fpbinarycommon.h"
+#include "fpbinaryglobaldoc.h"
 #include <math.h>
-
-/*
- * The value exposed to the user is 2's complement for signed representation.
- * Underlying scaled value uses an unsigned long int. We use the guaranteed
- * wrapping behavior of unsigned values to naturally give the correct 2's
- * complement answer for math operations (once the initial value is set
- * correctly).
- */
 
 static int
 check_new_bit_len_ok(FpBinarySmallObject *new_obj)
@@ -428,6 +449,12 @@ fpbinarysmall_create_mem(PyTypeObject *type)
     return self;
 }
 
+PyDoc_STRVAR(fpbinarysmall_doc,
+             "_FpBinarySmall(int_bits=1, frac_bits=0, signed=True, value=0.0, "
+             "bit_field=None, format_inst=None)\n"
+             "\n"
+             "Represents a real number using fixed point math and structure.\n"
+             "NOTE: This object is not intended to be used directly!\n");
 static PyObject *
 fpbinarysmall_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -476,6 +503,9 @@ fpbinarysmall_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     return (PyObject *)self;
 }
 
+/*
+ * See copy_doc
+ */
 static PyObject *
 fpbinarysmall_copy(FpBinarySmallObject *self, PyObject *args)
 {
@@ -520,6 +550,9 @@ fpbinarysmall_to_signed(PyObject *obj, PyObject *args)
     return (PyObject *)result;
 }
 
+/*
+ * See resize_doc
+ */
 static PyObject *
 fpbinarysmall_resize(FpBinarySmallObject *self, PyObject *args, PyObject *kwds)
 {
@@ -574,10 +607,7 @@ fpbinarysmall_resize(FpBinarySmallObject *self, PyObject *args, PyObject *kwds)
 }
 
 /*
- * The bits represented in the passed fixed point object are interpreted as
- * a signed 2's complement integer and returned as a PyLong.
- * NOTE: if self is an unsigned object, the MSB, as defined by the int_bits
- * and frac_bits values, will be considered a sign bit.
+ * See bits_to_signed_doc
  */
 static PyObject *
 fpbinarysmall_bits_to_signed(FpBinarySmallObject *self, PyObject *args)
@@ -1108,6 +1138,9 @@ fpbinarysmall_str(PyObject *obj)
     return result;
 }
 
+/*
+ * See str_ex_doc
+ */
 static PyObject *
 fpbinarysmall_str_ex(PyObject *self)
 {
@@ -1198,6 +1231,9 @@ fpbinarysmall_dealloc(FpBinarySmallObject *self)
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
+/*
+ * See format_doc
+ */
 static PyObject *
 fpbinarysmall_getformat(PyObject *self, void *closure)
 {
@@ -1221,6 +1257,9 @@ fpbinarysmall_getformat(PyObject *self, void *closure)
     return result_tuple;
 }
 
+/*
+ * See is_signed_doc
+ */
 static PyObject *
 fpbinarysmall_is_signed(PyObject *self, void *closure)
 {
@@ -1366,16 +1405,13 @@ FpBinary_IntCheck(PyObject *ob)
 
 static PyMethodDef fpbinarysmall_methods[] = {
     {"resize", (PyCFunction)fpbinarysmall_resize, METH_VARARGS | METH_KEYWORDS,
-     "Resize the fixed point binary object."},
-    {"str_ex", (PyCFunction)fpbinarysmall_str_ex, METH_NOARGS,
-     "Extended version of str that provides max precision."},
+     resize_doc},
+    {"str_ex", (PyCFunction)fpbinarysmall_str_ex, METH_NOARGS, str_ex_doc},
     {"to_signed", (PyCFunction)fpbinarysmall_to_signed, METH_NOARGS,
      "Copies the input value, adds an int bit and makes signed."},
     {"bits_to_signed", (PyCFunction)fpbinarysmall_bits_to_signed, METH_NOARGS,
-     "Interpret the bits of the fixed point binary object as a 2's complement "
-     "long integer."},
-    {"__copy__", (PyCFunction)fpbinarysmall_copy, METH_NOARGS,
-     "Shallow copy the fixed point binary object."},
+     bits_to_signed_doc},
+    {"__copy__", (PyCFunction)fpbinarysmall_copy, METH_NOARGS, copy_doc},
     {"get_max_bits", (PyCFunction)fpbinarysmall_get_max_bits, METH_CLASS,
      "Returns max number of bits representable with this object."},
 
@@ -1385,9 +1421,8 @@ static PyMethodDef fpbinarysmall_methods[] = {
 };
 
 static PyGetSetDef fpbinarysmall_getsetters[] = {
-    {"format", (getter)fpbinarysmall_getformat, NULL, "Format tuple.", NULL},
-    {"is_signed", (getter)fpbinarysmall_is_signed, NULL,
-     "Returns True if signed.", NULL},
+    {"format", (getter)fpbinarysmall_getformat, NULL, format_doc, NULL},
+    {"is_signed", (getter)fpbinarysmall_is_signed, NULL, is_signed_doc, NULL},
     {NULL} /* Sentinel */
 };
 
@@ -1430,7 +1465,7 @@ static PyMappingMethods fpbinarysmall_as_mapping = {
 
 PyTypeObject FpBinary_SmallType = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name = "fpbinary.FpBinarySmall",
-    .tp_doc = "Fixed point binary objects",
+    .tp_doc = fpbinarysmall_doc,
     .tp_basicsize = sizeof(FpBinarySmallObject),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES,

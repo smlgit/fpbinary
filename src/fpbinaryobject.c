@@ -1,4 +1,23 @@
+/******************************************************************************
+ * Licensed under GNU General Public License 2.0 - see LICENSE
+ *****************************************************************************/
+
+/******************************************************************************
+ *
+ * FpBinary
+ *
+ * This object wraps the _FpBinarySmall and _FpBinaryLarge objects. The intent
+ * is for FpBinary to do the following tasks:
+ *
+ *     - select which object to use based on the number of bits required (use
+ *       _FpBinarySmall if at all possible)
+ *     - ensure operands to binary/ternary operations are the base object type
+ *       (i.e. _FpBinarySmall and _FpBinaryLarge do minimal type checking).
+ *
+ *****************************************************************************/
+
 #include "fpbinaryobject.h"
+#include "fpbinaryglobaldoc.h"
 #include "fpbinarylarge.h"
 #include "fpbinarysmall.h"
 #include <math.h>
@@ -454,6 +473,49 @@ FpBinary_FromParams(long int_bits, long frac_bits, bool is_signed, double value,
     return NULL;
 }
 
+PyDoc_STRVAR(
+    fpbinaryobject_doc,
+    "FpBinary(int_bits=1, frac_bits=0, signed=True, value=0.0, bit_field=None, "
+    "format_inst=None)\n"
+    "\n"
+    "Represents a real number using fixed point math and structure.\n"
+    "Parameters\n"
+    "----------\n"
+    "int_bits : int\n"
+    "    The number of bits to use to represent the integer part.\n"
+    "\n"
+    "frac_bits : int\n"
+    "    The number of bits to use to represent the fractional part.\n"
+    "\n"
+    "signed : bool\n"
+    "    Specifies whether the data represented is signed (True) or unsigned.\n"
+    "    This effects min/max values and wrapping/saturation behaviour.\n"
+    "\n"
+    "value : float\n"
+    "    The value to initialise the fixed point object to. If int_bits and "
+    "frac_bits\n"
+    "    do not provide enough precision to represent value fully, rounding "
+    "will be\n"
+    "    done using RoundingEnum.near_pos_inf and overflow will be handled "
+    "using\n"
+    "    OverflowEnum.sat.\n"
+    "\n"
+    "bit_field : int\n"
+    "    If the precision of the desired initialise value is too great for the "
+    "native\n"
+    "    float type, bit_field can be set to a 2's complement representation "
+    "of the\n"
+    "    desired value * 2**frac_bits. Note that bit_field overrides the value "
+    "parameter.\n"
+    "\n"
+    "format_inst : FpBinary\n"
+    "    If set, the int_bits and frac_bits values will be taken from the "
+    "format of\n"
+    "    format_inst.\n"
+    "\n"
+    "Returns\n"
+    "----------\n"
+    "self : FpBinary\n");
 static PyObject *
 fpbinary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -484,6 +546,9 @@ fpbinary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     return NULL;
 }
 
+/*
+ * See resize_doc
+ */
 static PyObject *
 fpbinary_resize(FpBinaryObject *self, PyObject *args, PyObject *kwds)
 {
@@ -575,10 +640,7 @@ fpbinary_resize(FpBinaryObject *self, PyObject *args, PyObject *kwds)
 }
 
 /*
- * The bits represented in the passed fixed point object are interpreted as
- * a signed 2's complement integer and returned as a PyLong.
- * NOTE: if self is an unsigned object, the MSB, as defined by the int_bits
- * and frac_bits values, will be considered a sign bit.
+ * See bits_to_signed_doc
  */
 static PyObject *
 fpbinary_bits_to_signed(FpBinaryObject *self, PyObject *args)
@@ -587,6 +649,9 @@ fpbinary_bits_to_signed(FpBinaryObject *self, PyObject *args)
                           bits_to_signed)((PyObject *)self->base_obj, args);
 }
 
+/*
+ * See copy_doc
+ */
 static PyObject *
 fpbinary_copy(FpBinaryObject *self, PyObject *args)
 {
@@ -901,6 +966,9 @@ fpbinary_str(PyObject *obj)
                      tp_str)(PYOBJ_TO_BASE_FP_PYOBJ(obj));
 }
 
+/*
+ * See str_ex_doc
+ */
 static PyObject *
 fpbinary_str_ex(PyObject *self)
 {
@@ -935,6 +1003,9 @@ fpbinary_dealloc(FpBinaryObject *self)
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
+/*
+ * See format_doc
+ */
 static PyObject *
 fpbinary_getformat(PyObject *self, void *closure)
 {
@@ -942,6 +1013,9 @@ fpbinary_getformat(PyObject *self, void *closure)
                           fp_getformat)(PYOBJ_TO_BASE_FP_PYOBJ(self), closure);
 }
 
+/*
+ * See is_signed_doc
+ */
 static PyObject *
 fpbinary_is_signed(PyObject *self, void *closure)
 {
@@ -965,14 +1039,11 @@ fpbinary_get_max_bits(PyObject *cls)
 
 static PyMethodDef fpbinary_methods[] = {
     {"resize", (PyCFunction)fpbinary_resize, METH_VARARGS | METH_KEYWORDS,
-     "Resize the fixed point binary object."},
-    {"str_ex", (PyCFunction)fpbinary_str_ex, METH_NOARGS,
-     "Extended version of str that provides max precision."},
+     resize_doc},
+    {"str_ex", (PyCFunction)fpbinary_str_ex, METH_NOARGS, str_ex_doc},
     {"bits_to_signed", (PyCFunction)fpbinary_bits_to_signed, METH_NOARGS,
-     "Interpret the bits of the fixed point binary object as a 2's complement "
-     "long integer."},
-    {"__copy__", (PyCFunction)fpbinary_copy, METH_NOARGS,
-     "Shallow copy the fixed point binary object."},
+     bits_to_signed_doc},
+    {"__copy__", (PyCFunction)fpbinary_copy, METH_NOARGS, copy_doc},
     {"get_max_bits", (PyCFunction)fpbinary_get_max_bits, METH_CLASS,
      "Returns max number of bits representable with this object."},
 
@@ -982,9 +1053,8 @@ static PyMethodDef fpbinary_methods[] = {
 };
 
 static PyGetSetDef fpbinary_getsetters[] = {
-    {"format", (getter)fpbinary_getformat, NULL, "Format tuple", NULL},
-    {"is_signed", (getter)fpbinary_is_signed, NULL, "Returns True if signed.",
-     NULL},
+    {"format", (getter)fpbinary_getformat, NULL, format_doc, NULL},
+    {"is_signed", (getter)fpbinary_is_signed, NULL, is_signed_doc, NULL},
     {NULL} /* Sentinel */
 };
 
@@ -1026,7 +1096,7 @@ static PyMappingMethods fpbinary_as_mapping = {
 
 PyTypeObject FpBinary_Type = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name = "fpbinary.FpBinary",
-    .tp_doc = "Fixed point binary objects",
+    .tp_doc = fpbinaryobject_doc,
     .tp_basicsize = sizeof(FpBinaryObject),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES,
