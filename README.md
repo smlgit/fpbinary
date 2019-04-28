@@ -20,18 +20,28 @@ cd fpbinary
 python setup install
 ```
 
+The library has been tested (via pyenv) on versions 2.7.12, 3.5.2 and 3.6.5.
+
 ## Objects
 
-fpbinary provides two main objects - `FpBinary` and `FpBinarySwitchable`.
+fpbinary provides two main objects - `FpBinary` and `FpBinarySwitchable`. The best way to learn how they work is to read the help documentation:
+
+```python
+from fpbinary import FpBinary, FpBinarySwitchable
+help(FpBinary)
+help(FpBinarySwitchable)
+```
+
+There are also some useful demos:
+ 
+ [demos](./demos)
+ 
+ Below is a very brief introduction into the objects.
 
 #### `FpBinary`
 
 This object represents a real number with a specified number of integer and fractional bits. View the documentation via:
 
-```python
-import fpbinary
-help(fpbinary.FpBinary)
-```
 Some basic usage:
 
 ```python
