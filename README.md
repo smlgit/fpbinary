@@ -32,9 +32,7 @@ help(FpBinary)
 help(FpBinarySwitchable)
 ```
 
-There are also some useful demos:
- 
- [demos](./demos)
+There are also some useful [demos](./demos).
  
  Below is a very brief introduction to the objects.
  
