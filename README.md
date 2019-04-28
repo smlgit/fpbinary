@@ -22,7 +22,7 @@ python setup install
 
 The library has been tested (via pyenv) on versions 2.7.12, 3.5.2 and 3.6.5.
 
-## Objects
+## Use
 
 fpbinary provides two main objects - `FpBinary` and `FpBinarySwitchable`. The best way to learn how they work is to read the help documentation:
 
@@ -36,7 +36,9 @@ There are also some useful demos:
  
  [demos](./demos)
  
- Below is a very brief introduction into the objects.
+ Below is a very brief introduction to the objects.
+ 
+ ## Object Introduction
 
 #### `FpBinary`
 
