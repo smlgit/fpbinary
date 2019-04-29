@@ -8,16 +8,17 @@
 1. [Development](#dev)
 1. [Enhancements](#enhancements)
 
-...snip...
 <a name="intro"/>
+
 ## Introduction
 
 fpbinary is a binary fixed point library for Python. It is written as an extension module for the CPython implementation of Python.
 
 fpbinary was created with **_fast_** simulation of math-intensive systems destined for digital hardware (e.g. signal processing) in mind. While Python has great support for signal processing functions, there is no offical fixed point library. Implementaions written completely in Python tend to be frustratingly slow, so fpbinary is an attempt to make fixed point simulation of large, complex hardware systems in Python viable.
 
-...snip...
+
 <a name="features"/>
+
 ## Features
 - Arbitrary precision representation of real numbers (including a `str_ex()` method for string display of high precision numbers)
 - Definable integer and fractional bit formats
@@ -28,8 +29,8 @@ fpbinary was created with **_fast_** simulation of math-intensive systems destin
 - Tracking of min/max values for prototyping
 - Follows the VHDL fixed point library conventions (relatively) closely
 
-...snip...
 <a name="install"/>
+
 ## Installation
 
 Installation is currently only via source download and build. You require an installation of git, python >= 2.7.12 and a C99 compliant compiler.
@@ -46,8 +47,8 @@ python setup install
 
 The library has been tested (via pyenv) on versions 2.7.12, 3.5.2 and 3.6.5.
 
-...snip...
 <a name="use"/>
+
 ## Use
 
 fpbinary provides two main objects - `FpBinary` and `FpBinarySwitchable`. The best way to learn how they work is to read the help documentation:
@@ -121,8 +122,8 @@ def run(fp_mode):
     return inp.min_value, inp.max_value, scaled.min_value, scaled.max_value
 ```
 
-...snip...
 <a name="dev"/>
+
 ## Development
 fpbinary was designed from the point of view of a frustrated FPGA designer. Speed and useability for FPGA/hardware engineers drove the implementation decisions.
 
@@ -147,7 +148,8 @@ The point of this object is to allow a designer to write their simulation code a
 
 `FpBinarySwitchable` is designed to "look" like an `FpBinary` object, at least when it makes sense to flick the operation to float mode. So I have implemented `resize()` operations (no change in float mode) and shifting operations (mult/div by powers of 2) as well as the math operations. But index/slice and bitwise operations have **not** been implemented.
 
-1. [Development](#enhancements)
+<a name="enhancements"/>
+
 ### Enhancements
 - [ ] Possibly jettison the base class architecure and use `_FpBinaryLarge` as the main object.
 - [ ] Add more advanced operations like log, exp, sin/cos/tan. I have stopped short of doing these thus far because a user may rather simulate the actual hardware implementation (e.g. a lookup table would likely be used for sin). Having said that, a convienient fpbinary method should give the same result.
