@@ -8,6 +8,7 @@
 1. [Development](#dev)
 1. [Enhancements](#enhancements)
 
+...snip...
 <a name="intro"/>
 ## Introduction
 
@@ -15,6 +16,7 @@ fpbinary is a binary fixed point library for Python. It is written as an extensi
 
 fpbinary was created with **_fast_** simulation of math-intensive systems destined for digital hardware (e.g. signal processing) in mind. While Python has great support for signal processing functions, there is no offical fixed point library. Implementaions written completely in Python tend to be frustratingly slow, so fpbinary is an attempt to make fixed point simulation of large, complex hardware systems in Python viable.
 
+...snip...
 <a name="features"/>
 ## Features
 - Arbitrary precision representation of real numbers (including a `str_ex()` method for string display of high precision numbers)
@@ -26,6 +28,7 @@ fpbinary was created with **_fast_** simulation of math-intensive systems destin
 - Tracking of min/max values for prototyping
 - Follows the VHDL fixed point library conventions (relatively) closely
 
+...snip...
 <a name="install"/>
 ## Installation
 
@@ -43,6 +46,7 @@ python setup install
 
 The library has been tested (via pyenv) on versions 2.7.12, 3.5.2 and 3.6.5.
 
+...snip...
 <a name="use"/>
 ## Use
 
@@ -117,6 +121,7 @@ def run(fp_mode):
     return inp.min_value, inp.max_value, scaled.min_value, scaled.max_value
 ```
 
+...snip...
 <a name="dev"/>
 ## Development
 fpbinary was designed from the point of view of a frustrated FPGA designer. Speed and useability for FPGA/hardware engineers drove the implementation decisions.
