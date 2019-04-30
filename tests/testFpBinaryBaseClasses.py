@@ -2,12 +2,17 @@
 # Unit-tests for FpBinary Python module
 # SM), some tests adapted from RW Penney's Simple Fixed Point module
 
-import sys, unittest, copy
+import sys, unittest, copy, math
 from fpbinary import FpBinary, _FpBinarySmall, _FpBinaryLarge, OverflowEnum, RoundingEnum, FpBinaryOverflowException
 
 
 if sys.version_info[0] >= 3:
     from porting_v3_funcs import *
+
+
+def get_small_type_size():
+    """ Returns the number of bits the FpBinarySmall object should be able to support. """
+    return int(math.log(sys.maxsize, 2)) + 1
 
 
 class AbstractTestHider(object):
@@ -26,12 +31,12 @@ class AbstractTestHider(object):
         def assertEqual(self, first, second, msg=None):
             super(AbstractTestHider.BaseClassesTestAbstract, self).assertEqual(float(first), float(second), msg)
 
-        def assertAlmostEqual(self, first, second, places=7):
+        def assertAlmostEqual(self, first, second, places=7, msg=''):
             """Overload TestCase.assertAlmostEqual() to avoid use of round()"""
             tol = 10.0 ** -places
             self.assertTrue(float(abs(first - second)) < tol,
-                            '{} and {} differ by more than {} ({})'.format(
-                                first, second, tol, (first - second)))
+                            '{} and {} differ by more than {} ({}) {}'.format(
+                                first, second, tol, (first - second), msg))
 
         def testCreateParams(self):
             # These parameter test cases should raise an exception
@@ -251,43 +256,54 @@ class AbstractTestHider(object):
             self.assertEqual(mult, 15.015625)
             self.assertTrue(mult.format == (4, 6))
 
-
         def testDivision(self):
-            """Division operators should promote & inverse-commute"""
-            format_obj = self.fp_binary_class(16, 16, signed=True)
-            scale = 0.125
-            scale2 = scale * scale
-            for a in range(-32, 32):
-                if a == 0: continue
-                fpa = self.fp_binary_class(signed=True, value=a * scale, format_inst=format_obj)
-                for y in range(-16, 16):
-                    if y == 0: continue
-                    fpy = self.fp_binary_class(signed=True, value=y * scale, format_inst=format_obj)
-                    fpx = self.fp_binary_class(signed=True, value=(y * a) * scale2, format_inst=format_obj)
 
-                    # compute various forms of a = (x / y):
-                    self.assertAlmostEqual(fpa, (fpx / fpy).resize(fpa.format))
-                    self.assertAlmostEqual((self.fp_one / fpa).resize(fpa.format), (fpy / fpx).resize(fpa.format))
-                    self.assertAlmostEqual((a * scale), float(fpx / fpy))
+            is_signed_test_cases = [False, True]
 
-                    tmp = fpx
-                    tmp /= fpy
-                    self.assertAlmostEqual(fpa, tmp.resize(fpa.format))
+            num_int_bits = 5
+            num_frac_bits = 4
+            denom_int_bits = 6
+            denom_frac_bits = 3
 
-            # Check boundaries
-            # b01.111 / b01.111 = b0001.000000
-            fpx = self.fp_binary_class(2, 3, signed=True, value=1.875)
-            div = fpx / fpx
-            self.assertEqual(div, 1.0)
-            self.assertTrue(div.format == (4, 6))
+            for is_signed in is_signed_test_cases:
 
-            # Check boundaries
-            # b11.111 / b11.111 = b0001.000000
-            fpx = self.fp_binary_class(2, 3, signed=False, value=3.875)
-            div = fpx / fpx
-            self.assertEqual(div, 1.0)
-            self.assertTrue(div.format == (4, 6))
+                num_min = -2.0**(num_int_bits - 1) if is_signed else 0.0
+                num_max = -num_min - 1 if is_signed else 2.0**num_int_bits
 
+                denom_min = -2.0 ** (denom_int_bits - 1) if is_signed else 0.0
+                denom_max = -denom_min - 1 if is_signed else 2.0 ** denom_int_bits
+
+                num_inc = 2.0**-num_frac_bits
+                denom_inc = 2.0**-denom_frac_bits
+
+                num_val = num_min
+
+                while num_val < num_max:
+                    fp_num = self.fp_binary_class(num_int_bits, num_frac_bits, signed=is_signed, value=num_val)
+
+                    denom_val = denom_min
+                    while denom_val < denom_max:
+                        if denom_val != 0.0:
+                            fp_denom = self.fp_binary_class(denom_int_bits, denom_frac_bits, signed=is_signed, value=denom_val)
+                            self.assertAlmostEqual(float(fp_num / fp_denom), num_val / denom_val, places=3)
+                            self.assertTrue((fp_num / fp_denom).format == (num_int_bits + denom_frac_bits,
+                                                                           num_frac_bits + denom_int_bits))
+
+                        denom_val += denom_inc
+
+                    num_val += num_inc
+
+                # Check boundaries - largest values that can be divided by _FpBinarSmall
+                # Division requires scaling by the size of the denominator
+                max_total_bits = int(get_small_type_size() / 2)
+
+                fp_num = self.fp_binary_class(int(max_total_bits / 2), int(max_total_bits / 2),
+                                              signed=is_signed, bit_field=(long(1) << max_total_bits) - 1)
+                fp_denom = self.fp_binary_class(int(max_total_bits / 2), int(max_total_bits / 2),
+                                              signed=is_signed, bit_field=(long(1) << max_total_bits) - 1)
+                self.assertTrue((fp_num / fp_denom).format == (max_total_bits, max_total_bits))
+
+                self.assertEqual(float(fp_num / fp_denom), 1.0, msg='is_signed={}'.format(is_signed))
 
         def testBitShifts(self):
             """Check effects of left & right shift operators."""

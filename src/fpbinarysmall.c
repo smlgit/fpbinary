@@ -51,6 +51,28 @@ get_sign_bit(FP_UINT_TYPE total_bits)
 }
 
 /*
+ * Modifies the bits in scaled_value to represent the negative 2's complement value.
+ */
+static inline FP_UINT_TYPE
+negate_scaled_value(FP_UINT_TYPE scaled_value)
+{
+	return ~scaled_value + 1;
+}
+
+static inline FP_UINT_TYPE
+sign_extend_scaled_value(FP_UINT_TYPE scaled_value, FP_UINT_TYPE total_bits, bool is_signed)
+{
+	if (is_signed && (scaled_value & get_sign_bit(total_bits)))
+	{
+		/* Need to shift with 1's. Calculate mask that will OR out the newly
+		 * shifted zeros. */
+		return scaled_value - (((FP_UINT_TYPE) 1) << total_bits);
+	}
+
+	return scaled_value;
+}
+
+/*
 * Returns an int that gives the largest value representable (after conversion to
 * scaled
 * int representation) given total_bits.
@@ -831,6 +853,12 @@ fpbinarysmall_multiply(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+FP_UINT_TYPE fpbinarysmall_req_div_cal_bits(FP_UINT_TYPE op1_total_bits, FP_UINT_TYPE op2_total_bits)
+{
+	/* Need to shift the numerator by the total bits in the denom to do the integer divide */
+	return (op1_total_bits + op2_total_bits);
+}
+
 /*
  * Divide is a bit odd with fixed point. Currently convert to doubles,
  * do a divide and convert back to fixed point with the same format as
@@ -839,26 +867,91 @@ fpbinarysmall_multiply(PyObject *op1, PyObject *op2)
 static PyObject *
 fpbinarysmall_divide(PyObject *op1, PyObject *op2)
 {
+	/*
+	 * Given the nature of division (i.e. the int bits in the denominator make
+	 * the result smaller and the frac bits in the denomintor make the result
+	 * larger), the convention is to have:
+	 *     result frac bits = numerator frac bits + denominator int bits
+	 *
+	 * Similarly, in order to avoid overflow:
+	 *     result int bits = numerator int bits + denominator frac bits
+	 *
+	 *
+	 * We just divide the scaled values but in order to maintain precision,
+	 * we scale the numerator further by denom_frac_bits + denom_int_bits since:
+	 *     result = (actual_num << num_frac_bits_adjusted) / (actual_denom << denom_frac_bits)
+	 *            = (actual_num / actual_denom) << (num_frac_bits_adjusted - denom_frac_bits)
+	 *
+	 * So, to get (num frac bits + denom int bits) frac bits in our result:
+	 *     num_frac_bits_adjusted - denom_frac_bits = num frac bits + denom int bits
+	 *     num_frac_bits_adjusted = num frac bits + denom int bits + denom_frac_bits
+	 *
+	 * So, all this is a long-winded way of saying that we just left shift the numerator by
+	 * (denom int bits + denom_frac_bits) and then divide by the untouched denominator.
+	 *
+	 *
+	 */
     FpBinarySmallObject *result = NULL;
-    FpBinarySmallObject *cast_op1, *cast_op2;
-    double result_dbl;
+    FpBinarySmallObject *cast_op1 = (FpBinarySmallObject *)op1;
+    FpBinarySmallObject *cast_op2 = (FpBinarySmallObject *)op2;
+
+    FP_UINT_TYPE op1_total_bits = cast_op1->int_bits + cast_op1->frac_bits;
+    FP_UINT_TYPE op2_total_bits = cast_op2->int_bits + cast_op2->frac_bits;
+    FP_UINT_TYPE op1_sign_bit = get_sign_bit(op1_total_bits);
+    FP_UINT_TYPE op2_sign_bit = get_sign_bit(op2_total_bits);
+
+    bool op1_neg = (cast_op1->is_signed && (cast_op1->scaled_value & op1_sign_bit));
+    bool op2_neg = (cast_op1->is_signed && (cast_op2->scaled_value & op2_sign_bit));
+
+    FP_UINT_TYPE op1_scaled_val_mag, op2_scaled_val_mag;
+    FP_UINT_TYPE new_scaled_value;
 
     if (!check_binary_ops(op1, op2))
     {
         FPBINARY_RETURN_NOT_IMPLEMENTED;
     }
 
-    cast_op1 = (FpBinarySmallObject *)op1;
-    cast_op2 = (FpBinarySmallObject *)op2;
+    /*
+     * We use unsigned ints for the scaled value. This means direct division
+     * will not work negative numbers will always be larger than positive,
+     * so division by a neg number will result in integer 0. So convert to
+     * magnitude and sign extend later (note that overflow isn't an issue
+     * with magnitude conversion here because the unsigned result will be
+     * the same except for the sign - e.g 8 / 1 or -8 / 1 both look like
+     * 0b1000 / 0b0001).
+     */
+
+    if (op1_neg)
+    {
+    	op1_scaled_val_mag = negate_scaled_value(cast_op1->scaled_value);
+    }
+    else
+    {
+    	op1_scaled_val_mag = cast_op1->scaled_value;
+    }
+
+    if (op2_neg)
+	{
+		op2_scaled_val_mag = negate_scaled_value(cast_op2->scaled_value);
+	}
+	else
+	{
+		op2_scaled_val_mag = cast_op2->scaled_value;
+	}
+
+    /* Extra scale for final fractional precision */
+    op1_scaled_val_mag <<= op2_total_bits;
+
+    new_scaled_value = op1_scaled_val_mag / op2_scaled_val_mag;
+    if (op1_neg != op2_neg)
+    {
+    	new_scaled_value = negate_scaled_value(new_scaled_value);
+    }
 
     result =
-        (FpBinarySmallObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
-    result_dbl =
-        fpbinarysmall_to_double(cast_op1) / fpbinarysmall_to_double(cast_op2);
-    build_from_float(result_dbl, cast_op1->int_bits + cast_op2->int_bits,
-                     cast_op1->frac_bits + cast_op2->frac_bits,
-                     cast_op1->is_signed, OVERFLOW_WRAP,
-                     ROUNDING_DIRECT_NEG_INF, result);
+		(FpBinarySmallObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
+
+	set_object_fields(result, new_scaled_value, cast_op1->int_bits + cast_op2->frac_bits, cast_op1->frac_bits + cast_op2->int_bits, cast_op1->is_signed);
 
     /* Check for overflow of our underlying word size. */
     if (!check_new_bit_len_ok(result))
@@ -1365,19 +1458,14 @@ FpBinarySmall_FromBitsPylong(PyObject *scaled_value, FP_UINT_TYPE int_bits,
 {
     PyObject *result;
     FP_UINT_TYPE total_bits = int_bits + frac_bits;
-    FP_UINT_TYPE sign_bit = get_sign_bit(total_bits);
     PyObject *mask =
         PyLong_FromUnsignedLongLong(get_total_bits_mask(int_bits + frac_bits));
     PyObject *masked_val =
         FP_NUM_METHOD(scaled_value, nb_and)(scaled_value, mask);
     FP_UINT_TYPE scaled_value_uint = pylong_as_fp_uint(masked_val);
 
-    if (is_signed && (scaled_value_uint & sign_bit) &&
-        sign_bit < FP_UINT_MAX_SIGN_BIT)
-    {
-        /* If underlying value is negative, ensure bits are sign extended. */
-        scaled_value_uint -= (sign_bit << 1);
-    }
+    /* If underlying value is negative, ensure bits are sign extended. */
+    scaled_value_uint = sign_extend_scaled_value(scaled_value_uint, total_bits, is_signed);
 
     result = (PyObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
     set_object_fields((FpBinarySmallObject *)result, scaled_value_uint,
