@@ -39,5 +39,6 @@ PyObject *FpBinarySmall_FromBitsPylong(PyObject *scaled_value,
                                        FP_UINT_TYPE frac_bits, bool is_signed);
 
 bool FpBinarySmall_IsNegative(PyObject *obj);
+FP_UINT_TYPE fpbinarysmall_can_divide_ops(FP_UINT_TYPE op1_total_bits, FP_UINT_TYPE op2_total_bits);
 
 #endif

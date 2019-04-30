@@ -853,10 +853,14 @@ fpbinarysmall_multiply(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
-FP_UINT_TYPE fpbinarysmall_req_div_cal_bits(FP_UINT_TYPE op1_total_bits, FP_UINT_TYPE op2_total_bits)
+/*
+ * Returns true if the FpBinarySmall object has enough bits in its native
+ * type to divide op1 by op2.
+ */
+FP_UINT_TYPE fpbinarysmall_can_divide_ops(FP_UINT_TYPE op1_total_bits, FP_UINT_TYPE op2_total_bits)
 {
 	/* Need to shift the numerator by the total bits in the denom to do the integer divide */
-	return (op1_total_bits + op2_total_bits);
+	return (op1_total_bits + op2_total_bits) <= FP_SMALL_MAX_BITS;
 }
 
 /*

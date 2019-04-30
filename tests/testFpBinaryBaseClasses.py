@@ -260,9 +260,9 @@ class AbstractTestHider(object):
 
             is_signed_test_cases = [False, True]
 
-            num_int_bits = 5
-            num_frac_bits = 4
-            denom_int_bits = 6
+            num_int_bits = 4
+            num_frac_bits = 3
+            denom_int_bits = 5
             denom_frac_bits = 3
 
             for is_signed in is_signed_test_cases:
@@ -285,7 +285,7 @@ class AbstractTestHider(object):
                     while denom_val < denom_max:
                         if denom_val != 0.0:
                             fp_denom = self.fp_binary_class(denom_int_bits, denom_frac_bits, signed=is_signed, value=denom_val)
-                            self.assertAlmostEqual(float(fp_num / fp_denom), num_val / denom_val, places=3)
+                            self.assertAlmostEqual(float(fp_num / fp_denom), num_val / denom_val, places=2)
                             self.assertTrue((fp_num / fp_denom).format == (num_int_bits + denom_frac_bits,
                                                                            num_frac_bits + denom_int_bits))
 

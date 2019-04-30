@@ -291,6 +291,7 @@ class AbstractTestHider(object):
         def testDivision(self):
             """Subtraction operations between different types"""
 
+            almost_equal_places_small = 4
             bits_small = int(get_small_type_size() / 4)
             bits_large = get_small_type_size()
 
@@ -309,20 +310,20 @@ class AbstractTestHider(object):
                     fpx_large = self.fp_binary_class(signed=True, value=(y * a) * scale2, format_inst=fpa_large)
 
                     # compute various forms of a = (x / y):
-                    self.assertAlmostEqual(fpa_small, (fpx_small / fpy_small).resize(fpa_small.format))
+                    self.assertAlmostEqual(fpa_small, (fpx_small / fpy_small).resize(fpa_small.format), places=almost_equal_places_small)
                     self.assertAlmostEqual((1 / fpa_small).resize(fpa_small.format),
-                                           (fpy_small / fpx_small).resize(fpa_small.format))
-                    self.assertAlmostEqual((a * scale), float(fpx_small / fpy_small))
+                                           (fpy_small / fpx_small).resize(fpa_small.format), places=almost_equal_places_small)
+                    self.assertAlmostEqual((a * scale), float(fpx_small / fpy_small), places=almost_equal_places_small)
 
                     self.assertAlmostEqual(fpa_large, (fpx_large / fpy_large).resize(fpa_large.format))
                     self.assertAlmostEqual((1 / fpa_large).resize(fpa_large.format),
                                            (fpy_large / fpx_large).resize(fpa_large.format))
                     self.assertAlmostEqual((a * scale), float(fpx_large / fpy_large))
 
-                    self.assertAlmostEqual(fpa_small, (fpx_small / fpy_large).resize(fpa_small.format))
+                    self.assertAlmostEqual(fpa_small, (fpx_small / fpy_large).resize(fpa_small.format), places=almost_equal_places_small)
                     self.assertAlmostEqual((1 / fpa_small).resize(fpa_small.format),
-                                           (fpy_small / fpx_large).resize(fpa_small.format))
-                    self.assertAlmostEqual((a * scale), float(fpx_small / fpy_large))
+                                           (fpy_small / fpx_large).resize(fpa_small.format), places=almost_equal_places_small)
+                    self.assertAlmostEqual((a * scale), float(fpx_small / fpy_large), places=almost_equal_places_small)
 
                     self.assertAlmostEqual(fpa_large, (fpx_large / fpy_small).resize(fpa_large.format))
                     self.assertAlmostEqual((1 / fpa_large).resize(fpa_large.format),

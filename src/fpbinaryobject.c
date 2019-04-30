@@ -26,6 +26,7 @@ typedef enum {
     fp_op_type_none,
     fp_op_type_add,
     fp_op_type_mult,
+	fp_op_type_div,
 } fp_op_type_t;
 
 static inline bool
@@ -304,23 +305,23 @@ prepare_binary_ops(PyObject *in_op1, PyObject *in_op2, fp_op_type_t op_type,
         if (FpBinarySmall_Check(*output_op1))
         {
             bool convert = false;
+            FP_UINT_TYPE op1_total_bits = FP_BASE_METHOD(*output_op1, get_total_bits)(*output_op1);
+            FP_UINT_TYPE op2_total_bits = FP_BASE_METHOD(*output_op2, get_total_bits)(*output_op2);
+
             if (op_type == fp_op_type_add)
             {
                 convert =
-                    ((FP_BASE_METHOD(*output_op1, get_total_bits)(*output_op1) +
-                          1 >
-                      FP_SMALL_MAX_BITS) ||
-                     (FP_BASE_METHOD(*output_op2, get_total_bits)(*output_op2) +
-                          1 >
-                      FP_SMALL_MAX_BITS));
+                    ((op1_total_bits + 1 > FP_SMALL_MAX_BITS) ||
+                     (op2_total_bits + 1 > FP_SMALL_MAX_BITS));
             }
             else if (op_type == fp_op_type_mult)
             {
                 convert =
-                    (FP_BASE_METHOD(*output_op1, get_total_bits)(*output_op1) +
-                         FP_BASE_METHOD(*output_op2,
-                                        get_total_bits)(*output_op2) >
-                     FP_SMALL_MAX_BITS);
+                    (op1_total_bits + op2_total_bits > FP_SMALL_MAX_BITS);
+            }
+            else if (fp_op_type_div)
+            {
+            	convert = !fpbinarysmall_can_divide_ops(op1_total_bits, op2_total_bits);
             }
 
             if (convert)

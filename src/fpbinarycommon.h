@@ -40,6 +40,18 @@
 #define FP_NUM_METHOD_PRESENT(ob, method_name)                                 \
     (ob && (Py_TYPE(ob)->tp_as_number && FP_NUM_METHOD(ob, method_name)))
 
+/*
+ * Will carry out method on op1 and op2 and steal the original reference
+ * to op1.
+ */
+#define FP_NUM_BIN_OP_INPLACE(op1, op2, method)                                  \
+    do                                                                         \
+    {                                                                          \
+        PyObject *tmp = op1;                                            \
+        op1 = FP_NUM_METHOD(tmp, method)(tmp, op2);\
+        Py_XDECREF(tmp);                                                       \
+    } while (0)
+
 #define FP_GLOBAL_Doc_VAR(name) char name[]
 #define FP_GLOBAL_Doc_STRVAR(name, str) FP_GLOBAL_Doc_VAR(name) = PyDoc_STR(str)
 

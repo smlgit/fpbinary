@@ -887,49 +887,60 @@ fpbinarylarge_multiply(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
-/*
- * Divide is a bit odd with fixed point. Currently convert to doubles,
- * do a divide and convert back to fixed point with the same format as
- * a multiply.
- */
 static PyObject *
 fpbinarylarge_divide(PyObject *op1, PyObject *op2)
 {
+	/*
+	 * Given the nature of division (i.e. the int bits in the denominator make
+	 * the result smaller and the frac bits in the denomintor make the result
+	 * larger), the convention is to have:
+	 *     result frac bits = numerator frac bits + denominator int bits
+	 *
+	 * Similarly, in order to avoid overflow:
+	 *     result int bits = numerator int bits + denominator frac bits
+	 *
+	 *
+	 * We just divide the scaled values but in order to maintain precision,
+	 * we scale the numerator further by denom_frac_bits + denom_int_bits since:
+	 *     result = (actual_num << num_frac_bits_adjusted) / (actual_denom << denom_frac_bits)
+	 *            = (actual_num / actual_denom) << (num_frac_bits_adjusted - denom_frac_bits)
+	 *
+	 * So, to get (num frac bits + denom int bits) frac bits in our result:
+	 *     num_frac_bits_adjusted - denom_frac_bits = num frac bits + denom int bits
+	 *     num_frac_bits_adjusted = num frac bits + denom int bits + denom_frac_bits
+	 *
+	 * So, all this is a long-winded way of saying that we just left shift the numerator by
+	 * (denom int bits + denom_frac_bits) and then divide by the untouched denominator.
+	 *
+	 *
+	 */
+
     FpBinaryLargeObject *cast_op1 = (FpBinaryLargeObject *)op1;
     FpBinaryLargeObject *cast_op2 = (FpBinaryLargeObject *)op2;
-    PyObject *result_pyfloat = NULL;
+    PyObject *extra_scale = NULL, *result_scaled_value = NULL, *result_int_bits = NULL, *result_frac_bits = NULL;
     FpBinaryLargeObject *result = NULL;
-    double op1_dbl = 0.0, op2_dbl = 1.0;
 
     if (!check_binary_ops(op1, op2))
     {
         FPBINARY_RETURN_NOT_IMPLEMENTED;
     }
 
-    op1_dbl = fpbinarylarge_to_double(cast_op1);
-    op2_dbl = fpbinarylarge_to_double(cast_op2);
+    extra_scale = FP_NUM_METHOD(cast_op2->int_bits, nb_add)(cast_op2->int_bits, cast_op2->frac_bits);
+    result_scaled_value = FP_NUM_METHOD(cast_op1->scaled_value, nb_lshift)(cast_op1->scaled_value, extra_scale);
+    FP_NUM_BIN_OP_INPLACE(result_scaled_value, cast_op2->scaled_value, nb_floor_divide);
 
-    result_pyfloat = PyFloat_FromDouble(op1_dbl / op2_dbl);
+    result_int_bits = FP_NUM_METHOD(cast_op1->int_bits, nb_add)(cast_op1->int_bits, cast_op2->frac_bits);
+    result_frac_bits = FP_NUM_METHOD(cast_op1->frac_bits, nb_add)(cast_op1->frac_bits, cast_op2->int_bits);
 
-    if (result_pyfloat)
-    {
-        PyObject *new_int_bits = FP_NUM_METHOD(cast_op1->int_bits, nb_add)(
-            cast_op1->int_bits, cast_op2->int_bits);
-        PyObject *new_frac_bits = FP_NUM_METHOD(cast_op1->frac_bits, nb_add)(
-            cast_op1->frac_bits, cast_op2->frac_bits);
+    result = fpbinarylarge_create_mem(&FpBinary_LargeType);
+    set_object_fields(result, result_scaled_value, result_int_bits, result_frac_bits, cast_op1->is_signed);
 
-        result = (FpBinaryLargeObject *)fpbinarylarge_create_mem(
-            &FpBinary_LargeType);
-        build_from_pyfloat(result_pyfloat, new_int_bits, new_frac_bits,
-                           cast_op1->is_signed, OVERFLOW_WRAP,
-                           ROUNDING_DIRECT_NEG_INF, result);
+    Py_DECREF(extra_scale);
+    Py_DECREF(result_scaled_value);
+    Py_DECREF(result_int_bits);
+    Py_DECREF(result_frac_bits);
 
-        Py_DECREF(result_pyfloat);
-        Py_DECREF(new_int_bits);
-        Py_DECREF(new_frac_bits);
-    }
-
-    return (PyObject *)result;
+    return (PyObject *) result;
 }
 
 static PyObject *
