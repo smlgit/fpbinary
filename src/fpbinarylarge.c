@@ -890,57 +890,98 @@ fpbinarylarge_multiply(PyObject *op1, PyObject *op2)
 static PyObject *
 fpbinarylarge_divide(PyObject *op1, PyObject *op2)
 {
-	/*
-	 * Given the nature of division (i.e. the int bits in the denominator make
-	 * the result smaller and the frac bits in the denomintor make the result
-	 * larger), the convention is to have:
-	 *     result frac bits = numerator frac bits + denominator int bits
-	 *
-	 * Similarly, in order to avoid overflow:
-	 *     result int bits = numerator int bits + denominator frac bits
-	 *
-	 *
-	 * We just divide the scaled values but in order to maintain precision,
-	 * we scale the numerator further by denom_frac_bits + denom_int_bits since:
-	 *     result = (actual_num << num_frac_bits_adjusted) / (actual_denom << denom_frac_bits)
-	 *            = (actual_num / actual_denom) << (num_frac_bits_adjusted - denom_frac_bits)
-	 *
-	 * So, to get (num frac bits + denom int bits) frac bits in our result:
-	 *     num_frac_bits_adjusted - denom_frac_bits = num frac bits + denom int bits
-	 *     num_frac_bits_adjusted = num frac bits + denom int bits + denom_frac_bits
-	 *
-	 * So, all this is a long-winded way of saying that we just left shift the numerator by
-	 * (denom int bits + denom_frac_bits) and then divide by the untouched denominator.
-	 *
-	 *
-	 */
+    /*
+     * Given the nature of division (i.e. the int bits in the denominator make
+     * the result smaller and the frac bits in the denomintor make the result
+     * larger), the convention is to have:
+     *     result frac bits = numerator frac bits + denominator int bits
+     *
+     * Similarly, in order to avoid overflow:
+     *     result int bits = numerator int bits + denominator frac bits + 1
+     *     (the + 1 is only required for signed (e.g. -8 / -0.125)
+     *
+     *
+     * We just divide the scaled values but in order to maintain precision,
+     * we scale the numerator further by denom_frac_bits + denom_int_bits since:
+     *     result = (actual_num << num_frac_bits_adjusted) / (actual_denom <<
+     * denom_frac_bits)
+     *            = (actual_num / actual_denom) << (num_frac_bits_adjusted -
+     * denom_frac_bits)
+     *
+     * So, to get (num frac bits + denom int bits) frac bits in our result:
+     *     num_frac_bits_adjusted - denom_frac_bits = num frac bits + denom int
+     * bits
+     *     num_frac_bits_adjusted = num frac bits + denom int bits +
+     * denom_frac_bits
+     *
+     * So, all this is a long-winded way of saying that we just left shift the
+     * numerator by
+     * (denom int bits + denom_frac_bits) and then divide by the untouched
+     * denominator.
+     *
+     *
+     * The standard VHDL library appears to do "towards zero" truncation on
+     * divide. This
+     * is the same as C. So this is what we will do. Unfortunately, the python
+     * long
+     * only does a floor divide. So we need to convert negative numbers to
+     * positive,
+     * do our division, and then convert back.
+     */
 
     FpBinaryLargeObject *cast_op1 = (FpBinaryLargeObject *)op1;
     FpBinaryLargeObject *cast_op2 = (FpBinaryLargeObject *)op2;
-    PyObject *extra_scale = NULL, *result_scaled_value = NULL, *result_int_bits = NULL, *result_frac_bits = NULL;
+    PyObject *op1_abs, *op2_abs;
+    PyObject *extra_scale = NULL, *result_scaled_value = NULL,
+             *result_int_bits = NULL, *result_frac_bits = NULL;
     FpBinaryLargeObject *result = NULL;
+    bool op1_neg, op2_neg;
 
     if (!check_binary_ops(op1, op2))
     {
         FPBINARY_RETURN_NOT_IMPLEMENTED;
     }
 
-    extra_scale = FP_NUM_METHOD(cast_op2->int_bits, nb_add)(cast_op2->int_bits, cast_op2->frac_bits);
-    result_scaled_value = FP_NUM_METHOD(cast_op1->scaled_value, nb_lshift)(cast_op1->scaled_value, extra_scale);
-    FP_NUM_BIN_OP_INPLACE(result_scaled_value, cast_op2->scaled_value, nb_floor_divide);
+    op1_neg = FpBinary_TpCompare(cast_op1->scaled_value, py_zero) < 0;
+    op2_neg = FpBinary_TpCompare(cast_op2->scaled_value, py_zero) < 0;
 
-    result_int_bits = FP_NUM_METHOD(cast_op1->int_bits, nb_add)(cast_op1->int_bits, cast_op2->frac_bits);
-    result_frac_bits = FP_NUM_METHOD(cast_op1->frac_bits, nb_add)(cast_op1->frac_bits, cast_op2->int_bits);
+    /* Need positive ints so our divide turns out to be toward zero truncated */
+    op1_abs = FP_NUM_METHOD(cast_op1->scaled_value,
+                            nb_absolute)(cast_op1->scaled_value);
+    op2_abs = FP_NUM_METHOD(cast_op2->scaled_value,
+                            nb_absolute)(cast_op2->scaled_value);
+
+    extra_scale = FP_NUM_METHOD(cast_op2->int_bits, nb_add)(
+        cast_op2->int_bits, cast_op2->frac_bits);
+
+    result_scaled_value =
+        FP_NUM_METHOD(op1_abs, nb_lshift)(op1_abs, extra_scale);
+    FP_NUM_BIN_OP_INPLACE(result_scaled_value, op2_abs, nb_floor_divide);
+
+    /* Now convert back to negative if needed */
+    if (op1_neg != op2_neg)
+    {
+        FP_NUM_UNI_OP_INPLACE(result_scaled_value, nb_negative);
+    }
+
+    result_int_bits = FP_NUM_METHOD(cast_op1->int_bits, nb_add)(
+        cast_op1->int_bits, cast_op2->frac_bits);
+    FP_NUM_BIN_OP_INPLACE(result_int_bits, py_one, nb_add);
+    result_frac_bits = FP_NUM_METHOD(cast_op1->frac_bits, nb_add)(
+        cast_op1->frac_bits, cast_op2->int_bits);
 
     result = fpbinarylarge_create_mem(&FpBinary_LargeType);
-    set_object_fields(result, result_scaled_value, result_int_bits, result_frac_bits, cast_op1->is_signed);
+    set_object_fields(result, result_scaled_value, result_int_bits,
+                      result_frac_bits, cast_op1->is_signed);
 
+    Py_DECREF(op1_abs);
+    Py_DECREF(op2_abs);
     Py_DECREF(extra_scale);
     Py_DECREF(result_scaled_value);
     Py_DECREF(result_int_bits);
     Py_DECREF(result_frac_bits);
 
-    return (PyObject *) result;
+    return (PyObject *)result;
 }
 
 static PyObject *

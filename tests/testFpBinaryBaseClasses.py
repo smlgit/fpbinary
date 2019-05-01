@@ -2,17 +2,12 @@
 # Unit-tests for FpBinary Python module
 # SM), some tests adapted from RW Penney's Simple Fixed Point module
 
-import sys, unittest, copy, math
+import sys, unittest, copy
+import test_utils
 from fpbinary import FpBinary, _FpBinarySmall, _FpBinaryLarge, OverflowEnum, RoundingEnum, FpBinaryOverflowException
-
 
 if sys.version_info[0] >= 3:
     from porting_v3_funcs import *
-
-
-def get_small_type_size():
-    """ Returns the number of bits the FpBinarySmall object should be able to support. """
-    return int(math.log(sys.maxsize, 2)) + 1
 
 
 class AbstractTestHider(object):
@@ -75,11 +70,11 @@ class AbstractTestHider(object):
                 # format tuple is not size 2
                 ((4,), {'overflow_mode': OverflowEnum.wrap, 'round_mode': RoundingEnum.direct_neg_inf}),
                 # format tuple is not size 2
-                ((4,5,6), {'overflow_mode': OverflowEnum.sat, 'round_mode': RoundingEnum.near_pos_inf}),
-                ]
+                ((4, 5, 6), {'overflow_mode': OverflowEnum.sat, 'round_mode': RoundingEnum.near_pos_inf}),
+            ]
 
             for test_case in params_test_cases:
-                fpNum = self.fp_binary_class(5,5, value=0.0)
+                fpNum = self.fp_binary_class(5, 5, value=0.0)
                 try:
                     fpNum.resize(*test_case[0], **test_case[1])
                 except TypeError:
@@ -99,7 +94,6 @@ class AbstractTestHider(object):
                 pass
             else:
                 self.fail()
-
 
         def testImmutable(self):
             """Arithmetic operations on object should not alter orignal value"""
@@ -140,10 +134,9 @@ class AbstractTestHider(object):
 
         def testIntCasts(self):
             """Rounding on casting to int should match float-conversions"""
-            for i in range(-40,40):
+            for i in range(-40, 40):
                 x = i / 8.0
                 self.assertEqual(int(x), int(self.fp_binary_class(4, 16, signed=True, value=x)))
-
 
         def testNegating(self):
             for i in range(-32, 32):
@@ -154,7 +147,7 @@ class AbstractTestHider(object):
                 self.assertEqual(0.0, (-fx + fx).resize(self.fp_zero.format))
                 self.assertEqual((self.fp_minus_one * fx).resize(fx.format), -fx)
                 self.assertEqual(0.0, ((self.fp_minus_one * fx).resize(fx.format) + (-fx) +
-                                        (self.fp_two * (fx)).resize(fx.format)).resize(fx.format))
+                                       (self.fp_two * (fx)).resize(fx.format)).resize(fx.format))
 
         def testAddition(self):
             """Addition operators should promote & commute"""
@@ -179,7 +172,7 @@ class AbstractTestHider(object):
             fpx = self.fp_binary_class(2, 3, signed=True, value=1.875)
             addition = fpx + fpx
             self.assertEqual(addition, 3.75)
-            self.assertTrue(addition.format == (3,3))
+            self.assertTrue(addition.format == (3, 3))
 
             # Check boundaries unsigned
             # b11.111 + b11.111 = b111.110
@@ -223,7 +216,6 @@ class AbstractTestHider(object):
             self.assertEqual(sub, 4.125)
             self.assertTrue(sub.format == (3, 3))
 
-
         def testMultiplication(self):
             """Multiplication operators should promote & commute"""
             scale = 0.25
@@ -258,64 +250,64 @@ class AbstractTestHider(object):
 
         def testDivision(self):
 
-            is_signed_test_cases = [False, True]
+            # We cycle through all number combinations for specified int/frac bits.
+            # Accuracy is checked by using the test_utils.set_float_bit_precision
+            # function to reduce the bits in the result of an actual float division.
 
-            num_int_bits = 4
-            num_frac_bits = 3
-            denom_int_bits = 5
-            denom_frac_bits = 3
+            # Do for both signed and unsigned
+            is_signed_test_cases = [False, True]
 
             for is_signed in is_signed_test_cases:
 
-                num_min = -2.0**(num_int_bits - 1) if is_signed else 0.0
-                num_max = -num_min - 1 if is_signed else 2.0**num_int_bits
+                num_int_bits = 4
+                num_frac_bits = 3
+                denom_int_bits = 5
+                denom_frac_bits = 3
+
+                num_min = -2.0 ** (num_int_bits - 1) if is_signed else 0.0
+                num_max = -num_min - 1 if is_signed else 2.0 ** num_int_bits
 
                 denom_min = -2.0 ** (denom_int_bits - 1) if is_signed else 0.0
                 denom_max = -denom_min - 1 if is_signed else 2.0 ** denom_int_bits
 
-                num_inc = 2.0**-num_frac_bits
-                denom_inc = 2.0**-denom_frac_bits
+                num_inc = 2.0 ** -num_frac_bits
+                denom_inc = 2.0 ** -denom_frac_bits
 
                 num_val = num_min
 
                 while num_val < num_max:
                     fp_num = self.fp_binary_class(num_int_bits, num_frac_bits, signed=is_signed, value=num_val)
-
                     denom_val = denom_min
                     while denom_val < denom_max:
                         if denom_val != 0.0:
-                            fp_denom = self.fp_binary_class(denom_int_bits, denom_frac_bits, signed=is_signed, value=denom_val)
+                            result_format = (num_int_bits + denom_frac_bits + 1, num_frac_bits + denom_int_bits)
+                            fp_denom = self.fp_binary_class(denom_int_bits, denom_frac_bits, signed=is_signed,
+                                                            value=denom_val)
+
+                            self.assertEqual(test_utils.set_float_bit_precision(num_val / denom_val,
+                                                                                result_format[0],
+                                                                                result_format[1],
+                                                                                is_signed),
+                                             fp_num / fp_denom)
                             self.assertAlmostEqual(float(fp_num / fp_denom), num_val / denom_val, places=2)
-                            self.assertTrue((fp_num / fp_denom).format == (num_int_bits + denom_frac_bits,
-                                                                           num_frac_bits + denom_int_bits))
+                            self.assertTrue((fp_num / fp_denom).format == result_format)
 
                         denom_val += denom_inc
 
                     num_val += num_inc
 
-                # Check boundaries - largest values that can be divided by _FpBinarSmall
-                # Division requires scaling by the size of the denominator
-                max_total_bits = int(get_small_type_size() / 2)
-
-                fp_num = self.fp_binary_class(int(max_total_bits / 2), int(max_total_bits / 2),
-                                              signed=is_signed, bit_field=(long(1) << max_total_bits) - 1)
-                fp_denom = self.fp_binary_class(int(max_total_bits / 2), int(max_total_bits / 2),
-                                              signed=is_signed, bit_field=(long(1) << max_total_bits) - 1)
-                self.assertTrue((fp_num / fp_denom).format == (max_total_bits, max_total_bits))
-
-                self.assertEqual(float(fp_num / fp_denom), 1.0, msg='is_signed={}'.format(is_signed))
 
         def testBitShifts(self):
             """Check effects of left & right shift operators."""
             format_obj = self.fp_binary_class(32, 32, signed=True)
 
-            self.assertEqual(self.fp_binary_class(value= 1, format_inst=format_obj) << long(2), 4)
-            self.assertEqual(self.fp_binary_class(value= 3, format_inst=format_obj) << long(4), 48)
-            self.assertEqual(self.fp_binary_class(value= -7, format_inst=format_obj) << long(8), -7 * 256)
+            self.assertEqual(self.fp_binary_class(value=1, format_inst=format_obj) << long(2), 4)
+            self.assertEqual(self.fp_binary_class(value=3, format_inst=format_obj) << long(4), 48)
+            self.assertEqual(self.fp_binary_class(value=-7, format_inst=format_obj) << long(8), -7 * 256)
 
-            self.assertEqual(self.fp_binary_class(value= 1, format_inst=format_obj) >> long(1), 0.5)
-            self.assertEqual(self.fp_binary_class(value= 12, format_inst=format_obj) >> long(2), 3)
-            self.assertEqual(self.fp_binary_class(value= -71 * 1024, format_inst=format_obj) >> long(12), -17.75)
+            self.assertEqual(self.fp_binary_class(value=1, format_inst=format_obj) >> long(1), 0.5)
+            self.assertEqual(self.fp_binary_class(value=12, format_inst=format_obj) >> long(2), 3)
+            self.assertEqual(self.fp_binary_class(value=-71 * 1024, format_inst=format_obj) >> long(12), -17.75)
 
         def testIntRange(self):
             """ A floating point number is used to track the approximate value of a
@@ -330,17 +322,17 @@ class AbstractTestHider(object):
             int_length_list = [1, 2, 4, 6, 7, 8]
             for top in int_length_list:
                 frac_bits = 16
-                inc = 1.0/16.01
+                inc = 1.0 / 16.01
                 format_obj = self.fp_binary_class(top, frac_bits, signed=True)
 
-                pos_limit = 2**(top - 1)
-                neg_limit = -2**(top - 1)
+                pos_limit = 2 ** (top - 1)
+                neg_limit = -2 ** (top - 1)
 
                 # Fixed point increment values. We need a rounded down and a rounded
                 # up version of the floating point inc number so that we can make sure
                 # we are never in front or behind the floating point cnt variable.
                 fpIncRoundedDown = self.fp_binary_class(max(int_length_list), frac_bits, signed=True,
-                                            value=inc)
+                                                        value=inc)
                 fpIncRoundedUp = self.fp_binary_class(max(int_length_list), frac_bits, signed=True, value=inc)
 
                 cnt, xRoundedDown, xRoundedUp, yRoundedDown, yRoundedUp = 0, self.fp_zero, self.fp_zero, self.fp_zero, self.fp_zero
@@ -349,27 +341,35 @@ class AbstractTestHider(object):
 
                     xRoundedDown += fpIncRoundedDown
                     xRoundedUp += fpIncRoundedUp
-                    try:  xRoundedDown.resize(format_obj.format, overflow_mode=OverflowEnum.excep, round_mode=RoundingEnum.direct_neg_inf)
+                    try:
+                        xRoundedDown.resize(format_obj.format, overflow_mode=OverflowEnum.excep,
+                                            round_mode=RoundingEnum.direct_neg_inf)
                     except FpBinaryOverflowException:
-                        #print 'cnt: {0}  pos_limit: {1}  top: {2}   x: {3}'.format(cnt, pos_limit, top, float(x))
+                        # print 'cnt: {0}  pos_limit: {1}  top: {2}   x: {3}'.format(cnt, pos_limit, top, float(x))
                         if cnt < pos_limit:
                             self.fail()
 
-                    try:  xRoundedUp.resize(format_obj.format, overflow_mode=OverflowEnum.excep, round_mode=RoundingEnum.near_pos_inf)
+                    try:
+                        xRoundedUp.resize(format_obj.format, overflow_mode=OverflowEnum.excep,
+                                          round_mode=RoundingEnum.near_pos_inf)
                     except FpBinaryOverflowException:
                         pass
                     else:
-                        #print 'cnt: {0}  pos_limit: {1}  top: {2}   x: {3}'.format(cnt, pos_limit, top, float(x))
+                        # print 'cnt: {0}  pos_limit: {1}  top: {2}   x: {3}'.format(cnt, pos_limit, top, float(x))
                         if cnt >= pos_limit: self.fail()
 
                     yRoundedDown -= fpIncRoundedDown
                     yRoundedUp -= fpIncRoundedUp
 
-                    try: yRoundedDown.resize(format_obj.format, overflow_mode=OverflowEnum.excep, round_mode=RoundingEnum.direct_neg_inf)
+                    try:
+                        yRoundedDown.resize(format_obj.format, overflow_mode=OverflowEnum.excep,
+                                            round_mode=RoundingEnum.direct_neg_inf)
                     except FpBinaryOverflowException:
                         if -cnt >= neg_limit: self.fail()
 
-                    try:  yRoundedUp.resize(format_obj.format, overflow_mode=OverflowEnum.excep, round_mode=RoundingEnum.near_pos_inf)
+                    try:
+                        yRoundedUp.resize(format_obj.format, overflow_mode=OverflowEnum.excep,
+                                          round_mode=RoundingEnum.near_pos_inf)
                     except FpBinaryOverflowException:
                         pass
                     else:
@@ -415,15 +415,17 @@ class AbstractTestHider(object):
             # =======================================================================
             # Exception
 
-            #Losing MSBs, no wrapping required
+            # Losing MSBs, no wrapping required
             fpNum = self.fp_binary_class(6, 3, signed=True, value=3.875)
-            try: fpNum.resize((3, 3), overflow_mode=OverflowEnum.excep)
+            try:
+                fpNum.resize((3, 3), overflow_mode=OverflowEnum.excep)
             except FpBinaryOverflowException:
                 self.fail()
 
             # Losing MSB, positive to negative
             fpNum = self.fp_binary_class(5, 2, signed=True, value=15.75)
-            try: fpNum.resize((4, 2), overflow_mode=OverflowEnum.excep)
+            try:
+                fpNum.resize((4, 2), overflow_mode=OverflowEnum.excep)
             except FpBinaryOverflowException:
                 pass
             else:
@@ -431,7 +433,8 @@ class AbstractTestHider(object):
 
             # Losing MSB, positive to positive
             fpNum = self.fp_binary_class(5, 2, signed=True, value=10.75)
-            try: fpNum.resize((3, 2), overflow_mode=OverflowEnum.excep)
+            try:
+                fpNum.resize((3, 2), overflow_mode=OverflowEnum.excep)
             except FpBinaryOverflowException:
                 pass
             else:
@@ -782,7 +785,7 @@ class AbstractTestHider(object):
                     cur_val += inc
 
         def testStrEx(self):
-            tests =\
+            tests = \
                 [
                     {'signed': True, 'int_bits': 1, 'frac_bits': 0},
                     {'signed': False, 'int_bits': 1, 'frac_bits': 0},
@@ -793,9 +796,9 @@ class AbstractTestHider(object):
                 ]
 
             for test_case in tests:
-                min_val = -2.0**(test_case['int_bits'] - 1) if test_case['signed'] else 0.0
-                max_val = 2.0**(test_case['int_bits'] - 1) if test_case['signed'] else 2.0**test_case['int_bits']
-                inc = 2.0**-test_case['frac_bits']
+                min_val = -2.0 ** (test_case['int_bits'] - 1) if test_case['signed'] else 0.0
+                max_val = 2.0 ** (test_case['int_bits'] - 1) if test_case['signed'] else 2.0 ** test_case['int_bits']
+                inc = 2.0 ** -test_case['frac_bits']
 
                 cur_val = min_val
                 while cur_val < max_val:
@@ -833,16 +836,18 @@ class FpBinarySmallTests(AbstractTestHider.BaseClassesTestAbstract):
         self.fp_binary_class = _FpBinarySmall
         super(FpBinarySmallTests, self).setUp()
 
+
 class FpBinaryLargeTests(AbstractTestHider.BaseClassesTestAbstract):
     def setUp(self):
         self.fp_binary_class = _FpBinaryLarge
         super(FpBinaryLargeTests, self).setUp()
+
 
 class FpBinaryTests(AbstractTestHider.BaseClassesTestAbstract):
     def setUp(self):
         self.fp_binary_class = FpBinary
         super(FpBinaryTests, self).setUp()
 
+
 if __name__ == "__main__":
     unittest.main()
-
