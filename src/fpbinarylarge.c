@@ -634,17 +634,6 @@ make_binary_ops_same_format(PyObject *op1, PyObject *op2,
         *output_op1 = cast_op1;
         *output_op2 = cast_op2;
     }
-
-    /* Int bits. */
-    compare_val = FpBinary_TpCompare(cast_op1->int_bits, cast_op2->int_bits);
-    if (compare_val > 0)
-    {
-        FP_ASSIGN_PY_FIELD(cast_op2, cast_op1->frac_bits, int_bits);
-    }
-    else if (compare_val < 0)
-    {
-        FP_ASSIGN_PY_FIELD(cast_op1, cast_op2->frac_bits, int_bits);
-    }
 }
 
 /*
@@ -898,7 +887,7 @@ fpbinarylarge_divide(PyObject *op1, PyObject *op2)
      *
      * Similarly, in order to avoid overflow:
      *     result int bits = numerator int bits + denominator frac bits + 1
-     *     (the + 1 is only required for signed (e.g. -8 / -0.125)
+     *     (the + 1 is only required for signed (e.g. -8 / -0.125) )
      *
      *
      * We just divide the scaled values but in order to maintain precision,
@@ -966,7 +955,10 @@ fpbinarylarge_divide(PyObject *op1, PyObject *op2)
 
     result_int_bits = FP_NUM_METHOD(cast_op1->int_bits, nb_add)(
         cast_op1->int_bits, cast_op2->frac_bits);
-    FP_NUM_BIN_OP_INPLACE(result_int_bits, py_one, nb_add);
+    if (cast_op1->is_signed)
+    {
+        FP_NUM_BIN_OP_INPLACE(result_int_bits, py_one, nb_add);
+    }
     result_frac_bits = FP_NUM_METHOD(cast_op1->frac_bits, nb_add)(
         cast_op1->frac_bits, cast_op2->int_bits);
 
@@ -1318,6 +1310,9 @@ fpbinarylarge_richcompare(PyObject *op1, PyObject *op2, int operator)
         case Py_GE: eval = (compare >= 0); break;
         default: FPBINARY_RETURN_NOT_IMPLEMENTED; break;
     }
+
+    Py_DECREF(resized_op1);
+    Py_DECREF(resized_op2);
 
     if (eval)
         Py_RETURN_TRUE;

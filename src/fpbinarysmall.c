@@ -885,7 +885,7 @@ fpbinarysmall_divide(PyObject *op1, PyObject *op2)
      *
      * Similarly, in order to avoid overflow:
      *     result int bits = numerator int bits + denominator frac bits + 1
-     *     (the + 1 is only required for signed (e.g. -8 / -0.125)
+     *     (the + 1 is only required for signed (e.g. -8 / -0.125) )
      *
      *
      * We just divide the scaled values but in order to maintain precision,
@@ -971,7 +971,9 @@ fpbinarysmall_divide(PyObject *op1, PyObject *op2)
         (FpBinarySmallObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
 
     set_object_fields(
-        result, new_scaled_value, cast_op1->int_bits + cast_op2->frac_bits + 1,
+        result, new_scaled_value,
+        cast_op1->is_signed ? cast_op1->int_bits + cast_op2->frac_bits + 1
+                            : cast_op1->int_bits + cast_op2->frac_bits,
         cast_op1->frac_bits + cast_op2->int_bits, cast_op1->is_signed);
 
     /* Check for overflow of our underlying word size. */
