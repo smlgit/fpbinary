@@ -774,6 +774,10 @@ fpbinarylarge_index(PyObject *self)
  * Numeric methods implementation
  *
  */
+
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarylarge_add(PyObject *op1, PyObject *op2)
 {
@@ -807,6 +811,9 @@ fpbinarylarge_add(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarylarge_subtract(PyObject *op1, PyObject *op2)
 {
@@ -847,6 +854,9 @@ fpbinarylarge_subtract(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarylarge_multiply(PyObject *op1, PyObject *op2)
 {
@@ -884,6 +894,9 @@ fpbinarylarge_multiply(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarylarge_divide(PyObject *op1, PyObject *op2)
 {
@@ -984,6 +997,9 @@ fpbinarylarge_divide(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarylarge_negative(PyObject *self)
 {
@@ -1021,6 +1037,9 @@ fpbinarylarge_float(PyObject *self)
         fpbinarylarge_to_double((FpBinaryLargeObject *)self));
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarylarge_abs(PyObject *self)
 {

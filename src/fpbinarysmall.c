@@ -736,6 +736,10 @@ make_binary_ops_same_frac_size(PyObject *op1, PyObject *op2,
  * Numeric methods implementation
  *
  */
+
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarysmall_add(PyObject *op1, PyObject *op2)
 {
@@ -776,6 +780,9 @@ fpbinarysmall_add(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarysmall_subtract(PyObject *op1, PyObject *op2)
 {
@@ -823,6 +830,9 @@ fpbinarysmall_subtract(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarysmall_multiply(PyObject *op1, PyObject *op2)
 {
@@ -870,9 +880,7 @@ fpbinarysmall_can_divide_ops(FP_UINT_TYPE op1_total_bits,
 }
 
 /*
- * Divide is a bit odd with fixed point. Currently convert to doubles,
- * do a divide and convert back to fixed point with the same format as
- * a multiply.
+ * See fpbinaryobject_doc for official requirements.
  */
 static PyObject *
 fpbinarysmall_divide(PyObject *op1, PyObject *op2)
@@ -986,6 +994,9 @@ fpbinarysmall_divide(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarysmall_negative(PyObject *self)
 {
@@ -1050,6 +1061,9 @@ fpbinarysmall_float(PyObject *self)
         fpbinarysmall_to_double((FpBinarySmallObject *)self));
 }
 
+/*
+ * See fpbinaryobject_doc for official requirements.
+ */
 static PyObject *
 fpbinarysmall_abs(PyObject *self)
 {

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # Unit-tests for FpBinary Python module
-# SM), some tests adapted from RW Penney's Simple Fixed Point module
+# SML, some tests adapted from RW Penney's Simple Fixed Point module
 
 import sys, unittest, copy
 import test_utils
