@@ -2,17 +2,13 @@
 # Unit-tests for FpBinary Python module
 # SML, some tests adapted from RW Penney's Simple Fixed Point module
 
-import math, sys, unittest, copy, random, platform
+import sys, unittest, copy
+import test_utils
 from fpbinary import FpBinary, OverflowEnum, RoundingEnum, FpBinaryOverflowException
 
 
 if sys.version_info[0] >= 3:
     from porting_v3_funcs import *
-
-
-def get_small_type_size():
-    """ Returns the number of bits the FpBinarySmall object should be able to support. """
-    return int(math.log(sys.maxsize, 2)) + 1
 
 
 class AbstractTestHider(object):
@@ -96,7 +92,7 @@ class AbstractTestHider(object):
             # Float comparison should be ok as long as the value is small enough
             for i in range(-40, 40):
                 x = i / 8.0
-                self.assertEqual(int(x), int(self.fp_binary_class(get_small_type_size(), 16,
+                self.assertEqual(int(x), int(self.fp_binary_class(test_utils.get_small_type_size(), 16,
                                                                   signed=True, value=x)))
 
         def testNegating(self):
@@ -113,7 +109,7 @@ class AbstractTestHider(object):
             # Large type
             for i in range(-32, 32):
                 x = i * 0.819
-                fx = self.fp_binary_class(get_small_type_size(), 16, signed=True, value=x)
+                fx = self.fp_binary_class(test_utils.get_small_type_size(), 16, signed=True, value=x)
 
                 self.assertEqual(0.0, (fx + (-fx)))
                 self.assertEqual(0.0, (-fx + fx))
@@ -123,8 +119,8 @@ class AbstractTestHider(object):
         def testAddition(self):
             """Addition operations between different types"""
 
-            bits_small = int(get_small_type_size() / 4)
-            bits_large = get_small_type_size()
+            bits_small = int(test_utils.get_small_type_size() / 4)
+            bits_large = test_utils.get_small_type_size()
 
             scale = 0.125
 
@@ -174,8 +170,8 @@ class AbstractTestHider(object):
         def testSubtract(self):
             """Subtraction operations between different types"""
 
-            bits_small = int(get_small_type_size() / 4)
-            bits_large = get_small_type_size()
+            bits_small = int(test_utils.get_small_type_size() / 4)
+            bits_large = test_utils.get_small_type_size()
 
             scale = 0.125
 
@@ -225,8 +221,8 @@ class AbstractTestHider(object):
         def testMultiplication(self):
             """Subtraction operations between different types"""
 
-            bits_small = int(get_small_type_size() / 4)
-            bits_large = get_small_type_size()
+            bits_small = int(test_utils.get_small_type_size() / 4)
+            bits_large = test_utils.get_small_type_size()
 
             scale = 0.25
             scale2 = scale * scale
@@ -292,8 +288,8 @@ class AbstractTestHider(object):
             """Subtraction operations between different types"""
 
             almost_equal_places_small = 4
-            bits_small = int(get_small_type_size() / 4)
-            bits_large = get_small_type_size()
+            bits_small = int(test_utils.get_small_type_size() / 4)
+            bits_large = test_utils.get_small_type_size()
 
             scale = 0.125
             scale2 = scale * scale
@@ -355,8 +351,8 @@ class AbstractTestHider(object):
             """Check effects of left & right shift operators."""
 
             # Small size
-            format_fp = self.fp_binary_class(int(get_small_type_size() / 2),
-                                             int(get_small_type_size() / 2),
+            format_fp = self.fp_binary_class(int(test_utils.get_small_type_size() / 2),
+                                             int(test_utils.get_small_type_size() / 2),
                                              signed=True)
 
             self.assertEqual(self.fp_binary_class(value=1, format_inst=format_fp) << 2, 4)
@@ -368,7 +364,7 @@ class AbstractTestHider(object):
             self.assertEqual(self.fp_binary_class(value=-71 * 1024, format_inst=format_fp) >> 12, -17.75)
 
             # Large size
-            format_fp = self.fp_binary_class(get_small_type_size(), get_small_type_size(),
+            format_fp = self.fp_binary_class(test_utils.get_small_type_size(), test_utils.get_small_type_size(),
                                              signed=True)
 
             self.assertEqual(self.fp_binary_class(value=1, format_inst=format_fp) << 2, 4)
@@ -469,11 +465,11 @@ class AbstractTestHider(object):
 
         def testOverflowModesSignedLarge(self):
             # Rough estimate of float accuracy
-            max_total_float_bits = int(get_small_type_size() / 2)
+            max_total_float_bits = int(test_utils.get_small_type_size() / 2)
             # Adding 1 for the sign bit
-            large_int_bits = get_small_type_size() + 8 + 1
+            large_int_bits = test_utils.get_small_type_size() + 8 + 1
             frac_bits = 3
-            high_order_bits_pos = 0x7A << get_small_type_size()
+            high_order_bits_pos = 0x7A << test_utils.get_small_type_size()
 
             low_order_value = 13.125
             value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
@@ -582,10 +578,10 @@ class AbstractTestHider(object):
 
         def testOverflowModesUnsignedLarge(self):
             # Rough estimate of float accuracy
-            max_total_float_bits = int(get_small_type_size() / 2)
-            large_int_bits = get_small_type_size() + 8
+            max_total_float_bits = int(test_utils.get_small_type_size() / 2)
+            large_int_bits = test_utils.get_small_type_size() + 8
             frac_bits = 3
-            high_order_bits_pos = 0xAA << get_small_type_size()
+            high_order_bits_pos = 0xAA << test_utils.get_small_type_size()
 
             low_order_value = 13.125
             value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
@@ -693,9 +689,9 @@ class AbstractTestHider(object):
 
         def testRoundingModesSignedLarge(self):
             # Adding 1 for the sign bit
-            large_int_bits = get_small_type_size() + 8 + 1
+            large_int_bits = test_utils.get_small_type_size() + 8 + 1
             frac_bits = 4
-            high_order_bits_pos = 0x7A << get_small_type_size()
+            high_order_bits_pos = 0x7A << test_utils.get_small_type_size()
 
             low_order_value = 13.875
             value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
@@ -790,9 +786,9 @@ class AbstractTestHider(object):
 
         def testRoundingModesUnsignedLarge(self):
             # Adding 1 for the sign bit
-            large_int_bits = get_small_type_size() + 8
+            large_int_bits = test_utils.get_small_type_size() + 8
             frac_bits = 4
-            high_order_bits_pos = 0xFA << get_small_type_size()
+            high_order_bits_pos = 0xFA << test_utils.get_small_type_size()
 
             low_order_value = 13.875
             value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
@@ -895,10 +891,10 @@ class AbstractTestHider(object):
 
         def testIntConversionLarge(self):
             # Adding 1 for the sign bit
-            large_int_bits = get_small_type_size() + 8 + 1
+            large_int_bits = test_utils.get_small_type_size() + 8 + 1
             frac_bits = 4
             total_bits_mask = (1 << (large_int_bits + frac_bits)) - 1
-            high_order_bits_pos = 0x7A << get_small_type_size()
+            high_order_bits_pos = 0x7A << test_utils.get_small_type_size()
 
             low_order_value = 13.0625
             value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
@@ -1013,7 +1009,7 @@ class AbstractTestHider(object):
             # Test unsigned conversions don't lose information and resulting
             # math operation is signed.
 
-            int_bits = get_small_type_size() + 16
+            int_bits = test_utils.get_small_type_size() + 16
             frac_bits = 4
             max_unsigned_bit_field = (1 << (int_bits + frac_bits)) - 1
             max_signed_bit_field = (1 << (int_bits + frac_bits - 1)) - 1
@@ -1073,11 +1069,11 @@ class AbstractTestHider(object):
             self.assertEqual(int(fpNum[6:0]), 93)
 
         def testSequenceOpsLarge(self):
-            large_int_bits = get_small_type_size() + 8 + 1
+            large_int_bits = test_utils.get_small_type_size() + 8 + 1
             frac_bits = 4
             total_bits = large_int_bits + frac_bits
             total_bits_mask = (1 << (large_int_bits + frac_bits)) - 1
-            high_order_bits_pos = 0x7A << get_small_type_size()
+            high_order_bits_pos = 0x7A << test_utils.get_small_type_size()
 
             low_order_value = 13.875
             value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
@@ -1123,7 +1119,7 @@ class AbstractTestHider(object):
 
         def testStrEx(self):
             # Rough estimate of machine precision
-            prec_bits = int(get_small_type_size() * 0.65)
+            prec_bits = int(test_utils.get_small_type_size() * 0.65)
 
             # Smallest magnitude negative signed
             val_frac = -2.0 ** -prec_bits

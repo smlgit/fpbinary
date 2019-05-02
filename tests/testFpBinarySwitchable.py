@@ -2,16 +2,13 @@
 # Unit-tests for FpBinary Python module
 # SML
 
-import math, sys, unittest, random, copy
+import sys, unittest, random, copy
+import test_utils
 from fpbinary import FpBinary, FpBinarySwitchable, OverflowEnum, RoundingEnum
+
 
 if sys.version_info[0] >= 3:
     from porting_v3_funcs import *
-
-
-def get_small_type_size():
-    """ Returns the number of bits the FpBinarySmall object should be able to support. """
-    return int(math.log(sys.maxsize, 2)) + 1
 
 
 class FpBianrySwitchableTests(unittest.TestCase):
