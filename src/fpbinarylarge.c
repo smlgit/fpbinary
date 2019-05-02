@@ -581,14 +581,28 @@ make_binary_ops_same_format(PyObject *op1, PyObject *op2,
 {
     FpBinaryLargeObject *cast_op1 = (FpBinaryLargeObject *)op1;
     FpBinaryLargeObject *cast_op2 = (FpBinaryLargeObject *)op2;
-    int compare_val =
+    PyObject *new_int_bits;
+
+    int compare_val_int =
+        FpBinary_TpCompare(cast_op1->int_bits, cast_op2->int_bits);
+    int compare_val_frac =
         FpBinary_TpCompare(cast_op1->frac_bits, cast_op2->frac_bits);
 
-    /* Frac bits. */
-    if (compare_val > 0)
+    *output_op1 = fpbinarylarge_create_mem(&FpBinary_LargeType);
+    *output_op2 = fpbinarylarge_create_mem(&FpBinary_LargeType);
+
+    if (compare_val_int > 0)
     {
-        FpBinaryLargeObject *new_op =
-            fpbinarylarge_create_mem(&FpBinary_LargeType);
+        new_int_bits = cast_op1->int_bits;
+    }
+    else
+    {
+        new_int_bits = cast_op2->int_bits;
+    }
+
+    /* Frac bits. */
+    if (compare_val_frac > 0)
+    {
         PyObject *frac_bits_diff =
             FP_NUM_METHOD(cast_op1->frac_bits, nb_subtract)(
                 cast_op1->frac_bits, cast_op2->frac_bits);
@@ -596,20 +610,16 @@ make_binary_ops_same_format(PyObject *op1, PyObject *op2,
             FP_NUM_METHOD(cast_op2->scaled_value,
                           nb_lshift)(cast_op2->scaled_value, frac_bits_diff);
 
-        set_object_fields(new_op, new_scaled_value, cast_op2->int_bits,
+        set_object_fields(*output_op2, new_scaled_value, new_int_bits,
                           cast_op1->frac_bits, cast_op2->is_signed);
+        set_object_fields(*output_op1, cast_op1->scaled_value, new_int_bits,
+                          cast_op1->frac_bits, cast_op1->is_signed);
 
         Py_DECREF(frac_bits_diff);
         Py_DECREF(new_scaled_value);
-
-        *output_op2 = new_op;
-        Py_INCREF(cast_op1);
-        *output_op1 = cast_op1;
     }
-    else if (compare_val < 0)
+    else if (compare_val_frac < 0)
     {
-        FpBinaryLargeObject *new_op =
-            fpbinarylarge_create_mem(&FpBinary_LargeType);
         PyObject *frac_bits_diff =
             FP_NUM_METHOD(cast_op2->frac_bits, nb_subtract)(
                 cast_op2->frac_bits, cast_op1->frac_bits);
@@ -617,22 +627,20 @@ make_binary_ops_same_format(PyObject *op1, PyObject *op2,
             FP_NUM_METHOD(cast_op1->scaled_value,
                           nb_lshift)(cast_op1->scaled_value, frac_bits_diff);
 
-        set_object_fields(new_op, new_scaled_value, cast_op1->int_bits,
+        set_object_fields(*output_op1, new_scaled_value, new_int_bits,
                           cast_op2->frac_bits, cast_op1->is_signed);
+        set_object_fields(*output_op2, cast_op2->scaled_value, new_int_bits,
+                          cast_op2->frac_bits, cast_op2->is_signed);
 
         Py_DECREF(frac_bits_diff);
         Py_DECREF(new_scaled_value);
-
-        *output_op1 = new_op;
-        Py_INCREF(cast_op2);
-        *output_op2 = cast_op2;
     }
     else
     {
-        Py_INCREF(cast_op1);
-        Py_INCREF(cast_op2);
-        *output_op1 = cast_op1;
-        *output_op2 = cast_op2;
+        set_object_fields(*output_op1, cast_op1->scaled_value, new_int_bits,
+                          cast_op1->frac_bits, cast_op1->is_signed);
+        set_object_fields(*output_op2, cast_op2->scaled_value, new_int_bits,
+                          cast_op2->frac_bits, cast_op2->is_signed);
     }
 }
 

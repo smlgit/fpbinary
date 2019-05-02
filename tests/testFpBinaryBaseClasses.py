@@ -180,6 +180,12 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(addition, 7.75)
             self.assertTrue(addition.format == (3, 3))
 
+            # Check result format
+            fpx = self.fp_binary_class(4, 5, signed=True, value=0.875)
+            fpy = self.fp_binary_class(3, 6, signed=True, value=0.875)
+            self.assertEqual((fpx + fpy).format, (5, 6))
+            self.assertEqual((fpy + fpx).format, (5,6))
+
         def testSubtraction(self):
             """Subtraction operators should promote & anti-commute"""
             scale = 0.0625
@@ -215,6 +221,12 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(sub, 4.125)
             self.assertTrue(sub.format == (3, 3))
 
+            # Check result format
+            fpx = self.fp_binary_class(4, 5, signed=True, value=0.875)
+            fpy = self.fp_binary_class(3, 6, signed=True, value=0.875)
+            self.assertEqual((fpx - fpy).format, (5, 6))
+            self.assertEqual((fpy - fpx).format, (5, 6))
+
         def testMultiplication(self):
             """Multiplication operators should promote & commute"""
             scale = 0.25
@@ -246,6 +258,12 @@ class AbstractTestHider(object):
             mult = fpx * fpx
             self.assertEqualWithFloatCast(mult, 15.015625)
             self.assertTrue(mult.format == (4, 6))
+
+            # Check result format
+            fpx = self.fp_binary_class(4, 5, signed=True, value=0.875)
+            fpy = self.fp_binary_class(3, 6, signed=True, value=0.875)
+            self.assertEqual((fpx * fpy).format, (7, 11))
+            self.assertEqual((fpy * fpx).format, (7, 11))
 
         def testDivision(self):
 
