@@ -1084,16 +1084,6 @@ fpbinary_is_signed(PyObject *self, void *closure)
         Py_RETURN_FALSE;
 }
 
-/*
- * Returns the maximum bit width of fixed point numbers this object can
- * represent. If there is no limit, None is returned.
- */
-static PyObject *
-fpbinary_get_max_bits(PyObject *cls)
-{
-    Py_RETURN_NONE;
-}
-
 static PyMethodDef fpbinary_methods[] = {
     {"resize", (PyCFunction)fpbinary_resize, METH_VARARGS | METH_KEYWORDS,
      resize_doc},
@@ -1101,8 +1091,6 @@ static PyMethodDef fpbinary_methods[] = {
     {"bits_to_signed", (PyCFunction)fpbinary_bits_to_signed, METH_NOARGS,
      bits_to_signed_doc},
     {"__copy__", (PyCFunction)fpbinary_copy, METH_NOARGS, copy_doc},
-    {"get_max_bits", (PyCFunction)fpbinary_get_max_bits, METH_CLASS,
-     "Returns max number of bits representable with this object."},
 
     {"__getitem__", (PyCFunction)fpbinary_getitem, METH_O, NULL},
 
