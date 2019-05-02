@@ -148,9 +148,13 @@ The point of this object is to allow a designer to write their simulation code a
 
 `FpBinarySwitchable` is designed to "look" like an `FpBinary` object, at least when it makes sense to flick the operation to float mode. So I have implemented `resize()` operations (no change in float mode) and shifting operations (mult/div by powers of 2) as well as the math operations. But index/slice and bitwise operations have **not** been implemented.
 
+### Coding Notes
+- Direct calls to object methods (like the tp_as_number methods) was favoured over the c api PyNumber abstract methods where possible. This was done for speed.
+- Similarly, a private interface was created for `_FpBinarySmall` and `_FpBinaryLarge` to implement so `FpBinary` could access them without going through the abstract call functions (that use string methods for lookup). This provided some type of polymorphism via the `fpbinary_base_t` type placed at the top of the base's object definitions.
+
 <a name="enhancements"/>
 
-### Enhancements
+## Enhancements
 - [ ] Possibly jettison the base class architecure and use `_FpBinaryLarge` as the main object.
 - [ ] Add more advanced operations like log, exp, sin/cos/tan. I have stopped short of doing these thus far because a user may rather simulate the actual hardware implementation (e.g. a lookup table would likely be used for sin). Having said that, a convienient fpbinary method should give the same result.
 - [ ] Add complex number versions of the two main classes.
