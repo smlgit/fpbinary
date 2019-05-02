@@ -44,10 +44,8 @@ get_total_bits_mask(PyObject *total_bits)
     /*
      * total bits mask is (1 << total_bits) - 1
      */
-    PyObject *result_tmp = FP_NUM_METHOD(py_one, nb_lshift)(py_one, total_bits);
-    PyObject *result =
-        FP_NUM_METHOD(result_tmp, nb_subtract)(result_tmp, py_one);
-    Py_DECREF(result_tmp);
+    PyObject *result = FP_NUM_METHOD(py_one, nb_lshift)(py_one, total_bits);
+    FP_NUM_BIN_OP_INPLACE(result, py_one, nb_subtract);
     return result;
 }
 
@@ -68,9 +66,8 @@ get_sign_bit(PyObject *total_bits)
     /*
      * Sign bit is (1 << (total_bits - 1) )
      */
-    PyObject *sign_bit = FP_NUM_METHOD(py_one, nb_lshift)(py_one, total_bits);
-    PyObject *result = FP_NUM_METHOD(sign_bit, nb_rshift)(sign_bit, py_one);
-    Py_DECREF(sign_bit);
+    PyObject *result = FP_NUM_METHOD(py_one, nb_lshift)(py_one, total_bits);
+    FP_NUM_BIN_OP_INPLACE(result, py_one, nb_rshift);
     return result;
 }
 
@@ -82,17 +79,15 @@ get_sign_bit(PyObject *total_bits)
 static PyObject *
 get_max_scaled_value(PyObject *total_bits, bool is_signed)
 {
-    PyObject *total_bits_mask = get_total_bits_mask(total_bits);
+    PyObject *result = get_total_bits_mask(total_bits);
 
     if (is_signed)
     {
-        PyObject *result =
-            FP_NUM_METHOD(total_bits_mask, nb_rshift)(total_bits_mask, py_one);
-        Py_DECREF(total_bits_mask);
+        FP_NUM_BIN_OP_INPLACE(result, py_one, nb_rshift);
         return result;
     }
 
-    return total_bits_mask;
+    return result;
 }
 
 /*
@@ -110,10 +105,8 @@ get_min_scaled_value(PyObject *total_bits, bool is_signed)
          * bit"
          * negated.
          */
-        PyObject *sign_bit = get_sign_bit(total_bits);
-        PyObject *result =
-            FP_NUM_METHOD(sign_bit, nb_multiply)(sign_bit, py_minus_one);
-        Py_DECREF(sign_bit);
+        PyObject *result = get_sign_bit(total_bits);
+        FP_NUM_BIN_OP_INPLACE(result, py_minus_one, nb_multiply);
         return result;
     }
     else
@@ -146,13 +139,9 @@ apply_overflow_wrap(PyObject *value, PyObject *min_value, PyObject *max_value,
                  *
                  * return min_value + (value & max_value);
                  */
-                PyObject *masked =
-                    FP_NUM_METHOD(value, nb_and)(value, max_value);
                 PyObject *result =
-                    FP_NUM_METHOD(masked, nb_add)(masked, min_value);
-
-                Py_DECREF(masked);
-                Py_DECREF(sign_bit_value);
+                    FP_NUM_METHOD(value, nb_and)(value, max_value);
+                FP_NUM_BIN_OP_INPLACE(result, min_value, nb_add);
 
                 return result;
             }
@@ -365,18 +354,14 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
              * Here, we are doing:
              *     new_scaled_value = scaled_value + (1 << (right_shifts - 1) )
              */
-            PyObject *inc_value_tmp =
-                FP_NUM_METHOD(py_one, nb_lshift)(py_one, right_shifts);
             PyObject *inc_value =
-                FP_NUM_METHOD(inc_value_tmp, nb_rshift)(inc_value_tmp, py_one);
-            PyObject *new_scaled_value_tmp = FP_NUM_METHOD(
-                self->scaled_value, nb_add)(self->scaled_value, inc_value);
-            new_scaled_value = FP_NUM_METHOD(new_scaled_value_tmp, nb_rshift)(
-                new_scaled_value_tmp, right_shifts);
+                FP_NUM_METHOD(py_one, nb_lshift)(py_one, right_shifts);
+            FP_NUM_BIN_OP_INPLACE(inc_value, py_one, nb_rshift);
+            new_scaled_value = FP_NUM_METHOD(self->scaled_value, nb_add)(
+                self->scaled_value, inc_value);
+            FP_NUM_BIN_OP_INPLACE(new_scaled_value, right_shifts, nb_rshift);
 
-            Py_DECREF(inc_value_tmp);
             Py_DECREF(inc_value);
-            Py_DECREF(new_scaled_value_tmp);
         }
         else if (round_mode == ROUNDING_NEAR_ZERO)
         {
@@ -400,10 +385,15 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
                 {
                     inc_value = py_one;
                 }
+
+                Py_DECREF(frac_bits_mask);
+                Py_DECREF(frac_bits);
             }
 
             new_scaled_value = FP_NUM_METHOD(initial_shifted_val, nb_add)(
                 initial_shifted_val, inc_value);
+
+            Py_DECREF(initial_shifted_val);
         }
         else
         {
@@ -731,11 +721,9 @@ fpbinarylarge_bits_to_signed(FpBinaryLargeObject *self, PyObject *args)
              * bit value
              * from the value.
              */
-            PyObject *next_sign_bit =
-                FP_NUM_METHOD(sign_bit, nb_lshift)(sign_bit, py_one);
-            result = FP_NUM_METHOD(self->scaled_value, nb_subtract)(
-                self->scaled_value, next_sign_bit);
-            Py_DECREF(next_sign_bit);
+            FP_NUM_BIN_OP_INPLACE(sign_bit, py_one, nb_lshift);
+            result = FP_NUM_METHOD(self->scaled_value,
+                                   nb_subtract)(self->scaled_value, sign_bit);
         }
 
         Py_DECREF(total_bits);
@@ -925,18 +913,14 @@ fpbinarylarge_divide(PyObject *op1, PyObject *op2)
      * denom_frac_bits
      *
      * So, all this is a long-winded way of saying that we just left shift the
-     * numerator by
-     * (denom int bits + denom_frac_bits) and then divide by the untouched
-     * denominator.
+     * numerator by (denom int bits + denom_frac_bits) and then divide by the
+     * untouched denominator.
      *
      *
      * The standard VHDL library appears to do "towards zero" truncation on
-     * divide. This
-     * is the same as C. So this is what we will do. Unfortunately, the python
-     * long
-     * only does a floor divide. So we need to convert negative numbers to
-     * positive,
-     * do our division, and then convert back.
+     * divide. This is the same as C. So this is what we will do. Unfortunately,
+     * the python long only does a floor divide. So we need to convert negative
+     * numbers to positive, do our division, and then convert back.
      */
 
     FpBinaryLargeObject *cast_op1 = (FpBinaryLargeObject *)op1;
@@ -1044,22 +1028,16 @@ static PyObject *
 fpbinarylarge_abs(PyObject *self)
 {
     FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
-    FpBinaryLargeObject *copied =
-        (FpBinaryLargeObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
-    copy_fields(cast_self, copied);
+    PyObject *copied = fpbinarylarge_copy(cast_self, NULL);
 
-    if (FpBinary_TpCompare(copied->scaled_value, py_zero) >= 0)
-    {
-        return (PyObject *)copied;
-    }
-    else
+    if (FpBinary_TpCompare(((FpBinaryLargeObject *)copied)->scaled_value,
+                           py_zero) < 0)
     {
         /* Negative -> abs = self * -1. */
-        PyObject *result =
-            FP_NUM_METHOD(copied, nb_negative)((PyObject *)copied);
-        Py_DECREF(copied);
-        return result;
+        FP_NUM_UNI_OP_INPLACE(copied, nb_negative);
     }
+
+    return copied;
 }
 
 static PyObject *
@@ -1191,13 +1169,12 @@ fpbinarylarge_sq_item(PyObject *self, Py_ssize_t py_index)
 {
     FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
     PyObject *index = PyLong_FromSize_t(py_index);
-    PyObject *bit = FP_NUM_METHOD(py_one, nb_lshift)(py_one, index);
-    PyObject *and = FP_NUM_METHOD(bit, nb_and)(bit, cast_self->scaled_value);
-    int compare = FpBinary_TpCompare(and, py_zero);
+    PyObject *anded = FP_NUM_METHOD(py_one, nb_lshift)(py_one, index);
+    FP_NUM_BIN_OP_INPLACE(anded, cast_self->scaled_value, nb_and);
+    int compare = FpBinary_TpCompare(anded, py_zero);
 
     Py_DECREF(index);
-    Py_DECREF(bit);
-    Py_DECREF(and);
+    Py_DECREF(anded);
 
     if (compare == 0)
     {
@@ -1219,7 +1196,7 @@ static PyObject *
 fpbinarylarge_sq_slice(PyObject *self, Py_ssize_t index1, Py_ssize_t index2)
 {
     FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self, *result;
-    PyObject *total_bits, *mask, *masked_val, *shifted_val;
+    PyObject *total_bits, *mask, *masked_val;
     PyObject *low_index;
     Py_ssize_t total_bits_ssize, high_index_ssize, low_index_ssize;
 
@@ -1250,11 +1227,11 @@ fpbinarylarge_sq_slice(PyObject *self, Py_ssize_t index1, Py_ssize_t index2)
     }
 
     low_index = PyLong_FromSsize_t(low_index_ssize);
-    shifted_val = FP_NUM_METHOD(cast_self->scaled_value,
-                                nb_rshift)(cast_self->scaled_value, low_index);
+    masked_val = FP_NUM_METHOD(cast_self->scaled_value,
+                               nb_rshift)(cast_self->scaled_value, low_index);
     total_bits = PyLong_FromSsize_t(high_index_ssize - low_index_ssize + 1);
     mask = get_total_bits_mask(total_bits);
-    masked_val = FP_NUM_METHOD(shifted_val, nb_and)(shifted_val, mask);
+    FP_NUM_BIN_OP_INPLACE(masked_val, mask, nb_and);
 
     result = fpbinarylarge_create_mem(&FpBinary_LargeType);
     set_object_fields(result, masked_val, total_bits, py_zero, false);
@@ -1262,7 +1239,6 @@ fpbinarylarge_sq_slice(PyObject *self, Py_ssize_t index1, Py_ssize_t index2)
     Py_DECREF(total_bits);
     Py_DECREF(mask);
     Py_DECREF(masked_val);
-    Py_DECREF(shifted_val);
     Py_DECREF(low_index);
 
     return (PyObject *)result;
@@ -1472,11 +1448,9 @@ FpBinaryLarge_FromBitsPylong(PyObject *bits, FP_UINT_TYPE int_bits,
         /* scaled_value represents a negative value. Subtract "next" sign bit
          * to convert to negative pylong.
          */
-        PyObject *next_sign_bit =
-            FP_NUM_METHOD(sign_bit, nb_lshift)(sign_bit, py_one);
+        FP_NUM_BIN_OP_INPLACE(sign_bit, py_one, nb_lshift);
         scaled_value =
-            FP_NUM_METHOD(masked_val, nb_subtract)(masked_val, next_sign_bit);
-        Py_DECREF(next_sign_bit);
+            FP_NUM_METHOD(masked_val, nb_subtract)(masked_val, sign_bit);
     }
     else
     {

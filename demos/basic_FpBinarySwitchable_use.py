@@ -1,6 +1,5 @@
 import random
-from fpbinary import FpBinary, FpBinarySwitchable, OverflowEnum, RoundingEnum
-
+from fpbinary import FpBinary, FpBinarySwitchable
 
 fp_mode = True
 

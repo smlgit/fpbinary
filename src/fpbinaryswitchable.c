@@ -265,17 +265,8 @@ fpbinaryswitchable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     {
         if (FP_NUM_METHOD_PRESENT(float_value_in, nb_float))
         {
-            PyObject *val_pyfloat =
-                FP_NUM_METHOD(float_value_in, nb_float)(float_value_in);
-            dbl_val = PyFloat_AsDouble(val_pyfloat);
-            Py_DECREF(val_pyfloat);
-        }
-        else if (fp_value_in && FpBinary_Check(fp_value_in))
-        {
-            PyObject *val_pyfloat =
-                FP_NUM_METHOD(fp_value_in, nb_float)(fp_value_in);
-            dbl_val = PyFloat_AsDouble(val_pyfloat);
-            Py_DECREF(val_pyfloat);
+            FP_NUM_UNI_OP_INPLACE(float_value_in, nb_float);
+            dbl_val = PyFloat_AsDouble(float_value_in);
         }
         else if (!float_value_in)
         {
@@ -314,8 +305,6 @@ fpbinaryswitchable_resize(FpBinarySwitchableObject *self, PyObject *args,
 
     call_result = forward_call_with_args(self->fp_mode_value,
                                          resize_method_name_str, args, kwds);
-    /*call_result = PyObject_CallMethodObjArgs(
-        self->fp_mode_value, resize_method_name_str, args, kwds, NULL);*/
 
     /* Don't use the resize return reference (it is the same as base_obj). */
     if (call_result)

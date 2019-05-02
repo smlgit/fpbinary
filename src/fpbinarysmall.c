@@ -1073,11 +1073,7 @@ fpbinarysmall_abs(PyObject *self)
         !(cast_self->scaled_value & FP_UINT_MAX_SIGN_BIT))
     {
         /* Positive already */
-        FpBinarySmallObject *result =
-            (FpBinarySmallObject *)fpbinarysmall_create_mem(
-                &FpBinary_SmallType);
-        copy_fields(cast_self, result);
-        return (PyObject *)result;
+        return fpbinarysmall_copy((FpBinarySmallObject *)self, NULL);
     }
 
     /* Negative value. Just negate */
