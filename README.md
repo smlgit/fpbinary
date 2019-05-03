@@ -156,6 +156,7 @@ The point of this object is to allow a designer to write their simulation code a
 
 ## Enhancements
 - [ ] Possibly jettison the base class architecure and use `_FpBinaryLarge` as the main object.
+- [ ] Add global contexts that allows the user to define "hardware" specifications so inputs and outputs to math operations can be resized automatically (i.e. without the need for explicit resizing code). 
 - [ ] Add more advanced operations like log, exp, sin/cos/tan. I have stopped short of doing these thus far because a user may rather simulate the actual hardware implementation (e.g. a lookup table would likely be used for sin). Having said that, a convienient fpbinary method should give the same result.
 - [ ] Add complex number versions of the two main classes.
 
