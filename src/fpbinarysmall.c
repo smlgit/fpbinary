@@ -64,7 +64,7 @@ static inline FP_UINT_TYPE
 sign_extend_scaled_value(FP_UINT_TYPE scaled_value, FP_UINT_TYPE total_bits,
                          bool is_signed)
 {
-    if (is_signed && (scaled_value & get_sign_bit(total_bits)))
+    if (is_signed && total_bits < FP_UINT_NUM_BITS && (scaled_value & get_sign_bit(total_bits)))
     {
         /* Need to shift with 1's. Calculate mask that will OR out the newly
          * shifted zeros. */
@@ -320,9 +320,7 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
 /*
  * Will convert the passed float to a fixed point object and apply
  * the result to output_obj.
- * Returns 0 if (there was an overflow AND round_mode is OVERFLOW_EXCEP) OR
- *              (the passed value can't be represented on this CPU using a
- * FP_UINT_TYPE).
+ * Returns 0 if (there was an overflow AND round_mode is OVERFLOW_EXCEP)
  * Otherwise, non zero is returned.
  */
 static bool
@@ -331,12 +329,13 @@ build_from_float(double value, FP_UINT_TYPE int_bits, FP_UINT_TYPE frac_bits,
                  fp_round_mode_t round_mode, FpBinarySmallObject *output_obj)
 {
     FP_UINT_TYPE scaled_value = 0;
-    FP_UINT_TYPE total_bits = int_bits + frac_bits;
     double scaled_value_dbl = value * (((FP_UINT_TYPE)1) << frac_bits);
     FP_UINT_TYPE max_scaled_value =
         get_max_scaled_value(FP_UINT_NUM_BITS, is_signed);
+    FP_UINT_TYPE min_scaled_value =
+        get_min_scaled_value(FP_UINT_NUM_BITS, is_signed);
     FP_UINT_TYPE min_scaled_value_mag =
-        get_mag_of_min_scaled_value(total_bits, is_signed);
+        get_mag_of_min_scaled_value(FP_UINT_NUM_BITS, is_signed);
 
     if (round_mode == ROUNDING_NEAR_POS_INF)
     {
@@ -346,27 +345,33 @@ build_from_float(double value, FP_UINT_TYPE int_bits, FP_UINT_TYPE frac_bits,
     scaled_value_dbl = floor(scaled_value_dbl);
 
     /*
-     * Check for architecture value limit - this should raise an
-     * exception regardless of the overflow mode.
+     * Because we only have a limited number of bits to play with,
+     * we need to check that the scaled value won't exceed the max
+     * magnitude when we cast from the float. So we are really doing
+     * a pre-saturate to the platform max magnitude before we do the
+     * actual overflow check (which uses the int_bits/frac_bits limitations).
      */
-    if (scaled_value_dbl > max_scaled_value ||
-        scaled_value_dbl < (-1.0 * min_scaled_value_mag))
-    {
-        PyErr_SetString(
-            PyExc_OverflowError,
-            "Applied value is too large for int representation on this CPU.");
-        return false;
-    }
 
-    /* Safe to cast to int */
-    if (is_signed && scaled_value_dbl < 0.0)
+    if (scaled_value_dbl >= max_scaled_value)
     {
-        double abs_scaled_value = -scaled_value_dbl;
-        scaled_value = ~((FP_UINT_TYPE)abs_scaled_value) + 1;
+        scaled_value = max_scaled_value;
+    }
+    else if (scaled_value_dbl <= -1.0 * min_scaled_value_mag)
+    {
+        scaled_value = min_scaled_value;
     }
     else
     {
-        scaled_value = (FP_UINT_TYPE)scaled_value_dbl;
+        /* Safe to cast to int */
+        if (is_signed && scaled_value_dbl < 0.0)
+        {
+            double abs_scaled_value = -scaled_value_dbl;
+            scaled_value = ~((FP_UINT_TYPE)abs_scaled_value) + 1;
+        }
+        else
+        {
+            scaled_value = (FP_UINT_TYPE)scaled_value_dbl;
+        }
     }
 
     set_object_fields(output_obj, scaled_value, int_bits, frac_bits, is_signed);

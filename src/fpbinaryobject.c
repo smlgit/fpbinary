@@ -452,29 +452,6 @@ fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
     return self->base_obj;
 }
 
-FpBinaryObject *
-FpBinary_FromParams(long int_bits, long frac_bits, bool is_signed, double value,
-                    PyObject *bit_field, PyObject *format_instance)
-{
-    FpBinaryObject *self =
-        (FpBinaryObject *)FpBinary_Type.tp_alloc(&FpBinary_Type, 0);
-
-    if (self)
-    {
-        if (fpbinary_populate_with_params(self, int_bits, frac_bits, is_signed,
-                                          value, bit_field, format_instance))
-        {
-            return self;
-        }
-        else
-        {
-            Py_DECREF(self);
-        }
-    }
-
-    return NULL;
-}
-
 PyDoc_STRVAR(
     fpbinaryobject_doc,
     "FpBinary(int_bits=1, frac_bits=0, signed=True, value=0.0, bit_field=None, "

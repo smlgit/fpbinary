@@ -375,6 +375,66 @@ class AbstractTestHider(object):
             self.assertEqual(self.fp_binary_class(value=12, format_inst=format_fp) >> 2, 3)
             self.assertEqual(self.fp_binary_class(value=-71 * 1024, format_inst=format_fp) >> 12, -17.75)
 
+        def testOverflowModeOnCreate(self):
+            # Overflow mode on create is saturation. Verify values that have magnitudes that
+            # are too large are saturated correctly. A pass requires no exception raised and
+            # we also use the bit_field to construct an FpBinary instance to compare against.
+            # This should be safe because the bit_field method has no concept of overflow.
+
+            # =======================================================================
+            # Signed
+
+            # We set our input value to the largest possible INTEGER value for the platform.
+            # Having any fractional bits means this value is too large to represent and
+            # saturation must be performed (saturate to the largest/smallest possible value
+            # given the int_bits, frac_bits format)
+
+            native_max_int_val = (1 << (test_utils.get_small_type_size() - 1)) - 1
+            native_min_int_val = -(native_max_int_val + 1)
+
+            for int_bits in range(0, 2):
+                for frac_bits in range(1, test_utils.get_small_type_size() + 2):
+                    total_bits = int_bits + frac_bits
+                    if total_bits > 1:
+                        max_val_bit_field = (1 << (total_bits - 1)) - 1
+                    else:
+                        max_val_bit_field = 0
+
+                    min_val_bit_field = (1 << (total_bits - 1))
+
+
+                    fpNum = self.fp_binary_class(int_bits, frac_bits, signed=True, value=native_max_int_val)
+                    expected = self.fp_binary_class(int_bits, frac_bits, signed=True,
+                                                    bit_field=long(max_val_bit_field))
+                    self.assertAlmostEqual(fpNum, expected)
+
+                    fpNum = self.fp_binary_class(int_bits, frac_bits, signed=True, value=native_min_int_val)
+                    expected = self.fp_binary_class(int_bits, frac_bits, signed=True,
+                                                    bit_field=long(min_val_bit_field))
+                    self.assertAlmostEqual(fpNum, expected)
+
+            # =======================================================================
+            # Unsigned
+
+            native_max_int_val = (1 << test_utils.get_small_type_size()) - 1
+
+            for int_bits in range(0, 2):
+                for frac_bits in range(1, test_utils.get_small_type_size() + 2):
+                    total_bits = int_bits + frac_bits
+                    max_val_bit_field = (1 << total_bits) - 1
+                    min_val_bit_field = 0
+
+                    fpNum = self.fp_binary_class(int_bits, frac_bits, signed=False, value=native_max_int_val)
+                    expected = self.fp_binary_class(int_bits, frac_bits, signed=False,
+                                                    bit_field=long(max_val_bit_field))
+                    self.assertAlmostEqual(fpNum, expected)
+
+                    fpNum = self.fp_binary_class(int_bits, frac_bits, signed=False, value=-1.0)
+                    expected = self.fp_binary_class(int_bits, frac_bits, signed=False,
+                                                    bit_field=long(min_val_bit_field))
+                    self.assertAlmostEqual(fpNum, expected)
+
+
         def testOverflowModesSmall(self):
             # =======================================================================
             # Wrapping
