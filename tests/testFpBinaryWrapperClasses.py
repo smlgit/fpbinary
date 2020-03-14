@@ -435,6 +435,65 @@ class AbstractTestHider(object):
                     self.assertAlmostEqual(fpNum, expected)
 
 
+        def testZeroIntBitsOnCreate(self):
+            # Checks the corner case where there are 0 int bits and we are using the native
+            # bit length number of frac bits. This is a specific test because of the use of
+            # native unsigned ints for arithmetic and the need to scale by the number of
+            # frac bits (which was originally implemented using shifts. E.g. value * (1 << 64), which
+            # wouldn't work.
+
+            # =======================================================================
+            # Verify the specified user value is preserved when no rounding or overflow
+            # is required.
+
+            # =======================================================================
+            # Signed
+
+            value_cases = [0.3125, -0.25]
+
+            for value in value_cases:
+                # Cross the system word length boundary
+                for frac_bits in range(test_utils.get_small_type_size() - 1, test_utils.get_small_type_size() + 2):
+                    fpNum = self.fp_binary_class(0, frac_bits, signed=True, value=value)
+                    self.assertEqual(fpNum, value)
+
+            # =======================================================================
+            # Unsigned
+
+            value_cases = [0.3125, 0.125]
+
+            for value in value_cases:
+                # Cross the system word length boundary
+                for frac_bits in range(test_utils.get_small_type_size() - 1,
+                                       test_utils.get_small_type_size() + 2):
+                    fpNum = self.fp_binary_class(0, frac_bits, signed=False, value=value)
+                    self.assertEqual(fpNum, value)
+
+        def testZeroIntBitsBasicMath(self):
+            # Basic arithmetic to sanity check the corner case where there are 0 int bits and we
+            # are using the native bit length number of frac bits.
+
+            # =======================================================================
+            # Signed
+
+            fp_num1 = self.fp_binary_class(0, test_utils.get_small_type_size(), signed=True, value=0.25)
+            fp_num2 = self.fp_binary_class(0, test_utils.get_small_type_size(), signed=True, value=-0.25)
+
+            self.assertEqual(fp_num1 + fp_num2, 0.0)
+            self.assertEqual(fp_num2 - fp_num1, -0.5)
+            self.assertEqual(fp_num1 * fp_num2, -0.0625)
+
+            # =======================================================================
+            # Unsigned
+
+            fp_num1 = self.fp_binary_class(0, test_utils.get_small_type_size(), signed=False, value=0.25)
+            fp_num2 = self.fp_binary_class(0, test_utils.get_small_type_size(), signed=False, value=0.125)
+
+            self.assertEqual(fp_num1 + fp_num2, 0.375)
+            self.assertEqual(fp_num1 - fp_num2, 0.125)
+            self.assertEqual(fp_num1 * fp_num2, 0.03125)
+
+
         def testOverflowModesSmall(self):
             # =======================================================================
             # Wrapping

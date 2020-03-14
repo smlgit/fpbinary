@@ -329,13 +329,18 @@ build_from_float(double value, FP_UINT_TYPE int_bits, FP_UINT_TYPE frac_bits,
                  fp_round_mode_t round_mode, FpBinarySmallObject *output_obj)
 {
     FP_UINT_TYPE scaled_value = 0;
-    double scaled_value_dbl = value * (((FP_UINT_TYPE)1) << frac_bits);
     FP_UINT_TYPE max_scaled_value =
         get_max_scaled_value(FP_UINT_NUM_BITS, is_signed);
     FP_UINT_TYPE min_scaled_value =
         get_min_scaled_value(FP_UINT_NUM_BITS, is_signed);
     FP_UINT_TYPE min_scaled_value_mag =
         get_mag_of_min_scaled_value(FP_UINT_NUM_BITS, is_signed);
+
+    /* Can't use shifts if the number of frac_bits is the system word length
+     * (which occurs here if the user specifies an fpbinary format of (0, word_length).
+     * So use ldexp, which should be fast enough.
+     */
+    double scaled_value_dbl = ldexp(value, frac_bits);
 
     if (round_mode == ROUNDING_NEAR_POS_INF)
     {
