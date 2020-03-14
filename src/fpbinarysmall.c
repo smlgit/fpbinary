@@ -64,7 +64,8 @@ static inline FP_UINT_TYPE
 sign_extend_scaled_value(FP_UINT_TYPE scaled_value, FP_UINT_TYPE total_bits,
                          bool is_signed)
 {
-    if (is_signed && total_bits < FP_UINT_NUM_BITS && (scaled_value & get_sign_bit(total_bits)))
+    if (is_signed && total_bits < FP_UINT_NUM_BITS &&
+        (scaled_value & get_sign_bit(total_bits)))
     {
         /* Need to shift with 1's. Calculate mask that will OR out the newly
          * shifted zeros. */
@@ -337,7 +338,8 @@ build_from_float(double value, FP_UINT_TYPE int_bits, FP_UINT_TYPE frac_bits,
         get_mag_of_min_scaled_value(FP_UINT_NUM_BITS, is_signed);
 
     /* Can't use shifts if the number of frac_bits is the system word length
-     * (which occurs here if the user specifies an fpbinary format of (0, word_length).
+     * (which occurs here if the user specifies an fpbinary format of (0,
+     * word_length).
      * So use ldexp, which should be fast enough.
      */
     double scaled_value_dbl = ldexp(value, frac_bits);
