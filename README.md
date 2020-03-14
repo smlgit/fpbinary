@@ -35,7 +35,15 @@ fpbinary was created with **_fast_** simulation of math-intensive systems destin
 
 Installation is currently only via source download and build. You require an installation of git, python >= 2.7.12 and a C99 compliant compiler.
 
-Clone the fpbinary repository and run the setup script: 
+The easiest way is to use pip:
+
+```bash
+pip install git+https://github.com/smlgit/fpbinary.git
+```
+
+This will download the source from git and rund the setup script for you.
+
+Alternatively, you can clone the fpbinary repository and run the setup script: 
 
 
 ```bash
