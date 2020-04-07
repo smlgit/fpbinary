@@ -98,7 +98,6 @@ typedef enum {
     OVERFLOW_WRAP = 0,
     OVERFLOW_SAT = 1,
     OVERFLOW_EXCEP = 2,
-    OVERFLOW_NONE = 3,
 } fp_overflow_mode_t;
 
 /* Pseudo polymorphism to speed up calling functions that are in the "methods"
@@ -158,6 +157,7 @@ void calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
 PyObject *fp_uint_as_pylong(FP_UINT_TYPE value);
 PyObject *fp_int_as_pylong(FP_UINT_TYPE value);
 FP_UINT_TYPE pylong_as_fp_uint(PyObject *val);
+FP_INT_TYPE pylong_as_fp_int(PyObject *val);
 void build_scaled_bits_from_pyfloat(PyObject *value, PyObject *frac_bits,
                                     fp_round_mode_t round_mode,
                                     PyObject **output_obj);

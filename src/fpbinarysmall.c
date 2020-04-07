@@ -286,11 +286,6 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
     FP_UINT_TYPE total_bits = self->int_bits + self->frac_bits;
     FP_UINT_TYPE sign_bit = get_sign_bit(total_bits);
 
-    if (overflow_mode == OVERFLOW_NONE)
-    {
-        return true;
-    }
-
     min_value = get_min_scaled_value(total_bits, self->is_signed);
     max_value = get_max_scaled_value(total_bits, self->is_signed);
 
@@ -728,40 +723,8 @@ make_binary_ops_same_frac_size(PyObject *op1, PyObject *op2,
 {
     FpBinarySmallObject *cast_op1 = (FpBinarySmallObject *)op1;
     FpBinarySmallObject *cast_op2 = (FpBinarySmallObject *)op2;
-    FP_INT_TYPE max_int_position =
-            (cast_op1->int_bits > cast_op2->int_bits) ? cast_op1->int_bits : cast_op2->int_bits;
-    FP_INT_TYPE max_fract_position =
-            (cast_op1->frac_bits > cast_op2->frac_bits) ? cast_op1->frac_bits : cast_op2->frac_bits;
-  /*  FP_INT_TYPE op1_total_frac_bits =
-            get_neg_int_corrected_frac_bits(cast_op1->int_bits, cast_op1->frac_bits);
-    FP_INT_TYPE op2_total_frac_bits =
-            get_neg_int_corrected_frac_bits(cast_op2->int_bits, cast_op2->frac_bits);
-    FP_INT_TYPE max_frac_bits =
-            (op1_total_frac_bits > op2_total_frac_bits) ? op1_total_frac_bits : op2_total_frac_bits;*/
 
-    {
-        FpBinarySmallObject *new_op =
-            fpbinarysmall_create_mem(&FpBinary_SmallType);
-        set_object_fields(
-            new_op, cast_op1->scaled_value,
-            cast_op1->int_bits, cast_op1->frac_bits, cast_op1->is_signed);
-        resize_object(new_op, max_int_position, max_fract_position, OVERFLOW_NONE,
-                ROUNDING_NEAR_POS_INF);
-        *output_op1 = new_op;
-    }
-
-    {
-        FpBinarySmallObject *new_op =
-            fpbinarysmall_create_mem(&FpBinary_SmallType);
-        set_object_fields(
-            new_op, cast_op2->scaled_value,
-            cast_op2->int_bits, cast_op2->frac_bits, cast_op2->is_signed);
-        resize_object(new_op, max_int_position, max_fract_position, OVERFLOW_NONE,
-                ROUNDING_NEAR_POS_INF);
-        *output_op2 = new_op;
-    }
-
-/*    if (cast_op1->frac_bits > cast_op2->frac_bits)
+    if (cast_op1->frac_bits > cast_op2->frac_bits)
     {
         FpBinarySmallObject *new_op =
             fpbinarysmall_create_mem(&FpBinary_SmallType);
@@ -793,7 +756,7 @@ make_binary_ops_same_frac_size(PyObject *op1, PyObject *op2,
         Py_INCREF(cast_op2);
         *output_op1 = cast_op1;
         *output_op2 = cast_op2;
-    }*/
+    }
 }
 
 /*

@@ -316,6 +316,12 @@ fp_int_as_pylong(FP_UINT_TYPE value)
     return PyLong_FromLongLong(value);
 }
 
+FP_INT_TYPE
+pylong_as_fp_int(PyObject *val)
+{
+    return (FP_INT_TYPE)PyLong_AsLongLong(val);
+}
+
 FP_UINT_TYPE
 pylong_as_fp_uint(PyObject *val)
 {

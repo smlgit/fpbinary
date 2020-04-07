@@ -468,9 +468,9 @@ fpbinarylarge_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
     if (format_instance)
     {
-        int_bits = pylong_as_fp_uint(
+        int_bits = pylong_as_fp_int(
             ((FpBinaryLargeObject *)format_instance)->int_bits);
-        frac_bits = pylong_as_fp_uint(
+        frac_bits = pylong_as_fp_int(
             ((FpBinaryLargeObject *)format_instance)->frac_bits);
     }
 

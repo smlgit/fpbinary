@@ -953,17 +953,17 @@ class FpBinarySmallTests(AbstractTestHider.BaseClassesTestAbstract):
         self.fp_binary_class = _FpBinarySmall
         super(FpBinarySmallTests, self).setUp()
 
-#
-# class FpBinaryLargeTests(AbstractTestHider.BaseClassesTestAbstract):
-#     def setUp(self):
-#         self.fp_binary_class = _FpBinaryLarge
-#         super(FpBinaryLargeTests, self).setUp()
-#
-#
-# class FpBinaryTests(AbstractTestHider.BaseClassesTestAbstract):
-#     def setUp(self):
-#         self.fp_binary_class = FpBinary
-#         super(FpBinaryTests, self).setUp()
+
+class FpBinaryLargeTests(AbstractTestHider.BaseClassesTestAbstract):
+    def setUp(self):
+        self.fp_binary_class = _FpBinaryLarge
+        super(FpBinaryLargeTests, self).setUp()
+
+
+class FpBinaryTests(AbstractTestHider.BaseClassesTestAbstract):
+    def setUp(self):
+        self.fp_binary_class = FpBinary
+        super(FpBinaryTests, self).setUp()
 
 
 if __name__ == "__main__":

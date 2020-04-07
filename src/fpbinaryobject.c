@@ -398,8 +398,8 @@ fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
             if (extract_fp_format_from_tuple(format_tuple, &int_bits_py,
                                              &frac_bits_py))
             {
-                int_bits = pylong_as_fp_uint(int_bits_py);
-                frac_bits = pylong_as_fp_uint(frac_bits_py);
+                int_bits = pylong_as_fp_int(int_bits_py);
+                frac_bits = pylong_as_fp_int(frac_bits_py);
 
                 Py_DECREF(int_bits_py);
                 Py_DECREF(frac_bits_py);
@@ -633,8 +633,8 @@ fpbinary_resize(FpBinaryObject *self, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    new_int_bits = pylong_as_fp_uint(new_int_bits_py);
-    new_frac_bits = pylong_as_fp_uint(new_frac_bits_py);
+    new_int_bits = pylong_as_fp_int(new_int_bits_py);
+    new_frac_bits = pylong_as_fp_int(new_frac_bits_py);
 
     if (FpBinarySmall_Check(self->base_obj) &&
         ((unsigned long long)(new_int_bits + new_frac_bits)) >
