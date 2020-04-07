@@ -88,7 +88,7 @@ fp_binary_new_params_parse(PyObject *args, PyObject *kwds, long *int_bits,
     *bit_field = NULL;
     *format_instance = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iiOdOO", kwlist, int_bits,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|llOdOO", kwlist, int_bits,
                                      frac_bits, &py_is_signed, value, bit_field,
                                      format_instance))
         return false;

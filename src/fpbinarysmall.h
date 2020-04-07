@@ -10,8 +10,8 @@
 typedef struct
 {
     fpbinary_base_t fpbinary_base;
-    FP_UINT_TYPE int_bits;
-    FP_UINT_TYPE frac_bits;
+    FP_INT_TYPE int_bits;
+    FP_INT_TYPE frac_bits;
     FP_UINT_TYPE scaled_value;
     bool is_signed;
 } FpBinarySmallObject;
@@ -30,13 +30,13 @@ extern fpbinary_private_iface_t FpBinary_SmallPrvIface;
 void FpBinarySmall_FormatAsUints(PyObject *self, FP_UINT_TYPE *out_int_bits,
                                  FP_UINT_TYPE *out_frac_bits);
 PyObject *FpBinarySmall_BitsAsPylong(PyObject *obj);
-PyObject *FpBinarySmall_FromDouble(double value, FP_UINT_TYPE int_bits,
-                                   FP_UINT_TYPE frac_bits, bool is_signed,
+PyObject *FpBinarySmall_FromDouble(double value, FP_INT_TYPE int_bits,
+                                   FP_INT_TYPE frac_bits, bool is_signed,
                                    fp_overflow_mode_t overflow_mode,
                                    fp_round_mode_t round_mode);
 PyObject *FpBinarySmall_FromBitsPylong(PyObject *scaled_value,
-                                       FP_UINT_TYPE int_bits,
-                                       FP_UINT_TYPE frac_bits, bool is_signed);
+                                       FP_INT_TYPE int_bits,
+                                       FP_INT_TYPE frac_bits, bool is_signed);
 
 bool FpBinarySmall_IsNegative(PyObject *obj);
 FP_UINT_TYPE fpbinarysmall_can_divide_ops(FP_UINT_TYPE op1_total_bits,

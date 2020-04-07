@@ -31,10 +31,20 @@
 #include "fpbinaryglobaldoc.h"
 #include <math.h>
 
+static inline FP_INT_TYPE get_neg_int_corrected_frac_bits(FP_INT_TYPE int_bits, FP_INT_TYPE frac_bits)
+{
+    if (int_bits < 0)
+    {
+        return frac_bits + int_bits;
+    }
+
+    return frac_bits;
+}
+
 static int
 check_new_bit_len_ok(FpBinarySmallObject *new_obj)
 {
-    if ((new_obj->int_bits + new_obj->frac_bits) > FP_UINT_NUM_BITS)
+    if (((FP_UINT_TYPE) (new_obj->int_bits + new_obj->frac_bits)) > FP_UINT_NUM_BITS)
     {
         PyErr_SetString(PyExc_OverflowError,
                         "New FpBinary object has too many bits for this CPU.");
@@ -195,11 +205,16 @@ get_total_bits_mask(FP_UINT_TYPE total_bits)
 }
 
 static FP_UINT_TYPE
-get_frac_bits_mask(FP_UINT_TYPE frac_bits)
+get_frac_bits_mask(FP_INT_TYPE int_bits, FP_INT_TYPE frac_bits)
 {
     if (frac_bits == 0)
     {
         return 0;
+    }
+
+    if (int_bits < 0)
+    {
+        frac_bits += int_bits;
     }
 
     return get_total_bits_mask(frac_bits);
@@ -242,7 +257,7 @@ apply_overflow_wrap(FP_UINT_TYPE value, bool is_signed, FP_UINT_TYPE max_value,
 
 static inline void
 set_object_fields(FpBinarySmallObject *self, FP_UINT_TYPE scaled_value,
-                  FP_UINT_TYPE int_bits, FP_UINT_TYPE frac_bits, bool is_signed)
+                  FP_INT_TYPE int_bits, FP_INT_TYPE frac_bits, bool is_signed)
 {
     self->scaled_value = scaled_value;
     self->int_bits = int_bits;
@@ -270,6 +285,11 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
     FP_UINT_TYPE min_value, max_value;
     FP_UINT_TYPE total_bits = self->int_bits + self->frac_bits;
     FP_UINT_TYPE sign_bit = get_sign_bit(total_bits);
+
+    if (overflow_mode == OVERFLOW_NONE)
+    {
+        return true;
+    }
 
     min_value = get_min_scaled_value(total_bits, self->is_signed);
     max_value = get_max_scaled_value(total_bits, self->is_signed);
@@ -325,7 +345,7 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
  * Otherwise, non zero is returned.
  */
 static bool
-build_from_float(double value, FP_UINT_TYPE int_bits, FP_UINT_TYPE frac_bits,
+build_from_float(double value, FP_INT_TYPE int_bits, FP_INT_TYPE frac_bits,
                  bool is_signed, fp_overflow_mode_t overflow_mode,
                  fp_round_mode_t round_mode, FpBinarySmallObject *output_obj)
 {
@@ -394,8 +414,8 @@ build_from_float(double value, FP_UINT_TYPE int_bits, FP_UINT_TYPE frac_bits,
  * Otherwise, non-zero is returned.
  */
 static int
-resize_object(FpBinarySmallObject *self, FP_UINT_TYPE new_int_bits,
-              FP_UINT_TYPE new_frac_bits, fp_overflow_mode_t overflow_mode,
+resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
+              FP_INT_TYPE new_frac_bits, fp_overflow_mode_t overflow_mode,
               fp_round_mode_t round_mode)
 {
     FP_UINT_TYPE new_scaled_value = self->scaled_value;
@@ -422,7 +442,7 @@ resize_object(FpBinarySmallObject *self, FP_UINT_TYPE new_int_bits,
             if (self->is_signed &&
                 (self->scaled_value &
                  get_sign_bit(self->int_bits + self->frac_bits)) &&
-                (self->scaled_value & get_frac_bits_mask(right_shifts)))
+                (self->scaled_value & get_frac_bits_mask(0, right_shifts)))
             {
                 new_scaled_value =
                     self->scaled_value + (((FP_UINT_TYPE)1) << right_shifts);
@@ -433,7 +453,7 @@ resize_object(FpBinarySmallObject *self, FP_UINT_TYPE new_int_bits,
         new_scaled_value =
             apply_rshift(new_scaled_value, right_shifts, self->is_signed);
     }
-    else
+    else if (new_frac_bits > self->frac_bits)
     {
         new_scaled_value <<= (new_frac_bits - self->frac_bits);
     }
@@ -580,6 +600,7 @@ fpbinarysmall_to_signed(PyObject *obj, PyObject *args)
     /* Input is an unsigned FpBinarySmall object. */
 
     result = fpbinarysmall_create_mem(&FpBinary_SmallType);
+    /* TODO: Shouldn't this be int_bits + 1 ??? */
     set_object_fields(result, cast_obj->scaled_value, cast_obj->int_bits,
                       cast_obj->frac_bits, true);
 
@@ -596,7 +617,7 @@ fpbinarysmall_resize(FpBinarySmallObject *self, PyObject *args, PyObject *kwds)
     int overflow_mode = OVERFLOW_WRAP;
     int round_mode = ROUNDING_DIRECT_NEG_INF;
     static char *kwlist[] = {"format", "overflow_mode", "round_mode", NULL};
-    FP_UINT_TYPE new_int_bits = self->int_bits, new_frac_bits = self->frac_bits;
+    FP_INT_TYPE new_int_bits = self->int_bits, new_frac_bits = self->frac_bits;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|ii", kwlist, &format,
                                      &overflow_mode, &round_mode))
@@ -613,8 +634,8 @@ fpbinarysmall_resize(FpBinarySmallObject *self, PyObject *args, PyObject *kwds)
             return NULL;
         }
 
-        new_int_bits = (FP_UINT_TYPE)(long)PyLong_AsLong(int_bits_obj);
-        new_frac_bits = (FP_UINT_TYPE)(long)PyLong_AsLong(frac_bits_obj);
+        new_int_bits = (FP_INT_TYPE)(long)PyLong_AsLong(int_bits_obj);
+        new_frac_bits = (FP_INT_TYPE)(long)PyLong_AsLong(frac_bits_obj);
 
         Py_DECREF(int_bits_obj);
         Py_DECREF(frac_bits_obj);
@@ -707,8 +728,40 @@ make_binary_ops_same_frac_size(PyObject *op1, PyObject *op2,
 {
     FpBinarySmallObject *cast_op1 = (FpBinarySmallObject *)op1;
     FpBinarySmallObject *cast_op2 = (FpBinarySmallObject *)op2;
+    FP_INT_TYPE max_int_position =
+            (cast_op1->int_bits > cast_op2->int_bits) ? cast_op1->int_bits : cast_op2->int_bits;
+    FP_INT_TYPE max_fract_position =
+            (cast_op1->frac_bits > cast_op2->frac_bits) ? cast_op1->frac_bits : cast_op2->frac_bits;
+  /*  FP_INT_TYPE op1_total_frac_bits =
+            get_neg_int_corrected_frac_bits(cast_op1->int_bits, cast_op1->frac_bits);
+    FP_INT_TYPE op2_total_frac_bits =
+            get_neg_int_corrected_frac_bits(cast_op2->int_bits, cast_op2->frac_bits);
+    FP_INT_TYPE max_frac_bits =
+            (op1_total_frac_bits > op2_total_frac_bits) ? op1_total_frac_bits : op2_total_frac_bits;*/
 
-    if (cast_op1->frac_bits > cast_op2->frac_bits)
+    {
+        FpBinarySmallObject *new_op =
+            fpbinarysmall_create_mem(&FpBinary_SmallType);
+        set_object_fields(
+            new_op, cast_op1->scaled_value,
+            cast_op1->int_bits, cast_op1->frac_bits, cast_op1->is_signed);
+        resize_object(new_op, max_int_position, max_fract_position, OVERFLOW_NONE,
+                ROUNDING_NEAR_POS_INF);
+        *output_op1 = new_op;
+    }
+
+    {
+        FpBinarySmallObject *new_op =
+            fpbinarysmall_create_mem(&FpBinary_SmallType);
+        set_object_fields(
+            new_op, cast_op2->scaled_value,
+            cast_op2->int_bits, cast_op2->frac_bits, cast_op2->is_signed);
+        resize_object(new_op, max_int_position, max_fract_position, OVERFLOW_NONE,
+                ROUNDING_NEAR_POS_INF);
+        *output_op2 = new_op;
+    }
+
+/*    if (cast_op1->frac_bits > cast_op2->frac_bits)
     {
         FpBinarySmallObject *new_op =
             fpbinarysmall_create_mem(&FpBinary_SmallType);
@@ -740,7 +793,7 @@ make_binary_ops_same_frac_size(PyObject *op1, PyObject *op2,
         Py_INCREF(cast_op2);
         *output_op1 = cast_op1;
         *output_op2 = cast_op2;
-    }
+    }*/
 }
 
 /*
@@ -757,7 +810,7 @@ fpbinarysmall_add(PyObject *op1, PyObject *op2)
 {
     FpBinarySmallObject *result = NULL;
     FpBinarySmallObject *cast_op1, *cast_op2;
-    FP_UINT_TYPE result_int_bits;
+    FP_INT_TYPE result_int_bits;
 
     if (!check_binary_ops(op1, op2))
     {
@@ -766,6 +819,7 @@ fpbinarysmall_add(PyObject *op1, PyObject *op2)
 
     /* Add requires the fractional bits to be lined up */
     make_binary_ops_same_frac_size(op1, op2, &cast_op1, &cast_op2);
+
 
     result_int_bits = (cast_op1->int_bits > cast_op2->int_bits)
                           ? cast_op1->int_bits
@@ -800,7 +854,7 @@ fpbinarysmall_subtract(PyObject *op1, PyObject *op2)
 {
     FpBinarySmallObject *result = NULL;
     FpBinarySmallObject *cast_op1, *cast_op2;
-    FP_UINT_TYPE result_int_bits;
+    FP_INT_TYPE result_int_bits;
 
     if (!check_binary_ops(op1, op2))
     {
@@ -932,8 +986,8 @@ fpbinarysmall_divide(PyObject *op1, PyObject *op2)
     FpBinarySmallObject *cast_op1 = (FpBinarySmallObject *)op1;
     FpBinarySmallObject *cast_op2 = (FpBinarySmallObject *)op2;
 
-    FP_UINT_TYPE op1_total_bits = cast_op1->int_bits + cast_op1->frac_bits;
-    FP_UINT_TYPE op2_total_bits = cast_op2->int_bits + cast_op2->frac_bits;
+    FP_INT_TYPE op1_total_bits = cast_op1->int_bits + cast_op1->frac_bits;
+    FP_INT_TYPE op2_total_bits = cast_op2->int_bits + cast_op2->frac_bits;
     FP_UINT_TYPE op1_sign_bit = get_sign_bit(op1_total_bits);
     FP_UINT_TYPE op2_sign_bit = get_sign_bit(op2_total_bits);
 
@@ -1097,7 +1151,7 @@ fpbinarysmall_lshift(PyObject *self, PyObject *pyobj_lshift)
 {
     long lshift;
     FpBinarySmallObject *cast_self = (FpBinarySmallObject *)self;
-    FP_UINT_TYPE total_bits = cast_self->int_bits + cast_self->frac_bits;
+    FP_INT_TYPE total_bits = cast_self->int_bits + cast_self->frac_bits;
     FP_UINT_TYPE sign_bit = get_sign_bit(total_bits);
     FP_UINT_TYPE mask = get_total_bits_mask(total_bits);
     FP_UINT_TYPE shifted_value;
@@ -1286,8 +1340,8 @@ fpbinarysmall_str_ex(PyObject *self)
     PyObject *scaled_value =
         scaled_value_to_pylong(cast_self->scaled_value, cast_self->is_signed);
     PyObject *result = scaled_long_to_float_str(
-        scaled_value, fp_uint_as_pylong(cast_self->int_bits),
-        fp_uint_as_pylong(cast_self->frac_bits));
+        scaled_value, fp_int_as_pylong(cast_self->int_bits),
+        fp_int_as_pylong(cast_self->frac_bits));
 
     Py_DECREF(scaled_value);
     return result;
@@ -1455,8 +1509,8 @@ FpBinarySmall_IsNegative(PyObject *obj)
 }
 
 PyObject *
-FpBinarySmall_FromDouble(double value, FP_UINT_TYPE int_bits,
-                         FP_UINT_TYPE frac_bits, bool is_signed,
+FpBinarySmall_FromDouble(double value, FP_INT_TYPE int_bits,
+                         FP_INT_TYPE frac_bits, bool is_signed,
                          fp_overflow_mode_t overflow_mode,
                          fp_round_mode_t round_mode)
 {
@@ -1488,8 +1542,8 @@ FpBinarySmall_FromDouble(double value, FP_UINT_TYPE int_bits,
  * format bits are enough to represent the size of bits.
  */
 PyObject *
-FpBinarySmall_FromBitsPylong(PyObject *scaled_value, FP_UINT_TYPE int_bits,
-                             FP_UINT_TYPE frac_bits, bool is_signed)
+FpBinarySmall_FromBitsPylong(PyObject *scaled_value, FP_INT_TYPE int_bits,
+                             FP_INT_TYPE frac_bits, bool is_signed)
 {
     PyObject *result;
     FP_UINT_TYPE total_bits = int_bits + frac_bits;

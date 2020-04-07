@@ -98,6 +98,7 @@ typedef enum {
     OVERFLOW_WRAP = 0,
     OVERFLOW_SAT = 1,
     OVERFLOW_EXCEP = 2,
+    OVERFLOW_NONE = 3,
 } fp_overflow_mode_t;
 
 /* Pseudo polymorphism to speed up calling functions that are in the "methods"
@@ -113,9 +114,9 @@ typedef struct
     PyObject *(*bits_to_signed)(PyObject *, PyObject *);
     PyObject *(*copy)(PyObject *, PyObject *);
     PyObject *(*fp_getformat)(PyObject *, void *);
-    PyObject *(*fp_from_double)(double, FP_UINT_TYPE, FP_UINT_TYPE, bool,
+    PyObject *(*fp_from_double)(double, FP_INT_TYPE, FP_INT_TYPE, bool,
                                 fp_overflow_mode_t, fp_round_mode_t);
-    PyObject *(*fp_from_bits_pylong)(PyObject *, FP_UINT_TYPE, FP_UINT_TYPE,
+    PyObject *(*fp_from_bits_pylong)(PyObject *, FP_INT_TYPE, FP_INT_TYPE,
                                      bool);
 
     PyObject *(*getitem)(PyObject *, PyObject *);

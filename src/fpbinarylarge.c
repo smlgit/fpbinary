@@ -1429,8 +1429,8 @@ FpBinaryLarge_IsSigned(PyObject *obj)
  * format bits are enough to represent the size of bits.
  */
 PyObject *
-FpBinaryLarge_FromBitsPylong(PyObject *bits, FP_UINT_TYPE int_bits,
-                             FP_UINT_TYPE frac_bits, bool is_signed)
+FpBinaryLarge_FromBitsPylong(PyObject *bits, FP_INT_TYPE int_bits,
+                             FP_INT_TYPE frac_bits, bool is_signed)
 {
     PyObject *result =
         (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
@@ -1473,8 +1473,8 @@ FpBinaryLarge_FromBitsPylong(PyObject *bits, FP_UINT_TYPE int_bits,
 }
 
 PyObject *
-FpBinaryLarge_FromDouble(double value, FP_UINT_TYPE int_bits,
-                         FP_UINT_TYPE frac_bits, bool is_signed,
+FpBinaryLarge_FromDouble(double value, FP_INT_TYPE int_bits,
+                         FP_INT_TYPE frac_bits, bool is_signed,
                          fp_overflow_mode_t overflow_mode,
                          fp_round_mode_t round_mode)
 {

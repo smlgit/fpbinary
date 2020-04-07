@@ -32,12 +32,12 @@ void FpBinaryLarge_FormatAsUints(PyObject *self, FP_UINT_TYPE *out_int_bits,
 PyObject *FpBinaryLarge_BitsAsPylong(PyObject *obj);
 bool FpBinaryLarge_IsSigned(PyObject *obj);
 
-PyObject *FpBinaryLarge_FromDouble(double value, FP_UINT_TYPE int_bits,
-                                   FP_UINT_TYPE frac_bits, bool is_signed,
+PyObject *FpBinaryLarge_FromDouble(double value, FP_INT_TYPE int_bits,
+                                   FP_INT_TYPE frac_bits, bool is_signed,
                                    fp_overflow_mode_t overflow_mode,
                                    fp_round_mode_t round_mode);
 PyObject *FpBinaryLarge_FromBitsPylong(PyObject *scaled_value,
-                                       FP_UINT_TYPE int_bits,
-                                       FP_UINT_TYPE frac_bits, bool is_signed);
+                                       FP_INT_TYPE int_bits,
+                                       FP_INT_TYPE frac_bits, bool is_signed);
 
 #endif
