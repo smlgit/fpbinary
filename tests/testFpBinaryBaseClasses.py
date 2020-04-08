@@ -63,11 +63,6 @@ class AbstractTestHider(object):
                 else:
                     self.fail('Failed on test case {}'.format(test_case))
 
-        def testNegativeIntBits(self):
-            fpNum = self.fp_binary_class(long(-1), 9, value=0.125)
-            fpCheck = self.fp_binary_class(0, 8, value=0.25)
-            self.assertEqual(fpNum + fpNum, fpCheck)
-
         def testResizeParams(self):
             # These parameter test cases should raise an exception
             params_test_cases = [
@@ -91,6 +86,9 @@ class AbstractTestHider(object):
         def testFormatProperty(self):
             fpNum = self.fp_binary_class(2, 5, value=1.5, signed=True)
             self.assertTrue(fpNum.format == (2, 5))
+
+            fpNum = self.fp_binary_class(-200, 232, signed=True)
+            self.assertTrue(fpNum.format == (-200, 232))
 
         def testBoolConditions(self):
             """Values used in boolean expressions should behave as true/false"""

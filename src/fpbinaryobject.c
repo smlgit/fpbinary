@@ -417,15 +417,17 @@ fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
 
     if (int_bits + frac_bits < 1)
     {
-        PyErr_SetString(PyExc_ValueError,
-                        "The total number of bits in an fpbinary instance must be greater than 0.");
+        PyErr_SetString(PyExc_ValueError, "The total number of bits in an "
+                                          "fpbinary instance must be greater "
+                                          "than 0.");
         return false;
     }
 
     if (frac_bits < 0)
     {
-        PyErr_SetString(PyExc_ValueError,
-                        "The number of frac_bits must be greater or equal to 0.");
+        PyErr_SetString(
+            PyExc_ValueError,
+            "The number of frac_bits must be greater or equal to 0.");
         return false;
     }
 
@@ -476,9 +478,20 @@ PyDoc_STRVAR(
     "----------\n"
     "int_bits : int\n"
     "    The number of bits to use to represent the integer part.\n"
+    "    This value may be negative - this simply removes that number of bits\n"
+    "    from the fractional bits. The frac_bits param still specifies the "
+    "position\n"
+    "    of the least significant fractional bit but the total bits are\n"
+    "    int_bits + fract_bits. For example, a format of (-3, 6) would produce "
+    "an\n"
+    "    instance with 3 fractional bits with a maximum value (assuming "
+    "unsigned) of\n"
+    "    2.0**-4 + 2.0**-5 + 2.0**-6.\n"
     "\n"
     "frac_bits : int\n"
-    "    The number of bits to use to represent the fractional part.\n"
+    "    The number of bits to use to represent the fractional part. Must be "
+    "greater\n"
+    "    than or equal to zero.\n"
     "\n"
     "signed : bool\n"
     "    Specifies whether the data represented is signed (True) or unsigned.\n"

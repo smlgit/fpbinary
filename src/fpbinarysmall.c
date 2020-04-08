@@ -34,7 +34,8 @@
 static int
 check_new_bit_len_ok(FpBinarySmallObject *new_obj)
 {
-    if (((FP_UINT_TYPE) (new_obj->int_bits + new_obj->frac_bits)) > FP_UINT_NUM_BITS)
+    if (((FP_UINT_TYPE)(new_obj->int_bits + new_obj->frac_bits)) >
+        FP_UINT_NUM_BITS)
     {
         PyErr_SetString(PyExc_OverflowError,
                         "New FpBinary object has too many bits for this CPU.");
@@ -196,7 +197,8 @@ get_total_bits_mask(FP_UINT_TYPE total_bits)
 static FP_UINT_TYPE
 apply_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts, bool is_signed)
 {
-    if (num_shifts == 0) return value;
+    if (num_shifts == 0)
+        return value;
 
     /* Using unsigned integers to represent possible signed values, so need
      * to manually ensure sign is extended on shift.
@@ -264,8 +266,7 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
     min_value = get_min_scaled_value(total_bits, self->is_signed);
     max_value = get_max_scaled_value(total_bits, self->is_signed);
 
-    if (compare_scaled_values(self->is_signed, new_scaled_value,
-                              max_value) > 0)
+    if (compare_scaled_values(self->is_signed, new_scaled_value, max_value) > 0)
     {
         if (overflow_mode == OVERFLOW_WRAP)
         {
@@ -283,8 +284,8 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
             return false;
         }
     }
-    else if (compare_scaled_values(self->is_signed,
-                                   new_scaled_value, min_value) < 0)
+    else if (compare_scaled_values(self->is_signed, new_scaled_value,
+                                   min_value) < 0)
     {
         if (overflow_mode == OVERFLOW_WRAP)
         {
@@ -446,8 +447,7 @@ fpbinarysmall_to_double(FpBinarySmallObject *obj)
     }
     else
     {
-        result =
-            ldexp(((double)obj->scaled_value), -obj->frac_bits);
+        result = ldexp(((double)obj->scaled_value), -obj->frac_bits);
     }
 
     return result;
@@ -757,7 +757,6 @@ fpbinarysmall_add(PyObject *op1, PyObject *op2)
 
     /* Add requires the fractional bits to be lined up */
     make_binary_ops_same_frac_size(op1, op2, &cast_op1, &cast_op2);
-
 
     result_int_bits = (cast_op1->int_bits > cast_op2->int_bits)
                           ? cast_op1->int_bits
@@ -1302,26 +1301,27 @@ fpbinarysmall_str_ex(PyObject *self)
 static int
 fpbinarysmall_compare(PyObject *obj1, PyObject *obj2)
 {
-    FpBinarySmallObject *cast_op1 = (FpBinarySmallObject *) obj1;
-    FpBinarySmallObject *cast_op2 = (FpBinarySmallObject *) obj2;
+    FpBinarySmallObject *cast_op1 = (FpBinarySmallObject *)obj1;
+    FpBinarySmallObject *cast_op2 = (FpBinarySmallObject *)obj2;
 
     int current_compare;
     FP_INT_TYPE op1_right_shift, op2_right_shift;
     FP_UINT_TYPE op1_value_shifted, op2_value_shifted;
-    FP_INT_TYPE lowest_frac_bits =
-            (cast_op1->frac_bits < cast_op2->frac_bits) ? cast_op1->frac_bits : cast_op2->frac_bits;
+    FP_INT_TYPE lowest_frac_bits = (cast_op1->frac_bits < cast_op2->frac_bits)
+                                       ? cast_op1->frac_bits
+                                       : cast_op2->frac_bits;
 
     /* Compare highest bit blocks */
     op1_right_shift = cast_op1->frac_bits - lowest_frac_bits;
     op2_right_shift = cast_op2->frac_bits - lowest_frac_bits;
 
-    op1_value_shifted =
-            apply_rshift(cast_op1->scaled_value, op1_right_shift, cast_op1->is_signed);
-    op2_value_shifted =
-            apply_rshift(cast_op2->scaled_value, op2_right_shift, cast_op2->is_signed);
+    op1_value_shifted = apply_rshift(cast_op1->scaled_value, op1_right_shift,
+                                     cast_op1->is_signed);
+    op2_value_shifted = apply_rshift(cast_op2->scaled_value, op2_right_shift,
+                                     cast_op2->is_signed);
 
-    current_compare =
-            compare_scaled_values(cast_op1->is_signed, op1_value_shifted, op2_value_shifted);
+    current_compare = compare_scaled_values(
+        cast_op1->is_signed, op1_value_shifted, op2_value_shifted);
 
     if (current_compare != 0)
     {
@@ -1330,16 +1330,21 @@ fpbinarysmall_compare(PyObject *obj1, PyObject *obj2)
 
     /* First block of bits are equal.  This means that ops are the same sign
      * and so the op that still has bits uncompared has smaller fractional
-     * bits to check - if any of these are non-zero, it must be bigger, else equal.
+     * bits to check - if any of these are non-zero, it must be bigger, else
+     * equal.
      * So we just do a standard mask on the basis on what bits have already been
      * checked.
      */
 
-    op1_value_shifted = cast_op1->scaled_value & (~(FP_UINT_ALL_BITS_MASK << op1_right_shift));
-    op2_value_shifted = cast_op2->scaled_value & (~(FP_UINT_ALL_BITS_MASK << op2_right_shift));
+    op1_value_shifted =
+        cast_op1->scaled_value & (~(FP_UINT_ALL_BITS_MASK << op1_right_shift));
+    op2_value_shifted =
+        cast_op2->scaled_value & (~(FP_UINT_ALL_BITS_MASK << op2_right_shift));
 
-    if (op1_value_shifted > op2_value_shifted) return 1;
-    else if (op1_value_shifted < op2_value_shifted) return -1;
+    if (op1_value_shifted > op2_value_shifted)
+        return 1;
+    else if (op1_value_shifted < op2_value_shifted)
+        return -1;
     return 0;
 }
 

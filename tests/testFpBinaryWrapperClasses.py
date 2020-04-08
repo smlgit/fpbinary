@@ -404,6 +404,17 @@ class AbstractTestHider(object):
             self.assertEqual(self.fp_binary_class(value=12, format_inst=format_fp) >> 2, 3)
             self.assertEqual(self.fp_binary_class(value=-71 * 1024, format_inst=format_fp) >> 12, -17.75)
 
+
+            # Negative int_bits
+
+            # Small size
+            format_fp = self.fp_binary_class(-3, int(test_utils.get_small_type_size()) + 3, signed=True)
+            self.assertEqual(self.fp_binary_class(value=0.0322265625, format_inst=format_fp) << 1, -0.060546875)
+
+            # Large size
+            format_fp = self.fp_binary_class(-5, test_utils.get_small_type_size() + 10, signed=True)
+            self.assertEqual(self.fp_binary_class(value=0.0068359375, format_inst=format_fp) << 2, -0.00390625)
+
         def testOverflowModeOnCreate(self):
             # Overflow mode on create is saturation. Verify values that have magnitudes that
             # are too large are saturated correctly. A pass requires no exception raised and
