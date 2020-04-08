@@ -478,7 +478,7 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
      * will
      * give us an integer that can be assessed using the standard % 10 logic.
      */
-    PyObject *scaled_value_corrected, *int_bits_is_negative;
+    PyObject *int_bits_is_negative;
     PyObject *int_string, *frac_string, *final_string;
     PyObject *frac_format_string, *frac_value_tuple;
     PyObject *is_negative, *scaled_value_mag, *frac_mask1, *frac_mask;
@@ -492,21 +492,11 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
 
     if (int_bits_is_negative == Py_True)
     {
-        PyObject *right_shift = PyNumber_Absolute(int_bits);
-        scaled_value_corrected = PyNumber_Rshift(scaled_value, right_shift);
-
         int_bits = py_zero; // No need to inc/dec this
-
-        Py_DECREF(right_shift);
-    }
-    else
-    {
-        Py_INCREF(scaled_value);
-        scaled_value_corrected = scaled_value;
     }
 
-    is_negative = PyObject_RichCompare(scaled_value_corrected, py_zero, Py_LT);
-    scaled_value_mag = PyNumber_Absolute(scaled_value_corrected);
+    is_negative = PyObject_RichCompare(scaled_value, py_zero, Py_LT);
+    scaled_value_mag = PyNumber_Absolute(scaled_value);
     frac_mask1 = PyNumber_Lshift(py_one, frac_bits);
     frac_mask = PyNumber_Subtract(frac_mask1, py_one);
     frac_part = PyNumber_And(scaled_value_mag, frac_mask);
@@ -562,7 +552,6 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     Py_DECREF(frac_string);
     Py_DECREF(is_negative);
     Py_DECREF(int_bits_is_negative);
-    Py_DECREF(scaled_value_corrected);
     Py_DECREF(scaled_value_mag);
     Py_DECREF(frac_mask1);
     Py_DECREF(frac_mask);

@@ -513,6 +513,11 @@ class AbstractTestHider(object):
             fpNum.resize((3, 2), overflow_mode=OverflowEnum.wrap)
             self.assertEqualWithFloatCast(fpNum, 2.75)
 
+            # Neg int_bits, losing MSB, positive to negative
+            fpNum = self.fp_binary_class(-3, 8, signed=True, value=0.0546875)
+            fpNum.resize((-4, 7), overflow_mode=OverflowEnum.wrap)
+            self.assertEqualWithFloatCast(fpNum, -0.0078125)
+
             # =======================================================================
             # Saturation
 
@@ -530,6 +535,11 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(4, 2, signed=True, value=-7.75)
             fpNum.resize((3, 2), overflow_mode=OverflowEnum.sat)
             self.assertEqualWithFloatCast(fpNum, -4.0)
+
+            # Neg int_bits, losing MSB, positive
+            fpNum = self.fp_binary_class(-1, 6, signed=True, value=0.15625)
+            fpNum.resize((-2, 6), overflow_mode=OverflowEnum.sat)
+            self.assertEqualWithFloatCast(fpNum, 0.109375)
 
             # =======================================================================
             # Exception
@@ -559,6 +569,15 @@ class AbstractTestHider(object):
             else:
                 self.fail()
 
+            # Neg int_bits, losing MSB, positive to positive
+            fpNum = self.fp_binary_class(-1, 6, signed=True, value=0.15625)
+            try:
+                fpNum.resize((-2, 6), overflow_mode=OverflowEnum.excep)
+            except FpBinaryOverflowException:
+                pass
+            else:
+                self.fail()
+
             # =======================================================================
             # Left shifting
 
@@ -582,6 +601,11 @@ class AbstractTestHider(object):
             fpNum <<= long(1)
             self.assertEqualWithFloatCast(fpNum, 1.0)
 
+            # Neg int_bits, losing MSB, negative to positive expected
+            fpNum = self.fp_binary_class(-7, 11, signed=True, value=-0.00146484375)
+            fpNum <<= long(2)
+            self.assertEqualWithFloatCast(fpNum, 0.001953125)
+
         def testRoundingModes(self):
             # =======================================================================
             # No change expected after rounding
@@ -598,6 +622,18 @@ class AbstractTestHider(object):
             res = fpNum1.resize((2, 3), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, 1.125)
 
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, -0.0234375)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, -0.0234375)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, -0.0234375)
+
             # =======================================================================
             # Change expected after rounding
             fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
@@ -611,6 +647,18 @@ class AbstractTestHider(object):
             fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
             res = fpNum1.resize((2, 2), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, 1.0)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, -0.015625)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, -0.03125)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, -0.015625)
 
             # =======================================================================
             # Change expected after rounding, crossing frac/int boundary
@@ -1003,6 +1051,12 @@ class AbstractTestHider(object):
                     {'signed': False, 'int_bits': 2, 'frac_bits': 0},
                     {'signed': True, 'int_bits': 8, 'frac_bits': 8},
                     {'signed': False, 'int_bits': 8, 'frac_bits': 8},
+
+                    # Negative int_bits
+                    {'signed': True, 'int_bits': -3, 'frac_bits': 8},
+                    {'signed': False, 'int_bits': -3, 'frac_bits': 8},
+                    {'signed': True, 'int_bits': -7, 'frac_bits': 12},
+                    {'signed': False, 'int_bits': -7, 'frac_bits': 12},
                 ]
 
             for test_case in tests:
@@ -1014,10 +1068,22 @@ class AbstractTestHider(object):
                 while cur_val < max_val:
                     fpNum = self.fp_binary_class(test_case['int_bits'], test_case['frac_bits'],
                                                  signed=test_case['signed'], value=cur_val)
-                    self.assertTrue(fpNum.str_ex() == str(cur_val), 'Test case: {}, cur_val: {}'.format(
-                        test_case, cur_val
-                    ))
+                    self.assertEqual(fpNum.str_ex(), str(cur_val))
                     cur_val += inc
+
+            # Short numbers but with large negative int_bits
+
+            # Via https://www.wolframalpha.com/input/?i=2.0**-131+%2B+2.0**-133
+            # b010100 starting at bit 130
+            fpNum = self.fp_binary_class(-129, 135, signed=True, bit_field=long(20))
+            self.assertEqual(fpNum.str_ex(),
+                            '0.0000000000000000000000000000000000000004591774807899560578002877098524397178979162331140966880893561352650067419745028018951416015625')
+
+            # Via https://www.wolframalpha.com/input/?i=-2.0**-130+%2B+2.0**-132+%2B+2.0**-133
+            # b101100 starting at bit 130
+            fpNum = self.fp_binary_class(-129, 135, signed=True, bit_field=long(44))
+            self.assertEqual(fpNum.str_ex(),
+                             '-0.0000000000000000000000000000000000000004591774807899560578002877098524397178979162331140966880893561352650067419745028018951416015625')
 
         def testIndex(self):
             """When converting to binary sting, the assumption is that only the bits

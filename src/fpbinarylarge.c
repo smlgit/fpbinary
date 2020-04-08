@@ -1434,8 +1434,8 @@ FpBinaryLarge_FromBitsPylong(PyObject *bits, FP_INT_TYPE int_bits,
 {
     PyObject *result =
         (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
-    PyObject *int_bits_py = PyLong_FromUnsignedLongLong(int_bits);
-    PyObject *frac_bits_py = PyLong_FromUnsignedLongLong(frac_bits);
+    PyObject *int_bits_py = PyLong_FromLongLong(int_bits);
+    PyObject *frac_bits_py = PyLong_FromLongLong(frac_bits);
     PyObject *total_bits =
         FP_NUM_METHOD(int_bits_py, nb_add)(int_bits_py, frac_bits_py);
     PyObject *mask = get_total_bits_mask(total_bits);

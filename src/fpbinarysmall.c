@@ -442,12 +442,12 @@ fpbinarysmall_to_double(FpBinarySmallObject *obj)
     {
         /* Negative - create double with magnitude and mult by -1.0 */
         double magnitude = (double)(~obj->scaled_value + 1);
-        result = -magnitude / (((FP_UINT_TYPE)1) << obj->frac_bits);
+        result = ldexp(-magnitude, -obj->frac_bits);
     }
     else
     {
         result =
-            ((double)obj->scaled_value) / (((FP_UINT_TYPE)1) << obj->frac_bits);
+            ldexp(((double)obj->scaled_value), -obj->frac_bits);
     }
 
     return result;
@@ -1504,7 +1504,7 @@ FpBinarySmall_FromBitsPylong(PyObject *scaled_value, FP_INT_TYPE int_bits,
     PyObject *result;
     FP_UINT_TYPE total_bits = int_bits + frac_bits;
     PyObject *mask =
-        PyLong_FromUnsignedLongLong(get_total_bits_mask(int_bits + frac_bits));
+        PyLong_FromUnsignedLongLong(get_total_bits_mask(total_bits));
     PyObject *masked_val =
         FP_NUM_METHOD(scaled_value, nb_and)(scaled_value, mask);
     FP_UINT_TYPE scaled_value_uint = pylong_as_fp_uint(masked_val);
