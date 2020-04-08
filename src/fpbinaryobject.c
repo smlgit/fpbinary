@@ -415,6 +415,20 @@ fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
         }
     }
 
+    if (int_bits + frac_bits < 1)
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "The total number of bits in an fpbinary instance must be greater than 0.");
+        return false;
+    }
+
+    if (frac_bits < 0)
+    {
+        PyErr_SetString(PyExc_ValueError,
+                        "The number of frac_bits must be greater or equal to 0.");
+        return false;
+    }
+
     if (int_bits + frac_bits <= (long)FP_SMALL_MAX_BITS)
     {
         if (bit_field)
@@ -449,7 +463,7 @@ fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
         self->base_obj = base_obj;
     }
 
-    return self->base_obj;
+    return (self->base_obj != NULL);
 }
 
 PyDoc_STRVAR(

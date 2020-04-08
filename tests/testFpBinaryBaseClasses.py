@@ -58,6 +58,8 @@ class AbstractTestHider(object):
                     fpNum = self.fp_binary_class(*test_case[0], **test_case[1])
                 except TypeError:
                     pass
+                except ValueError:
+                    pass
                 else:
                     self.fail('Failed on test case {}'.format(test_case))
 
@@ -805,6 +807,77 @@ class AbstractTestHider(object):
                                 round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, -4.0)
 
+        def testCompare(self):
+            """ Verifies equals, greater than etc."""
+
+            # Operand 1 starts from the minimum value, operand 2 starts from the max and we
+            # increment/decrement and do comparison operations across the range allowed by
+            # the operand with the "largest smallest" representable value.
+
+
+            # NOTE: the (int_bits, frac_bits) must have some overlap between the two operands
+            # because we use "lowest" value frac_bit param as the position of the smallest increment.
+            # That is, BOTH operands must be able to represent this value.
+
+            tests = \
+                [
+                    # Standard, no dramas
+                    {'signed': True, 'op1_int_bits': 3, 'op1_frac_bits': 3, 'op2_int_bits': 3, 'op2_frac_bits': 3},
+                    {'signed': False, 'op1_int_bits': 3, 'op1_frac_bits': 3, 'op2_int_bits': 3, 'op2_frac_bits': 3},
+
+                    # Negative int bits inside positive int bit block
+                    {'signed': True, 'op1_int_bits': -2, 'op1_frac_bits': 6, 'op2_int_bits': 1, 'op2_frac_bits': 7},
+                    {'signed': False, 'op1_int_bits': 1, 'op1_frac_bits': 7, 'op2_int_bits': -2, 'op2_frac_bits': 6},
+
+                    # Negative int bits overlaps positive int bit block
+                    {'signed': True, 'op1_int_bits': -4, 'op1_frac_bits': 12, 'op2_int_bits': 1, 'op2_frac_bits': 7},
+                    {'signed': False, 'op1_int_bits': 1, 'op1_frac_bits': 7, 'op2_int_bits': -4, 'op2_frac_bits': 12},
+                ]
+
+            for test_case in tests:
+                least_frac_bits = min(test_case['op1_frac_bits'], test_case['op2_frac_bits'])
+                min_int_bits = min(test_case['op1_int_bits'], test_case['op2_int_bits'])
+
+                min_val = -2.0 ** (min_int_bits - 1) if test_case['signed'] else 0.0
+                max_val = 2.0 ** (min_int_bits - 1) if test_case['signed'] else 2.0 ** min_int_bits
+                inc = 2.0 ** -least_frac_bits
+
+                op1_accum_float = min_val
+                op2_accum_float = max_val - inc
+
+                # Increment op1 and decrement op2 and compare
+
+                while op1_accum_float < max_val and op2_accum_float > min_val:
+                    op1_accum_fp = self.fp_binary_class(test_case['op1_int_bits'], test_case['op1_frac_bits'],
+                                                        signed=test_case['signed'], value=op1_accum_float)
+                    op2_accum_fp = self.fp_binary_class(test_case['op2_int_bits'], test_case['op2_frac_bits'],
+                                                        signed=test_case['signed'], value=op2_accum_float)
+
+                    self.assertEqual(op1_accum_fp == op2_accum_fp, op1_accum_float == op2_accum_float)
+                    self.assertEqual(op1_accum_fp != op2_accum_fp, op1_accum_float != op2_accum_float)
+                    self.assertEqual(op1_accum_fp < op2_accum_fp, op1_accum_float < op2_accum_float)
+                    self.assertEqual(op1_accum_fp <= op2_accum_fp, op1_accum_float <= op2_accum_float)
+                    self.assertEqual(op1_accum_fp > op2_accum_fp, op1_accum_float > op2_accum_float)
+                    self.assertEqual(op1_accum_fp >= op2_accum_fp, op1_accum_float >= op2_accum_float)
+
+                    op1_accum_float += inc
+                    op2_accum_float -= inc
+
+                # Make sure we definitely get some equals to check
+                op1_accum_fp = self.fp_binary_class(test_case['op1_int_bits'], test_case['op1_frac_bits'],
+                                                    signed=test_case['signed'], value=inc)
+                op2_accum_fp = self.fp_binary_class(test_case['op2_int_bits'], test_case['op2_frac_bits'],
+                                                    signed=test_case['signed'], value=inc)
+                self.assertEqual(op1_accum_fp, op2_accum_fp)
+
+                if test_case['signed']:
+                    op1_accum_fp = self.fp_binary_class(test_case['op1_int_bits'], test_case['op1_frac_bits'],
+                                                        signed=test_case['signed'], value=-inc)
+                    op2_accum_fp = self.fp_binary_class(test_case['op2_int_bits'], test_case['op2_frac_bits'],
+                                                        signed=test_case['signed'], value=-inc)
+                    self.assertEqual(op1_accum_fp, op2_accum_fp)
+
+
         def testIntConversion(self):
             # =======================================================================
             # Signed to signed
@@ -822,6 +895,12 @@ class AbstractTestHider(object):
             # b0010.11100 = 220 as integer
             fpNum = self.fp_binary_class(4, 5, signed=True, value=-7.28125)
             self.assertEqualWithFloatCast((fpNum << long(2)).bits_to_signed(), 92)
+
+            # Negative int_bits
+            # b0.1111011 = -0.0390625 - goes to -5 as integer
+            #       ^ - start of bits
+            fpNum = self.fp_binary_class(-3, 7, signed=True, value=-0.0390625)
+            self.assertEqualWithFloatCast(fpNum.bits_to_signed(), -5)
 
             # =======================================================================
             # Signed to unsigned
@@ -842,6 +921,12 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(4, 5, signed=True, value=-7.28125)
             self.assertEqualWithFloatCast((fpNum << long(2))[:], 92)
 
+            # Negative int_bits
+            # b0.1111011 = -0.0390625 - goes to 11 as integer
+            #       ^ - start of bits
+            fpNum = self.fp_binary_class(-3, 7, signed=True, value=-0.0390625)
+            self.assertEqualWithFloatCast(fpNum[:], 11)
+
             # =======================================================================
             # Unsigned to signed
             # =======================================================================
@@ -852,6 +937,12 @@ class AbstractTestHider(object):
             # b0101.101 = 5.625 - goes to 45 as signed integer
             fpNum = self.fp_binary_class(4, 3, signed=False, value=5.625)
             self.assertEqualWithFloatCast(fpNum.bits_to_signed(), 45)
+
+            # Negative int_bits
+            # b0.00001001011 = 0.03662109375 - goes to -53 as integer
+            #        ^ - start of bits
+            fpNum = self.fp_binary_class(-4, 11, signed=False, value=0.03662109375)
+            self.assertEqualWithFloatCast(fpNum.bits_to_signed(), -53)
 
         def testSequenceOps(self):
             fpNum = self.fp_binary_class(5, 2, signed=True, value=10.5)
@@ -884,7 +975,9 @@ class AbstractTestHider(object):
             tests = \
                 [
                     {'signed': True, 'int_bits': 4, 'frac_bits': 4},
+                    {'signed': True, 'int_bits': -3, 'frac_bits': 7},
                     {'signed': False, 'int_bits': 4, 'frac_bits': 4},
+                    {'signed': False, 'int_bits': -3, 'frac_bits': 7},
                 ]
 
             for test_case in tests:
@@ -946,6 +1039,12 @@ class AbstractTestHider(object):
             # b11001.1010
             fpNum = self.fp_binary_class(5, 4, signed=False, value=25.625)
             self.assertTrue(bin(fpNum) == '0b110011010')
+
+            # Negative int_bits
+            # b0.1111011 = -0.0390625
+            #       ^ - start of bits
+            fpNum = self.fp_binary_class(-3, 7, signed=True, value=-0.0390625)
+            self.assertTrue(bin(fpNum) == '0b1011')
 
 
 class FpBinarySmallTests(AbstractTestHider.BaseClassesTestAbstract):

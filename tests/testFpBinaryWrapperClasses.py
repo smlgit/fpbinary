@@ -34,6 +34,35 @@ class AbstractTestHider(object):
             # 128 decimal places should be enough...
             return str(int(int_value)) + ('%.128f' % frac_value).lstrip('-').lstrip('0').rstrip('0')
 
+        def testCreateParams(self):
+            """ Checking error is raised on create for wrapper classes. Use for code that
+                only checks at the wrapper level.
+            """
+
+            # These parameter test cases should raise an exception
+            params_test_cases = [
+
+                # total bits is less than 1
+                ([-3, 3], {'signed': True}),
+                ([-7, 6], {'signed': True}),
+                ([-3, 3], {'signed': False}),
+                ([-7, 6], {'signed': False}),
+
+                # frac_bits is less than 0
+                ([3, -1], {'signed': True}),
+                ([8, -3], {'signed': False}),
+            ]
+
+            for test_case in params_test_cases:
+                try:
+                    fpNum = self.fp_binary_class(*test_case[0], **test_case[1])
+                except TypeError:
+                    pass
+                except ValueError:
+                    pass
+                else:
+                    self.fail('Failed on test case {}'.format(test_case))
+
         def testBoolConditions(self):
             """Values used in boolean expressions should behave as true/false"""
             if self.fp_binary_class(2, 2, signed=True, value=0):

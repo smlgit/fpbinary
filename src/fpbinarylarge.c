@@ -50,14 +50,14 @@ get_total_bits_mask(PyObject *total_bits)
 }
 
 static PyObject *
-get_frac_bits_mask(PyObject *frac_bits)
+get_lsb_mask(PyObject *num_lsb_bits)
 {
-    if (PyLong_AsLong(frac_bits) == 0)
+    if (PyLong_AsLong(num_lsb_bits) == 0)
     {
         return py_zero;
     }
 
-    return get_total_bits_mask(frac_bits);
+    return get_total_bits_mask(num_lsb_bits);
 }
 
 static PyObject *
@@ -378,7 +378,7 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
 
             if (FpBinary_TpCompare(self->scaled_value, py_zero) < 0)
             {
-                PyObject *frac_bits_mask = get_frac_bits_mask(right_shifts);
+                PyObject *frac_bits_mask = get_lsb_mask(right_shifts);
                 PyObject *frac_bits = FP_NUM_METHOD(self->scaled_value, nb_and)(
                     self->scaled_value, frac_bits_mask);
                 if (FpBinary_TpCompare(frac_bits, py_zero) != 0)

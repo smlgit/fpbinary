@@ -478,23 +478,48 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
      * will
      * give us an integer that can be assessed using the standard % 10 logic.
      */
+    PyObject *scaled_value_corrected, *int_bits_is_negative;
     PyObject *int_string, *frac_string, *final_string;
     PyObject *frac_format_string, *frac_value_tuple;
-    PyObject *is_negative = PyObject_RichCompare(scaled_value, py_zero, Py_LT);
-    PyObject *scaled_value_mag = PyNumber_Absolute(scaled_value);
-    PyObject *frac_mask1 = PyNumber_Lshift(py_one, frac_bits);
-    PyObject *frac_mask = PyNumber_Subtract(frac_mask1, py_one);
-    PyObject *frac_part = PyNumber_And(scaled_value_mag, frac_mask);
-    PyObject *int_part = PyNumber_Rshift(scaled_value_mag, frac_bits);
+    PyObject *is_negative, *scaled_value_mag, *frac_mask1, *frac_mask;
+    PyObject *frac_part, *int_part, *frac_scale, *frac_part_corrected;
 
-    PyObject *frac_scale = PyNumber_Power(py_five, frac_bits, Py_None);
-    PyObject *frac_part_corrected = PyNumber_Multiply(frac_part, frac_scale);
+    long frac_bits_long, frac_dec_places, count = 0;
+    PyObject *modulus, *modulus_is_zero;
+
+    /* If we have negative int_bits, pad out the extra fractional spaces */
+    int_bits_is_negative = PyObject_RichCompare(int_bits, py_zero, Py_LT);
+
+    if (int_bits_is_negative == Py_True)
+    {
+        PyObject *right_shift = PyNumber_Absolute(int_bits);
+        scaled_value_corrected = PyNumber_Rshift(scaled_value, right_shift);
+
+        int_bits = py_zero; // No need to inc/dec this
+
+        Py_DECREF(right_shift);
+    }
+    else
+    {
+        Py_INCREF(scaled_value);
+        scaled_value_corrected = scaled_value;
+    }
+
+    is_negative = PyObject_RichCompare(scaled_value_corrected, py_zero, Py_LT);
+    scaled_value_mag = PyNumber_Absolute(scaled_value_corrected);
+    frac_mask1 = PyNumber_Lshift(py_one, frac_bits);
+    frac_mask = PyNumber_Subtract(frac_mask1, py_one);
+    frac_part = PyNumber_And(scaled_value_mag, frac_mask);
+    int_part = PyNumber_Rshift(scaled_value_mag, frac_bits);
+
+    frac_scale = PyNumber_Power(py_five, frac_bits, Py_None);
+    frac_part_corrected = PyNumber_Multiply(frac_part, frac_scale);
 
     /* Need to get rid of any trailing zeros before creating string */
-    long frac_bits_long = PyLong_AsLong(frac_bits), count = 0;
-    long frac_dec_places = frac_bits_long;
-    PyObject *modulus = PyNumber_Remainder(frac_part_corrected, py_ten);
-    PyObject *modulus_is_zero = PyObject_RichCompare(modulus, py_zero, Py_EQ);
+    frac_bits_long = PyLong_AsLong(frac_bits), count = 0;
+    frac_dec_places = frac_bits_long;
+    modulus = PyNumber_Remainder(frac_part_corrected, py_ten);
+    modulus_is_zero = PyObject_RichCompare(modulus, py_zero, Py_EQ);
 
     while (count < frac_bits_long && modulus_is_zero == Py_True)
     {
@@ -536,6 +561,8 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
 
     Py_DECREF(frac_string);
     Py_DECREF(is_negative);
+    Py_DECREF(int_bits_is_negative);
+    Py_DECREF(scaled_value_corrected);
     Py_DECREF(scaled_value_mag);
     Py_DECREF(frac_mask1);
     Py_DECREF(frac_mask);

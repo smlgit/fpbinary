@@ -28,7 +28,8 @@
 #define FP_UINT_TYPE unsigned long long
 #define FP_UINT_NUM_BITS (sizeof(FP_INT_TYPE) * 8)
 #define FP_UINT_MAX_SIGN_BIT (((FP_UINT_TYPE)1) << (FP_UINT_NUM_BITS - 1))
-#define FP_UINT_MAX_VAL (~((FP_UINT_TYPE)0))
+#define FP_UINT_ALL_BITS_MASK (~((FP_UINT_TYPE)0))
+#define FP_UINT_MAX_VAL FP_UINT_ALL_BITS_MASK
 
 /* Not sure if this is already done somewhere - couldn't find it...
  * I've chosen to call "abstract" methods directly (rather than using the
