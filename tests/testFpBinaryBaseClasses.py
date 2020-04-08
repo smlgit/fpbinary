@@ -923,6 +923,50 @@ class AbstractTestHider(object):
                                                         signed=test_case['signed'], value=-inc)
                     self.assertEqual(op1_accum_fp, op2_accum_fp)
 
+            # Manual corner cases
+
+            # Max small type length without overlap
+            op1_fp = self.fp_binary_class(test_utils.get_small_type_size(), 0, signed=True, value=1.0)
+            op2_fp = self.fp_binary_class(0, test_utils.get_small_type_size(), signed=True, value=0.25)
+            self.assertLess(op2_fp, op1_fp)
+            self.assertLessEqual(op2_fp, op1_fp)
+            self.assertNotEqual(op1_fp, op2_fp)
+            self.assertGreater(op1_fp, op2_fp)
+            self.assertGreaterEqual(op1_fp, op2_fp)
+            self.assertFalse(op1_fp == op2_fp)
+
+            op1_fp = self.fp_binary_class(test_utils.get_small_type_size(), 0, signed=False, value=1.0)
+            op2_fp = self.fp_binary_class(0, test_utils.get_small_type_size(), signed=False, value=0.5)
+            self.assertLess(op2_fp, op1_fp)
+            self.assertLessEqual(op2_fp, op1_fp)
+            self.assertNotEqual(op1_fp, op2_fp)
+            self.assertGreater(op1_fp, op2_fp)
+            self.assertGreaterEqual(op1_fp, op2_fp)
+            self.assertFalse(op1_fp == op2_fp)
+
+            # Max small type length without overlap - negative int bits
+            op1_fp = self.fp_binary_class(test_utils.get_small_type_size(), 0, signed=True, value=1.0)
+            # Really small number
+            op2_fp = self.fp_binary_class(-test_utils.get_small_type_size(), 2*test_utils.get_small_type_size(),
+                                          signed=True, bit_field=long(2))
+            self.assertLess(op2_fp, op1_fp)
+            self.assertLessEqual(op2_fp, op1_fp)
+            self.assertNotEqual(op1_fp, op2_fp)
+            self.assertGreater(op1_fp, op2_fp)
+            self.assertGreaterEqual(op1_fp, op2_fp)
+            self.assertFalse(op1_fp == op2_fp)
+
+            op1_fp = self.fp_binary_class(test_utils.get_small_type_size(), 0, signed=False, value=1.0)
+            # Really small number
+            op2_fp = self.fp_binary_class(-test_utils.get_small_type_size(), 2 * test_utils.get_small_type_size(),
+                                          signed=False, bit_field=long(2))
+            self.assertLess(op2_fp, op1_fp)
+            self.assertLessEqual(op2_fp, op1_fp)
+            self.assertNotEqual(op1_fp, op2_fp)
+            self.assertGreater(op1_fp, op2_fp)
+            self.assertGreaterEqual(op1_fp, op2_fp)
+            self.assertFalse(op1_fp == op2_fp)
+
 
         def testIntConversion(self):
             # =======================================================================

@@ -48,7 +48,7 @@ check_new_bit_len_ok(FpBinarySmallObject *new_obj)
 static inline FP_UINT_TYPE
 get_sign_bit(FP_UINT_TYPE total_bits)
 {
-    return (((FP_UINT_TYPE)1) << (total_bits - 1));
+    return fp_uint_lshift(1, (total_bits - 1));
 }
 
 /*
@@ -65,12 +65,11 @@ static inline FP_UINT_TYPE
 sign_extend_scaled_value(FP_UINT_TYPE scaled_value, FP_UINT_TYPE total_bits,
                          bool is_signed)
 {
-    if (is_signed && total_bits < FP_UINT_NUM_BITS &&
-        (scaled_value & get_sign_bit(total_bits)))
+    if (is_signed && (scaled_value & get_sign_bit(total_bits)))
     {
         /* Need to shift with 1's. Calculate mask that will OR out the newly
          * shifted zeros. */
-        return scaled_value - (((FP_UINT_TYPE)1) << total_bits);
+        return scaled_value - fp_uint_lshift(1, total_bits);
     }
 
     return scaled_value;
@@ -86,10 +85,10 @@ get_max_scaled_value(FP_UINT_TYPE total_bits, bool is_signed)
 {
     if (is_signed)
     {
-        return (((FP_UINT_TYPE)1) << (total_bits - 1)) - 1;
+        return fp_uint_lshift(1, (total_bits - 1)) - 1;
     }
 
-    return FP_UINT_MAX_VAL >> (FP_UINT_NUM_BITS - total_bits);
+    return fp_uint_rshift(FP_UINT_MAX_VAL, FP_UINT_NUM_BITS - total_bits);
 }
 
 /*
@@ -104,7 +103,7 @@ get_min_scaled_value(FP_UINT_TYPE total_bits, bool is_signed)
 {
     if (is_signed)
     {
-        return FP_UINT_MAX_VAL << (total_bits - 1);
+        return fp_uint_lshift(FP_UINT_MAX_VAL, total_bits - 1);
     }
 
     return 0;
@@ -209,11 +208,12 @@ apply_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts, bool is_signed)
         {
             /* Need to shift with 1's. Calculate mask that will OR out the newly
              * shifted zeros. */
-            return ((value >> num_shifts) | ~(FP_UINT_MAX_VAL >> num_shifts));
+            return (fp_uint_rshift(value, num_shifts) |
+                    ~fp_uint_rshift(FP_UINT_MAX_VAL, num_shifts));
         }
     }
 
-    return (value >> num_shifts);
+    return fp_uint_rshift(value, num_shifts);
 }
 
 static inline FP_UINT_TYPE
@@ -400,7 +400,7 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
         {
             /* Add "new value 0.5" to the old sized value and then truncate */
             new_scaled_value =
-                self->scaled_value + (((FP_UINT_TYPE)1) << (right_shifts - 1));
+                self->scaled_value + fp_uint_lshift(1, right_shifts - 1);
         }
         else if (round_mode == ROUNDING_NEAR_ZERO)
         {
@@ -416,7 +416,7 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
                 (self->scaled_value & get_total_bits_mask(right_shifts)))
             {
                 new_scaled_value =
-                    self->scaled_value + (((FP_UINT_TYPE)1) << right_shifts);
+                    self->scaled_value + fp_uint_lshift(1, right_shifts);
             }
         }
         /* else Default to truncate (ROUNDING_DIRECT_NEG_INF) */
@@ -426,7 +426,8 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
     }
     else if (new_frac_bits > self->frac_bits)
     {
-        new_scaled_value <<= (new_frac_bits - self->frac_bits);
+        new_scaled_value =
+            fp_uint_lshift(new_scaled_value, new_frac_bits - self->frac_bits);
     }
 
     set_object_fields(self, new_scaled_value, new_int_bits, new_frac_bits,
@@ -704,8 +705,8 @@ make_binary_ops_same_frac_size(PyObject *op1, PyObject *op2,
         FpBinarySmallObject *new_op =
             fpbinarysmall_create_mem(&FpBinary_SmallType);
         set_object_fields(
-            new_op, cast_op2->scaled_value
-                        << (cast_op1->frac_bits - cast_op2->frac_bits),
+            new_op, fp_uint_lshift(cast_op2->scaled_value,
+                                   cast_op1->frac_bits - cast_op2->frac_bits),
             cast_op2->int_bits, cast_op1->frac_bits, cast_op2->is_signed);
 
         *output_op2 = new_op;
@@ -717,8 +718,8 @@ make_binary_ops_same_frac_size(PyObject *op1, PyObject *op2,
         FpBinarySmallObject *new_op =
             fpbinarysmall_create_mem(&FpBinary_SmallType);
         set_object_fields(
-            new_op, cast_op1->scaled_value
-                        << (cast_op2->frac_bits - cast_op1->frac_bits),
+            new_op, fp_uint_lshift(cast_op1->scaled_value,
+                                   cast_op2->frac_bits - cast_op1->frac_bits),
             cast_op1->int_bits, cast_op2->frac_bits, cast_op1->is_signed);
 
         *output_op1 = new_op;
@@ -970,7 +971,7 @@ fpbinarysmall_divide(PyObject *op1, PyObject *op2)
     }
 
     /* Extra scale for final fractional precision */
-    op1_scaled_val_mag <<= op2_total_bits;
+    op1_scaled_val_mag = fp_uint_lshift(op1_scaled_val_mag, op2_total_bits);
 
     new_scaled_value = op1_scaled_val_mag / op2_scaled_val_mag;
     if (op1_neg != op2_neg)
@@ -1100,7 +1101,7 @@ fpbinarysmall_lshift(PyObject *self, PyObject *pyobj_lshift)
     }
 
     lshift = PyLong_AsLong(pyobj_lshift);
-    shifted_value = cast_self->scaled_value << lshift;
+    shifted_value = fp_uint_lshift(cast_self->scaled_value, lshift);
 
     /*
      * For left shifting, we need to make sure the bits above our sign
@@ -1179,7 +1180,7 @@ fpbinarysmall_sq_item(PyObject *self, Py_ssize_t py_index)
 
     if (py_index < ((Py_ssize_t)(cast_self->int_bits + cast_self->frac_bits)))
     {
-        if (cast_self->scaled_value & (((FP_UINT_TYPE)1) << py_index))
+        if (cast_self->scaled_value & fp_uint_lshift(1, py_index))
         {
             Py_RETURN_TRUE;
         }
@@ -1227,10 +1228,11 @@ fpbinarysmall_sq_slice(PyObject *self, Py_ssize_t index1, Py_ssize_t index2)
     if (high_index > max_index)
         high_index = max_index;
 
-    mask = (((FP_UINT_TYPE)1) << (high_index + 1)) - 1;
+    mask = fp_uint_lshift(1, (high_index + 1)) - 1;
     result =
         (FpBinarySmallObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
-    set_object_fields(result, (cast_self->scaled_value & mask) >> low_index,
+    set_object_fields(result,
+                      fp_uint_rshift(cast_self->scaled_value & mask, low_index),
                       high_index - low_index + 1, 0, false);
 
     return (PyObject *)result;
@@ -1337,9 +1339,11 @@ fpbinarysmall_compare(PyObject *obj1, PyObject *obj2)
      */
 
     op1_value_shifted =
-        cast_op1->scaled_value & (~(FP_UINT_ALL_BITS_MASK << op1_right_shift));
+        cast_op1->scaled_value &
+        (~fp_uint_lshift(FP_UINT_ALL_BITS_MASK, op1_right_shift));
     op2_value_shifted =
-        cast_op2->scaled_value & (~(FP_UINT_ALL_BITS_MASK << op2_right_shift));
+        cast_op2->scaled_value &
+        (~fp_uint_lshift(FP_UINT_ALL_BITS_MASK, op2_right_shift));
 
     if (op1_value_shifted > op2_value_shifted)
         return 1;

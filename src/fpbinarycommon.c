@@ -19,6 +19,46 @@ PyObject *py_ten;
 PyObject *py_five;
 
 /*
+ * Does a left shift SAFELY (shifting by more than the length of the
+ * type is undefined).
+ */
+FP_UINT_TYPE
+fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts)
+{
+    if (num_shifts == 0)
+    {
+        return value;
+    }
+
+    if (num_shifts >= FP_UINT_NUM_BITS)
+    {
+        return 0;
+    }
+
+    return value << num_shifts;
+}
+
+/*
+ * Does a right shift SAFELY (shifting by more than the length of the
+ * type is undefined).
+ */
+FP_UINT_TYPE
+fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts)
+{
+    if (num_shifts == 0)
+    {
+        return value;
+    }
+
+    if (num_shifts >= FP_UINT_NUM_BITS)
+    {
+        return 0;
+    }
+
+    return value >> num_shifts;
+}
+
+/*
  * FFS, this does what the 2.7 PyString concat does...
  *
  * Probably could change all code to use unicode.

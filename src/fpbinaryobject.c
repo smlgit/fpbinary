@@ -319,7 +319,7 @@ prepare_binary_ops(PyObject *in_op1, PyObject *in_op2, fp_op_type_t op_type,
             {
                 convert = (op1_total_bits + op2_total_bits > FP_SMALL_MAX_BITS);
             }
-            else if (fp_op_type_div)
+            else if (op_type == fp_op_type_div)
             {
                 convert = !fpbinarysmall_can_divide_ops(op1_total_bits,
                                                         op2_total_bits);

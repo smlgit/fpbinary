@@ -133,6 +133,9 @@ extern PyObject *py_zero;
 extern PyObject *py_one;
 extern PyObject *py_minus_one;
 
+FP_UINT_TYPE fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
+FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
+
 /* Required for compatibility between v2 and v3 */
 bool FpBinary_IntCheck(PyObject *ob);
 PyObject *FpBinary_IntFromLong(long val);
