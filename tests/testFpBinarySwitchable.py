@@ -35,11 +35,18 @@ class FpBianrySwitchableTests(unittest.TestCase):
             fpNum = FpBinarySwitchable(fp_mode=False, float_value='sfasef')
 
     def testBasicMathFpMode(self):
+        # Negate
         fpNum = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=12.125))
         self.assertEqual(-fpNum, -12.125)
         self.assertTrue((-fpNum).fp_mode)
         self.assertTrue(isinstance((-fpNum).value, FpBinary))
 
+        fpNum = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(-7, 20, signed=True, value=0.0001220703125))
+        self.assertEqual(-fpNum, -0.0001220703125)
+        self.assertTrue((-fpNum).fp_mode)
+        self.assertTrue(isinstance((-fpNum).value, FpBinary))
+
+        # Add
         fpNum1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=15.25))
         fpNum2 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=-0.25))
         self.assertEqual(fpNum1 + fpNum2, 15.0)
@@ -47,6 +54,14 @@ class FpBianrySwitchableTests(unittest.TestCase):
         self.assertTrue(isinstance((fpNum1 + fpNum2).value, FpBinary))
         self.assertTrue(isinstance(fpNum1 + fpNum2, FpBinarySwitchable))
 
+        fpNum1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=15.03125))
+        fpNum2 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(-3, 19, signed=True, value=-0.03125))
+        self.assertEqual(fpNum1 + fpNum2, 15.0)
+        self.assertTrue((fpNum1 + fpNum2).fp_mode)
+        self.assertTrue(isinstance((fpNum1 + fpNum2).value, FpBinary))
+        self.assertTrue(isinstance(fpNum1 + fpNum2, FpBinarySwitchable))
+
+        # Subtract
         fpNum1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=15.25))
         fpNum2 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=-0.25))
         self.assertEqual(fpNum1 - fpNum2, 15.5)
@@ -54,6 +69,14 @@ class FpBianrySwitchableTests(unittest.TestCase):
         self.assertTrue(isinstance((fpNum1 - fpNum2).value, FpBinary))
         self.assertTrue(isinstance(fpNum1 - fpNum2, FpBinarySwitchable))
 
+        fpNum1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=15.03125))
+        fpNum2 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(-3, 19, signed=True, value=-0.03125))
+        self.assertEqual(fpNum1 - fpNum2, 15.0625)
+        self.assertTrue((fpNum1 - fpNum2).fp_mode)
+        self.assertTrue(isinstance((fpNum1 - fpNum2).value, FpBinary))
+        self.assertTrue(isinstance(fpNum1 - fpNum2, FpBinarySwitchable))
+
+        # Multiply
         fpNum1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(100, 16, signed=True, value=0.0625))
         fpNum2 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=2.0))
         self.assertEqual(fpNum1 * fpNum2, 0.125)
@@ -61,6 +84,15 @@ class FpBianrySwitchableTests(unittest.TestCase):
         self.assertTrue(isinstance((fpNum1 * fpNum2).value, FpBinary))
         self.assertTrue(isinstance(fpNum1 * fpNum2, FpBinarySwitchable))
 
+
+        fpNum1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(-3, 19, signed=True, value=-0.03125))
+        fpNum2 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=6.25))
+        self.assertEqual(fpNum1 * fpNum2, -0.1953125)
+        self.assertTrue((fpNum1 * fpNum2).fp_mode)
+        self.assertTrue(isinstance((fpNum1 * fpNum2).value, FpBinary))
+        self.assertTrue(isinstance(fpNum1 * fpNum2, FpBinarySwitchable))
+
+        # Divide
         fpNum1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(5, 5, signed=True, value=-3.0))
         fpNum2 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(5, 5, signed=True, value=2.0))
         self.assertEqual(fpNum1 / fpNum2, -1.5)
@@ -68,6 +100,14 @@ class FpBianrySwitchableTests(unittest.TestCase):
         self.assertTrue(isinstance((fpNum1 / fpNum2).value, FpBinary))
         self.assertTrue(isinstance(fpNum1 / fpNum2, FpBinarySwitchable))
 
+        fpNum1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(-3, 19, signed=True, value=0.03125))
+        fpNum2 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=-0.03125))
+        self.assertEqual(fpNum1 / fpNum2, -1.0)
+        self.assertTrue((fpNum1 / fpNum2).fp_mode)
+        self.assertTrue(isinstance((fpNum1 / fpNum2).value, FpBinary))
+        self.assertTrue(isinstance(fpNum1 / fpNum2, FpBinarySwitchable))
+
+        # ABS
         fpNum = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=-12.125))
         self.assertEqual(abs(fpNum), 12.125)
         self.assertTrue(abs(fpNum).fp_mode)
@@ -76,6 +116,15 @@ class FpBianrySwitchableTests(unittest.TestCase):
 
         fpNum = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=12.125))
         self.assertEqual(abs(fpNum), 12.125)
+
+        fpNum = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(-3, 19, signed=True, value=-0.0234375))
+        self.assertEqual(abs(fpNum), 0.0234375)
+        self.assertTrue(abs(fpNum).fp_mode)
+        self.assertTrue(isinstance(abs(fpNum).value, FpBinary))
+        self.assertTrue(isinstance(abs(fpNum1), FpBinarySwitchable))
+
+        fpNum = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(-3, 19, signed=True, value=0.0234375))
+        self.assertEqual(abs(fpNum), 0.0234375)
 
     def testBasicMathDoubleMode(self):
         fpNum = FpBinarySwitchable(fp_mode=False, float_value=12.125)
