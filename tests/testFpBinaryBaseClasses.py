@@ -90,7 +90,7 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(-200, 232, signed=True)
             self.assertTrue(fpNum.format == (-200, 232))
 
-            fpNum = self.fp_binary_class(-200, 232, signed=True)
+            fpNum = self.fp_binary_class(201, -190, signed=True)
             self.assertTrue(fpNum.format == (201, -190))
 
         def testBoolConditions(self):
@@ -579,6 +579,11 @@ class AbstractTestHider(object):
             fpNum.resize((-4, 7), overflow_mode=OverflowEnum.wrap)
             self.assertEqualWithFloatCast(fpNum, -0.0078125)
 
+            # Neg frac_bits, losing MSB, positive to negative
+            fpNum = self.fp_binary_class(7, -3, signed=True, value=40.0)
+            fpNum.resize((6, -3), overflow_mode=OverflowEnum.wrap)
+            self.assertEqualWithFloatCast(fpNum, -24.0)
+
             # =======================================================================
             # Saturation
 
@@ -601,6 +606,11 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(-1, 6, signed=True, value=0.15625)
             fpNum.resize((-2, 6), overflow_mode=OverflowEnum.sat)
             self.assertEqualWithFloatCast(fpNum, 0.109375)
+
+            # Neg frac_bits, losing MSB, positive
+            fpNum = self.fp_binary_class(5, -2, signed=True, value=8.0)
+            fpNum.resize((4, -2), overflow_mode=OverflowEnum.sat)
+            self.assertEqualWithFloatCast(fpNum, 4.0)
 
             # =======================================================================
             # Exception
@@ -639,6 +649,15 @@ class AbstractTestHider(object):
             else:
                 self.fail()
 
+            # Neg frac_bits, losing MSB, positive to positive
+            fpNum = self.fp_binary_class(7, -3, signed=True, value=32.0)
+            try:
+                fpNum.resize((6, -3), overflow_mode=OverflowEnum.excep)
+            except FpBinaryOverflowException:
+                pass
+            else:
+                self.fail()
+
             # =======================================================================
             # Left shifting
 
@@ -666,6 +685,11 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(-7, 11, signed=True, value=-0.00146484375)
             fpNum <<= long(2)
             self.assertEqualWithFloatCast(fpNum, 0.001953125)
+
+            # Neg frac_bits, losing MSB, negative to positive expected
+            fpNum = self.fp_binary_class(6, -2, signed=True, value=-28.0)
+            fpNum <<= long(1)
+            self.assertEqualWithFloatCast(fpNum, 8.0)
 
         def testRoundingModes(self):
             # =======================================================================
@@ -695,6 +719,18 @@ class AbstractTestHider(object):
             res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, -0.0234375)
 
+            fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
+            res = fpNum1.resize((7, -4), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, -48.0)
+
+            fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
+            res = fpNum1.resize((7, -4), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, -48.0)
+
+            fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
+            res = fpNum1.resize((7, -4), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, -48.0)
+
             # =======================================================================
             # Change expected after rounding
             fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
@@ -720,6 +756,18 @@ class AbstractTestHider(object):
             fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
             res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, -0.015625)
+
+            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, 48.0)
+
+            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 56.0)
+
+            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 48.0)
 
             # =======================================================================
             # Change expected after rounding, crossing frac/int boundary
@@ -941,6 +989,14 @@ class AbstractTestHider(object):
                     # Negative int bits overlaps positive int bit block
                     {'signed': True, 'op1_int_bits': -4, 'op1_frac_bits': 12, 'op2_int_bits': 1, 'op2_frac_bits': 7},
                     {'signed': False, 'op1_int_bits': 1, 'op1_frac_bits': 7, 'op2_int_bits': -4, 'op2_frac_bits': 12},
+
+                    # Negative frac bits inside positive frac bit block
+                    {'signed': True, 'op1_int_bits': 10, 'op1_frac_bits': 4, 'op2_int_bits': 6, 'op2_frac_bits': -2},
+                    {'signed': False, 'op1_int_bits': 6, 'op1_frac_bits': -2, 'op2_int_bits': 10, 'op2_frac_bits': 4},
+
+                    # Negative frac bits overlaps positive frac bit block
+                    {'signed': True, 'op1_int_bits': 5, 'op1_frac_bits': 3, 'op2_int_bits': 9, 'op2_frac_bits': -3},
+                    {'signed': False, 'op1_int_bits': 9, 'op1_frac_bits': -3, 'op2_int_bits': 5, 'op2_frac_bits': 3},
                 ]
 
             for test_case in tests:
@@ -1050,9 +1106,15 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast((fpNum << long(2)).bits_to_signed(), 92)
 
             # Negative int_bits
-            # b0.1111011 = -0.0390625 - goes to -5 as integer
+            # b1.1111011 = -0.0390625 - goes to -5 as integer
             #       ^ - start of bits
             fpNum = self.fp_binary_class(-3, 7, signed=True, value=-0.0390625)
+            self.assertEqualWithFloatCast(fpNum.bits_to_signed(), -5)
+
+            # Negative frac_bits
+            # b11011000 = -40.0 - goes to -5 as integer
+            #      ^ - start of bits
+            fpNum = self.fp_binary_class(8, -3, signed=True, value=-40.0)
             self.assertEqualWithFloatCast(fpNum.bits_to_signed(), -5)
 
             # =======================================================================
@@ -1075,10 +1137,16 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast((fpNum << long(2))[:], 92)
 
             # Negative int_bits
-            # b0.1111011 = -0.0390625 - goes to 11 as integer
+            # b1.1111011 = -0.0390625 - goes to 11 as integer
             #       ^ - start of bits
             fpNum = self.fp_binary_class(-3, 7, signed=True, value=-0.0390625)
             self.assertEqualWithFloatCast(fpNum[:], 11)
+
+            # Negative frac_bits
+            # b11011000 = -40.0 - goes to 54 as integer
+            #       ^ - start of bits
+            fpNum = self.fp_binary_class(8, -2, signed=True, value=-40.0)
+            self.assertEqualWithFloatCast(fpNum[:], 54)
 
             # =======================================================================
             # Unsigned to signed
@@ -1095,6 +1163,12 @@ class AbstractTestHider(object):
             # b0.00001001011 = 0.03662109375 - goes to -53 as integer
             #        ^ - start of bits
             fpNum = self.fp_binary_class(-4, 11, signed=False, value=0.03662109375)
+            self.assertEqualWithFloatCast(fpNum.bits_to_signed(), -53)
+
+            # Negative frac_bits
+            # b1001011000 = 600.0 - goes to -424 as integer
+            #        ^ - start of bits
+            fpNum = self.fp_binary_class(10, -3, signed=False, value=600.0)
             self.assertEqualWithFloatCast(fpNum.bits_to_signed(), -53)
 
         def testSequenceOps(self):
@@ -1230,10 +1304,16 @@ class AbstractTestHider(object):
             self.assertTrue(bin(fpNum) == '0b110011010')
 
             # Negative int_bits
-            # b0.1111011 = -0.0390625
-            #       ^ - start of bits
+            # b1.1111011 = -0.0390625
+            #        ^ - start of bits
             fpNum = self.fp_binary_class(-3, 7, signed=True, value=-0.0390625)
             self.assertTrue(bin(fpNum) == '0b1011')
+
+            # Negative frac_bits
+            # 1111000.0 = -8.0
+            #     ^ - start of bits
+            fpNum = self.fp_binary_class(7, -2, signed=True, value=-8.0)
+            self.assertTrue(bin(fpNum) == '0b11110')
 
 
 class FpBinarySmallTests(AbstractTestHider.BaseClassesTestAbstract):
