@@ -47,6 +47,10 @@ class AbstractTestHider(object):
                 ([-7, 6], {'signed': True}),
                 ([-3, 3], {'signed': False}),
                 ([-7, 6], {'signed': False}),
+                ([3, -3], {'signed': True}),
+                ([7, -8], {'signed': True}),
+                ([3, -78], {'signed': False}),
+                ([7, -11], {'signed': False}),
             ]
 
             for test_case in params_test_cases:
@@ -410,6 +414,16 @@ class AbstractTestHider(object):
             # Large size
             format_fp = self.fp_binary_class(-5, test_utils.get_small_type_size() + 10, signed=True)
             self.assertEqual(self.fp_binary_class(value=0.0068359375, format_inst=format_fp) << 2, -0.00390625)
+
+            # Negative frac_bits
+
+            # Small size
+            format_fp = self.fp_binary_class(int(test_utils.get_small_type_size()) + 10, -10, signed=True)
+            self.assertEqual(self.fp_binary_class(value=1024.0, format_inst=format_fp) << 1, 2048.0)
+
+            # Large size
+            format_fp = self.fp_binary_class(test_utils.get_small_type_size() + 10, -6, signed=True)
+            self.assertEqual(self.fp_binary_class(value=192.0, format_inst=format_fp) << 2, 768.0)
 
         def testOverflowModeOnCreate(self):
             # Overflow mode on create is saturation. Verify values that have magnitudes that

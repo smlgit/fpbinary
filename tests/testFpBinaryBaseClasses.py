@@ -1087,6 +1087,45 @@ class AbstractTestHider(object):
             self.assertFalse(op1_fp == op2_fp)
 
 
+            # Max small type length without overlap - negative frac bits
+
+            # Really big number
+            op1_fp = self.fp_binary_class(test_utils.get_small_type_size() * 2,
+                                          -test_utils.get_small_type_size(), signed=True, bit_field=long(12))
+            op2_fp = self.fp_binary_class(test_utils.get_small_type_size(), 0,
+                                          signed=True, value=3.0)
+            self.assertLess(op2_fp, op1_fp)
+            self.assertLessEqual(op2_fp, op1_fp)
+            self.assertNotEqual(op1_fp, op2_fp)
+            self.assertGreater(op1_fp, op2_fp)
+            self.assertGreaterEqual(op1_fp, op2_fp)
+            self.assertFalse(op1_fp == op2_fp)
+
+            # Really big number
+            op1_fp = self.fp_binary_class(test_utils.get_small_type_size() * 2,
+                                          -test_utils.get_small_type_size(), signed=False, bit_field=long(12))
+            op2_fp = self.fp_binary_class(test_utils.get_small_type_size(), 0,
+                                          signed=False, value=3.0)
+            self.assertLess(op2_fp, op1_fp)
+            self.assertLessEqual(op2_fp, op1_fp)
+            self.assertNotEqual(op1_fp, op2_fp)
+            self.assertGreater(op1_fp, op2_fp)
+            self.assertGreaterEqual(op1_fp, op2_fp)
+            self.assertFalse(op1_fp == op2_fp)
+
+
+            # Check massively different formats are equal at zero
+
+            op1_fp = self.fp_binary_class(-2000, 2016, signed=True, value=0.0)
+            op2_fp = self.fp_binary_class(5000, -4990, signed=True, value=0.0)
+            self.assertFalse(op2_fp < op1_fp)
+            self.assertTrue(op2_fp <= op1_fp)
+            self.assertFalse(op1_fp != op2_fp)
+            self.assertFalse(op1_fp > op2_fp)
+            self.assertTrue(op1_fp >= op2_fp)
+            self.assertEqual(op1_fp, op2_fp)
+
+
         def testIntConversion(self):
             # =======================================================================
             # Signed to signed
@@ -1181,6 +1220,31 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(int(fpNum[:]), 42)
             self.assertEqualWithFloatCast(int(fpNum[4:3]), 1)
 
+            # Negative number
+            fpNum = self.fp_binary_class(5, 2, signed=True, value=-8.75)
+            self.assertEqualWithFloatCast(int(fpNum[6:0]), 93)
+
+            # Negative int_bits
+            fpNum = self.fp_binary_class(-3, 7, signed=True, value=-0.046875)
+            self.assertEqualWithFloatCast(fpNum[0], False)
+            self.assertEqualWithFloatCast(fpNum[1], True)
+            self.assertEqualWithFloatCast(fpNum[2], False)
+            self.assertEqualWithFloatCast(fpNum[3], True)
+
+            self.assertEqualWithFloatCast(int(fpNum[:]), 10)
+            self.assertEqualWithFloatCast(int(fpNum[2:1]), 1)
+
+            # Negative frac_bits
+            fpNum = self.fp_binary_class(1035, -1030, signed=True, bit_field=21)
+            self.assertEqualWithFloatCast(fpNum[0], True)
+            self.assertEqualWithFloatCast(fpNum[1], False)
+            self.assertEqualWithFloatCast(fpNum[2], True)
+            self.assertEqualWithFloatCast(fpNum[3], False)
+            self.assertEqualWithFloatCast(fpNum[4], True)
+
+            self.assertEqualWithFloatCast(int(fpNum[:]), 21)
+            self.assertEqualWithFloatCast(int(fpNum[4:2]), 5)
+
             # Index error check
             try:
                 fpNum[len(fpNum) + 1:0]
@@ -1193,10 +1257,6 @@ class AbstractTestHider(object):
                 self.fail()
             except:
                 pass
-
-            # Negative number
-            fpNum = self.fp_binary_class(5, 2, signed=True, value=-8.75)
-            self.assertEqualWithFloatCast(int(fpNum[6:0]), 93)
 
         def testStr(self):
             tests = \
@@ -1281,6 +1341,20 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(-129, 135, signed=True, bit_field=long(44))
             self.assertEqual(fpNum.str_ex(),
                              '-0.0000000000000000000000000000000000000004591774807899560578002877098524397178979162331140966880893561352650067419745028018951416015625')
+
+            # Short numbers but with large negative frac_bits
+
+            # Via https://www.wolframalpha.com/input/?i=2.0**138+%2B+2.0**137
+            # b0011 starting at bit 140
+            fpNum = self.fp_binary_class(141, -137, signed=True, bit_field=long(3))
+            self.assertEqual(fpNum.str_ex(),
+                             '522673715590561479879743397015195972796416.0')
+
+            # Via https://www.wolframalpha.com/input/?i=-2.0**140+%2B+2.0**138+%2B+2.0**137
+            # b1011 starting at bit 140
+            fpNum = self.fp_binary_class(141, -137, signed=True, bit_field=long(11))
+            self.assertEqual(fpNum.str_ex(),
+                             '-871122859317602466466238995025326621327360.0')
 
         def testIndex(self):
             """When converting to binary sting, the assumption is that only the bits
