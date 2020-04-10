@@ -423,14 +423,6 @@ fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
         return false;
     }
 
-    if (frac_bits < 0)
-    {
-        PyErr_SetString(
-            PyExc_ValueError,
-            "The number of frac_bits must be greater or equal to 0.");
-        return false;
-    }
-
     if (int_bits + frac_bits <= (long)FP_SMALL_MAX_BITS)
     {
         if (bit_field)

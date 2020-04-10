@@ -90,6 +90,9 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(-200, 232, signed=True)
             self.assertTrue(fpNum.format == (-200, 232))
 
+            fpNum = self.fp_binary_class(-200, 232, signed=True)
+            self.assertTrue(fpNum.format == (201, -190))
+
         def testBoolConditions(self):
             """Values used in boolean expressions should behave as true/false"""
             if self.fp_binary_class(2, 2, signed=True, value=0):
@@ -191,26 +194,41 @@ class AbstractTestHider(object):
             self.assertEqual((fpx + fpy).format, (5, 6))
             self.assertEqual((fpy + fpx).format, (5,6))
 
-            # Check negative int_bits
-            actual_num_frac_bits = 4
-            for int_bits in range(-3, 0):
-                frac_bits = actual_num_frac_bits - int_bits
-                min_inc = 1.0 / 2**frac_bits
-                # Remember we are using signed - one of the bits is a sign bit
-                min_val = 0.0 - 2.0**(int_bits - 1)
-                max_val = (2.0**(actual_num_frac_bits - 1) - 1) / 2.0**frac_bits
 
-                float_accum = min_val
-                fp_accum = self.fp_binary_class(int_bits, frac_bits, signed=True, value=min_val)
-                fp_inc = self.fp_binary_class(int_bits, frac_bits, signed=True, value=min_inc)
+            """
+            Various combinations of int_bits and frac_bits to test bit values.
+            We work out what the minimum representable value is and use this as an increment
+            to test adding from the minimum value to the max value.
+            """
+            for is_signed in iter([True, False]):
+                format_test_cases = [(4, 4), (4, 0), (8, -3), (0, 4), (-3, 7)]
+                for fmat in format_test_cases:
+                    int_bits = fmat[0]
+                    frac_bits = fmat[1]
+                    msb_pos = int_bits - 1
+                    lsb_pos = -frac_bits
 
-                while float_accum < max_val:
-                    fp_accum += fp_inc
-                    float_accum += min_inc
-                    self.assertEqualWithFloatCast(fp_accum, float_accum)
-                    self.assertEqual(fp_accum.format, (int_bits + 1, frac_bits))
+                    min_val = -2.0**msb_pos if is_signed else 0.0
+                    max_limit_val = 2.0**msb_pos if is_signed else 2.0**(msb_pos + 1)
+                    inc = 2.0**lsb_pos
 
-                    fp_accum.resize((int_bits, frac_bits), overflow_mode=OverflowEnum.excep)
+                    float_accum = min_val
+                    fp_accum = self.fp_binary_class(int_bits, frac_bits, signed=is_signed, value=min_val)
+
+                    # Test with a smaller format for variation
+                    fp_inc = self.fp_binary_class(int_bits - 1, frac_bits, signed=is_signed, value=inc)
+
+                    while float_accum < max_limit_val:
+                        self.assertEqualWithFloatCast(fp_accum, float_accum)
+
+                        fp_accum.resize((int_bits, frac_bits), overflow_mode=OverflowEnum.excep)
+
+                        fp_accum += fp_inc
+                        float_accum += inc
+
+                        self.assertEqual(fp_accum.format, (int_bits + 1, frac_bits))
+
+
 
 
         def testSubtraction(self):
@@ -255,26 +273,39 @@ class AbstractTestHider(object):
             self.assertEqual((fpy - fpx).format, (5, 6))
 
 
-            # Check negative int_bits
-            actual_num_frac_bits = 3
-            for int_bits in range(-4, 0):
-                frac_bits = actual_num_frac_bits - int_bits
-                min_inc = 1.0 / 2 ** frac_bits
-                # Remember we are using signed - one of the bits is a sign bit
-                min_val = 0.0 - 2.0 ** (int_bits - 1)
-                max_val = (2.0 ** (actual_num_frac_bits - 1) - 1) / 2.0 ** frac_bits
+            """
+            Various combinations of int_bits and frac_bits to test bit values.
+            We work out what the minimum representable value is and use this as an increment
+            to test subtraction from the max value to the minimum value.
+            """
 
-                float_accum = max_val
-                fp_accum = self.fp_binary_class(int_bits, frac_bits, signed=True, value=max_val)
-                fp_inc = self.fp_binary_class(int_bits, frac_bits, signed=True, value=min_inc)
+            for is_signed in iter([True, False]):
+                format_test_cases = [(4, 4), (4, 0), (8, -3), (0, 4), (-3, 7)]
+                for fmat in format_test_cases:
+                    int_bits = fmat[0]
+                    frac_bits = fmat[1]
+                    msb_pos = int_bits - 1
+                    lsb_pos = -frac_bits
 
-                while float_accum > min_val:
-                    fp_accum -= fp_inc
-                    float_accum -= min_inc
-                    self.assertEqualWithFloatCast(fp_accum, float_accum)
-                    self.assertEqual(fp_accum.format, (int_bits + 1, frac_bits))
+                    min_val = -2.0 ** msb_pos if is_signed else 0.0
+                    max_limit_val = 2.0 ** msb_pos if is_signed else 2.0 ** (msb_pos + 1)
+                    inc = 2.0 ** lsb_pos
 
-                    fp_accum.resize((int_bits, frac_bits), overflow_mode=OverflowEnum.excep)
+                    float_accum = max_limit_val - inc
+                    fp_accum = self.fp_binary_class(int_bits, frac_bits, signed=is_signed, value=float_accum)
+
+                    # Test with a smaller format for variation
+                    fp_inc = self.fp_binary_class(int_bits - 1, frac_bits, signed=is_signed, value=inc)
+
+                    while float_accum >= min_val:
+                        self.assertEqualWithFloatCast(fp_accum, float_accum)
+
+                        fp_accum.resize((int_bits, frac_bits), overflow_mode=OverflowEnum.excep)
+
+                        fp_accum -= fp_inc
+                        float_accum -= inc
+
+                        self.assertEqual(fp_accum.format, (int_bits + 1, frac_bits))
 
         def testMultiplication(self):
             """Multiplication operators should promote & commute"""
@@ -314,30 +345,40 @@ class AbstractTestHider(object):
             self.assertEqual((fpx * fpy).format, (7, 11))
             self.assertEqual((fpy * fpx).format, (7, 11))
 
-            # Check negative int_bits
-            actual_num_frac_bits = 8
-            float_multiplier = -3.0
-            fp_multiplier = self.fp_binary_class(3, 0, signed=True, value=float_multiplier)
 
-            for int_bits in range(-3, 0):
-                frac_bits = actual_num_frac_bits - int_bits
-                min_inc = 1.0 / 2 ** frac_bits
-                # Remember we are using signed - one of the bits is a sign bit
-                min_val = 0.0 - 2.0 ** (int_bits - 1)
-                max_val = (2.0 ** (actual_num_frac_bits - 1) - 1) / 2.0 ** frac_bits
+            """
+            Various combinations of int_bits and frac_bits to test bit values.
+            """
 
-                float_accum = min_inc
-                fp_accum = self.fp_binary_class(int_bits, frac_bits, signed=True, value=float_accum)
+            for is_signed in iter([True, False]):
 
-                while float_accum < max_val and float_accum > min_val:
-                    self.assertEqualWithFloatCast(fp_accum, float_accum)
+                float_multiplier = -3.0 if is_signed else 3.0
+                fp_multiplier = self.fp_binary_class(3, 0, signed=is_signed, value=float_multiplier)
 
-                    fp_accum.resize((int_bits, frac_bits), overflow_mode=OverflowEnum.excep)
+                format_test_cases = [(8, 4), (8, 0), (10, -3), (0, 7), (-3, 9)]
+                for fmat in format_test_cases:
+                    int_bits = fmat[0]
+                    frac_bits = fmat[1]
+                    msb_pos = int_bits - 1
+                    lsb_pos = -frac_bits
 
-                    fp_accum *= fp_multiplier
-                    float_accum *= float_multiplier
+                    min_val = -2.0 ** msb_pos if is_signed else 0.0
+                    max_limit_val = 2.0 ** msb_pos if is_signed else 2.0 ** (msb_pos + 1)
+                    inc = 2.0 ** lsb_pos
 
-                    self.assertEqual(fp_accum.format, (int_bits + 3, frac_bits + 0))
+                    float_accum = inc
+                    fp_accum = self.fp_binary_class(int_bits, frac_bits, signed=is_signed, value=float_accum)
+
+                    while float_accum >= min_val and float_accum < max_limit_val:
+                        self.assertEqualWithFloatCast(fp_accum, float_accum)
+
+                        fp_accum.resize((int_bits, frac_bits), overflow_mode=OverflowEnum.excep)
+
+                        fp_accum *= fp_multiplier
+                        float_accum *= float_multiplier
+
+                        self.assertEqual(fp_accum.format, (int_bits + fp_multiplier.format[0],
+                                                           frac_bits + fp_multiplier.format[1]))
 
         def testDivision(self):
 
@@ -405,11 +446,33 @@ class AbstractTestHider(object):
                                   frac_bits + fp_denom.format[0]))
 
 
-                # Basic checks for negative int_bits
+                # Basic checks for negative int_bits and frac_bits
                 fp_num = self.fp_binary_class(-2, 6, signed=is_signed, value=0.0625)
                 fp_denom = self.fp_binary_class(-3, 8, signed=is_signed, value=0.0078125)
                 fp_res = fp_num / fp_denom
                 fp_check = self.fp_binary_class(7 if is_signed else 6, 3, signed=is_signed, value=8.0)
+                self.assertEqual(fp_res, fp_check)
+                self.assertEqual(fp_res.format, fp_check.format)
+
+                fp_num = self.fp_binary_class(8, -2, signed=is_signed, value=32)
+                fp_denom = self.fp_binary_class(2, 3, signed=is_signed, value=0.5)
+                fp_res = fp_num / fp_denom
+                fp_check = self.fp_binary_class(12 if is_signed else 11, 0, signed=is_signed, value=64)
+                self.assertEqual(fp_res, fp_check)
+                self.assertEqual(fp_res.format, fp_check.format)
+
+
+                fp_num = self.fp_binary_class(2, 3, signed=is_signed, value=0.5)
+                fp_denom = self.fp_binary_class(8, -2, signed=is_signed, value=32)
+                fp_res = fp_num / fp_denom
+                fp_check = self.fp_binary_class(1 if is_signed else 0, 11, signed=is_signed, value=0.015625)
+                self.assertEqual(fp_res, fp_check)
+                self.assertEqual(fp_res.format, fp_check.format)
+
+                fp_num = self.fp_binary_class(9, -3, signed=is_signed, value=128)
+                fp_denom = self.fp_binary_class(8, -2, signed=is_signed, value=32)
+                fp_res = fp_num / fp_denom
+                fp_check = self.fp_binary_class(8 if is_signed else 7, 5, signed=is_signed, value=4.0)
                 self.assertEqual(fp_res, fp_check)
                 self.assertEqual(fp_res.format, fp_check.format)
 
@@ -1068,6 +1131,18 @@ class AbstractTestHider(object):
                     {'signed': True, 'int_bits': -3, 'frac_bits': 7},
                     {'signed': False, 'int_bits': 4, 'frac_bits': 4},
                     {'signed': False, 'int_bits': -3, 'frac_bits': 7},
+
+                    # Negative int_bits
+                    {'signed': True, 'int_bits': -3, 'frac_bits': 8},
+                    {'signed': False, 'int_bits': -3, 'frac_bits': 8},
+                    {'signed': True, 'int_bits': -7, 'frac_bits': 12},
+                    {'signed': False, 'int_bits': -7, 'frac_bits': 12},
+
+                    # Negative frac bits
+                    {'signed': True, 'int_bits': 8, 'frac_bits': -3},
+                    {'signed': False, 'int_bits': 12, 'frac_bits': -6},
+                    {'signed': True, 'int_bits': 8, 'frac_bits': -3},
+                    {'signed': False, 'int_bits': 12, 'frac_bits': -6},
                 ]
 
             for test_case in tests:
@@ -1099,6 +1174,12 @@ class AbstractTestHider(object):
                     {'signed': False, 'int_bits': -3, 'frac_bits': 8},
                     {'signed': True, 'int_bits': -7, 'frac_bits': 12},
                     {'signed': False, 'int_bits': -7, 'frac_bits': 12},
+
+                    # Negative frac bits
+                    {'signed': True, 'int_bits': 8, 'frac_bits': -3},
+                    {'signed': False, 'int_bits': 12, 'frac_bits': -6},
+                    {'signed': True, 'int_bits': 8, 'frac_bits': -3},
+                    {'signed': False, 'int_bits': 12, 'frac_bits': -6},
                 ]
 
             for test_case in tests:

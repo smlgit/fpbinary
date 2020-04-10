@@ -515,9 +515,10 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
      * will
      * give us an integer that can be assessed using the standard % 10 logic.
      */
-    PyObject *int_bits_is_negative;
+    PyObject *int_bits_is_negative, *frac_bits_is_negative;
     PyObject *int_string, *frac_string, *final_string;
     PyObject *frac_format_string, *frac_value_tuple;
+    PyObject *scaled_value_padded;
     PyObject *is_negative, *scaled_value_mag, *frac_mask1, *frac_mask;
     PyObject *frac_part, *int_part, *frac_scale, *frac_part_corrected;
 
@@ -532,8 +533,24 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
         int_bits = py_zero; // No need to inc/dec this
     }
 
-    is_negative = PyObject_RichCompare(scaled_value, py_zero, Py_LT);
-    scaled_value_mag = PyNumber_Absolute(scaled_value);
+    /* If we have negative frac_bits, pad out the extra int spaces */
+    frac_bits_is_negative = PyObject_RichCompare(frac_bits, py_zero, Py_LT);
+
+    if (frac_bits_is_negative == Py_True)
+    {
+        PyObject *left_shift = PyNumber_Absolute(frac_bits);
+        scaled_value_padded = PyNumber_Lshift(scaled_value, left_shift);
+        Py_DECREF(left_shift);
+        frac_bits = py_zero; // No need to inc/dec this
+    }
+    else
+    {
+        Py_INCREF(scaled_value);
+        scaled_value_padded = scaled_value;
+    }
+
+    is_negative = PyObject_RichCompare(scaled_value_padded, py_zero, Py_LT);
+    scaled_value_mag = PyNumber_Absolute(scaled_value_padded);
     frac_mask1 = PyNumber_Lshift(py_one, frac_bits);
     frac_mask = PyNumber_Subtract(frac_mask1, py_one);
     frac_part = PyNumber_And(scaled_value_mag, frac_mask);
@@ -586,6 +603,7 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     unicode_concat(&final_string, PyUnicode_FromString("."));
     unicode_concat(&final_string, frac_string);
 
+    Py_DECREF(scaled_value_padded);
     Py_DECREF(frac_string);
     Py_DECREF(is_negative);
     Py_DECREF(int_bits_is_negative);

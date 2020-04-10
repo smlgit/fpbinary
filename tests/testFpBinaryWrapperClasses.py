@@ -47,10 +47,6 @@ class AbstractTestHider(object):
                 ([-7, 6], {'signed': True}),
                 ([-3, 3], {'signed': False}),
                 ([-7, 6], {'signed': False}),
-
-                # frac_bits is less than 0
-                ([3, -1], {'signed': True}),
-                ([8, -3], {'signed': False}),
             ]
 
             for test_case in params_test_cases:
