@@ -53,7 +53,7 @@ cd fpbinary
 python setup install
 ```
 
-The library has been tested (via pyenv) on versions 2.7.12, 3.5.2 and 3.6.5.
+The library has been tested (via pyenv) on versions 2.7.12, 3.5.2, 3.6.5 and 3.8.2 .
 
 <a name="use"/>
 

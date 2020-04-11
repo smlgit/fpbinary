@@ -1235,7 +1235,7 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(int(fpNum[2:1]), 1)
 
             # Negative frac_bits
-            fpNum = self.fp_binary_class(1035, -1030, signed=True, bit_field=21)
+            fpNum = self.fp_binary_class(1035, -1030, signed=True, bit_field=long(21))
             self.assertEqualWithFloatCast(fpNum[0], True)
             self.assertEqualWithFloatCast(fpNum[1], False)
             self.assertEqualWithFloatCast(fpNum[2], True)

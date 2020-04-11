@@ -288,13 +288,9 @@ build_from_pyfloat(PyObject *value, PyObject *int_bits, PyObject *frac_bits,
                    fp_round_mode_t round_mode, FpBinaryLargeObject *output_obj)
 {
     PyObject *py_scaled_value_long = NULL;
-//    PyObject *py_scale_factor =
-//        FP_NUM_METHOD(py_one, nb_lshift)(py_one, frac_bits);
-//    PyObject *py_scaled_value =
-//        FP_NUM_METHOD(value, nb_multiply)(value, py_scale_factor);
 
-    //double dbl_scaled_value = PyFloat_AsDouble(py_scaled_value);
-    double dbl_scaled_value = ldexp(PyFloat_AsDouble(value), PyLong_AsLong(frac_bits));
+    double dbl_scaled_value =
+        ldexp(PyFloat_AsDouble(value), PyLong_AsLong(frac_bits));
 
     if (round_mode == ROUNDING_NEAR_POS_INF)
     {
@@ -308,8 +304,6 @@ build_from_pyfloat(PyObject *value, PyObject *int_bits, PyObject *frac_bits,
                       is_signed);
 
     Py_DECREF(py_scaled_value_long);
-//    Py_DECREF(py_scale_factor);
-//    Py_DECREF(py_scaled_value);
 
     return check_overflow(output_obj, overflow_mode);
 }
@@ -317,17 +311,10 @@ build_from_pyfloat(PyObject *value, PyObject *int_bits, PyObject *frac_bits,
 static double
 fpbinarylarge_to_double(FpBinaryLargeObject *obj)
 {
-    double result;
     FpBinaryLargeObject *cast_obj = (FpBinaryLargeObject *)obj;
-//    PyObject *py_scale_factor =
-//        FP_NUM_METHOD(py_one, nb_lshift)(py_one, cast_obj->frac_bits);
-//    double dbl_scale_factor = PyLong_AsDouble(py_scale_factor);
-//    double dbl_scaled_value = PyLong_AsDouble(cast_obj->scaled_value);
 
-    result = ldexp(PyLong_AsDouble(cast_obj->scaled_value), -PyLong_AsLong(cast_obj->frac_bits));
-
-    //Py_DECREF(py_scale_factor);
-    return result;
+    return ldexp(PyLong_AsDouble(cast_obj->scaled_value),
+                 -PyLong_AsLong(cast_obj->frac_bits));
 }
 
 /*

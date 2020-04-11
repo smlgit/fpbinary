@@ -23,11 +23,37 @@ fp_massive = FpBinary(int_bits=128, frac_bits=128, signed=True, bit_field=(1 << 
 fp_massive
 fp_massive.str_ex()
 
+# The format can have negative int_bits or negative frac_bits so long as the total
+# bits is greater than 0. The meaning of a negative format value is that number of
+# bits is removed from the other format part, but the extreme bit position remains
+# the same. E.g.:
+#
+# a format of (-2, 10) gives 8 fractional bits, 0 integer bits and the fractional
+# bit positions are 3 to 10 (inclusive).
+FpBinary(int_bits=-2, frac_bits=10, signed=False, value=2.0**-10)
+
+# This should saturate to the maximum representable value for an 8 bit unsigned
+# with fractional bit positions 3 to 10:
+FpBinary(int_bits=-2, frac_bits=10, signed=False, value=2.0**-1)
+
+# Similarly, negative frac_bits produces an instance with only integer bit positions:
+FpBinary(int_bits=10, frac_bits=-2, signed=False, value=2.0**9)
 
 # Basic math ops are supported, and overflow is guaranteed to NOT happen
 FpBinary(4, 4, value=2.5) + FpBinary(4, 4, value=2.5)
 FpBinary(4, 4, value=2.5) - FpBinary(4, 4, value=2.5)
 FpBinary(4, 4, value=2.5) * FpBinary(4, 4, value=2.5)
+FpBinary(4, 4, value=2.5) / FpBinary(4, 4, value=2.5)
+
+# Negative int/frac bits instances use the same rules of arithmetic, overflow, rounding
+# and resultant format as ordinary formats.
+add_res = FpBinary(-3, 8, value=0.03125) + FpBinary(9, -2, value=12.0)
+add_res
+add_res.format
+
+mul_res = FpBinary(-3, 8, value=0.03125) * FpBinary(9, -2, value=12.0)
+mul_res
+mul_res.format
 
 
 # Resizing numbers after operations can be done either by format tuple
