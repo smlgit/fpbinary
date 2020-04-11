@@ -41,6 +41,9 @@
 #define FP_NUM_METHOD_PRESENT(ob, method_name)                                 \
     (ob && (Py_TYPE(ob)->tp_as_number && FP_NUM_METHOD(ob, method_name)))
 
+#define xstr(s) str(s)
+#define str(s) #s
+
 /*
  * Will carry out method on op1 and steal the original reference to op1.
  */

@@ -13,11 +13,13 @@
 #include "fpbinaryobject.h"
 #include "fpbinarysmall.h"
 #include "fpbinaryswitchable.h"
+#include "fpbinaryversion.h"
 
 #define FPBINARY_MOD_NAME "fpbinary"
 #define FPBINARY_MOD_DOC "Fixed point binary module."
 
 PyObject *FpBinaryOverflowException;
+static PyObject *FpBinaryVersionString;
 
 static PyMethodDef fpbinarymod_methods[] = {
     {NULL}, /* Sentinel */
@@ -109,6 +111,17 @@ initfpbinary(void)
         PyErr_NewException("fpbinary.FpBinaryOverflowException", NULL, NULL);
     PyModule_AddObject(m, "FpBinaryOverflowException",
                        FpBinaryOverflowException);
+
+
+    /* Doing this to ensure the version string is the default type on
+     * each version of python.
+     */
+#if PY_MAJOR_VERSION >= 3
+    FpBinaryVersionString = PyUnicode_FromString(FPBINARY_VERSION_STR);
+#else
+    FpBinaryVersionString = PyString_FromString(FPBINARY_VERSION_STR);
+#endif
+    PyModule_AddObject(m, "__version__", FpBinaryVersionString);
 
 #if PY_MAJOR_VERSION >= 3
     return m;
