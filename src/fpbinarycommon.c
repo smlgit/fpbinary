@@ -607,6 +607,7 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     Py_DECREF(frac_string);
     Py_DECREF(is_negative);
     Py_DECREF(int_bits_is_negative);
+    Py_DECREF(frac_bits_is_negative);
     Py_DECREF(scaled_value_mag);
     Py_DECREF(frac_mask1);
     Py_DECREF(frac_mask);
