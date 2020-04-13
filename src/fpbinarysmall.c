@@ -396,19 +396,13 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
     {
         FP_UINT_TYPE right_shifts = self->frac_bits - new_frac_bits;
 
-        if (round_mode == ROUNDING_NEAR_POS_INF)
+        if (round_mode == ROUNDING_DIRECT_ZERO)
         {
-            /* Add "new value 0.5" to the old sized value and then truncate */
-            new_scaled_value =
-                self->scaled_value + fp_uint_lshift(1, right_shifts - 1);
-        }
-        else if (round_mode == ROUNDING_NEAR_ZERO)
-        {
-            /* This is "floor" functionality. So if we are positive, truncation
-             * works.
-             * If we are negative, need to add 1 to the new lowest int bit if
-             * the old
-             * frac bits are non zero, and then truncate.
+            /* Go toward zero to the nearest representable value.
+             * If positive, this is just a normal truncate.
+             * If negative, we need to add "1.0" unless we are at a
+             * "round number". That is, if the chopped bits aren't zero,
+             * add NEW LSB 1 to the scaled value and then truncate.
              */
             if (self->is_signed &&
                 (self->scaled_value &
@@ -417,6 +411,49 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
             {
                 new_scaled_value =
                     self->scaled_value + fp_uint_lshift(1, right_shifts);
+            }
+        }
+        else if (round_mode == ROUNDING_NEAR_POS_INF ||
+                 round_mode == ROUNDING_NEAR_ZERO)
+        {
+            /* "Near" rounding modes. This basically means we need to add
+             * "0.5" to our value, conditioned on the specific near type.
+             */
+
+            bool is_negative = self->is_signed &&
+                               (self->scaled_value &
+                                get_sign_bit(self->int_bits + self->frac_bits));
+            FP_UINT_TYPE chopped_lsbs_value = 0;
+            FP_UINT_TYPE inc_value = 1;
+
+            if (right_shifts > 1)
+            {
+                FP_UINT_TYPE num_chopped_minus_1 = right_shifts - 1;
+                chopped_lsbs_value = self->scaled_value &
+                                     get_total_bits_mask(num_chopped_minus_1);
+                inc_value = fp_uint_lshift(1, num_chopped_minus_1);
+            }
+
+            if (round_mode == ROUNDING_NEAR_ZERO)
+            {
+                /*
+                 * This is a "near" round but ties are settled towards zero.
+                 * So if negative, a normal add of "0.5" and then truncate
+                 * works.
+                 * It also works for positive unless we are on an exact "0.5"
+                 * boundary (i.e. the chopped LSBs except the MSB are zero). In
+                 * that case, we must truncate WITHOUT the add.
+                 */
+                if (is_negative || chopped_lsbs_value != 0)
+                {
+                    new_scaled_value = self->scaled_value + inc_value;
+                }
+            }
+            else if (round_mode == ROUNDING_NEAR_POS_INF)
+            {
+                /* Add "new value 0.5" to the old sized value and then truncate
+                 */
+                new_scaled_value = self->scaled_value + inc_value;
             }
         }
         /* else Default to truncate (ROUNDING_DIRECT_NEG_INF) */
@@ -1025,7 +1062,7 @@ fpbinarysmall_long(PyObject *self)
     PyObject *result = NULL;
     copy_fields(cast_self, result_fp);
     resize_object(result_fp, cast_self->int_bits, 0, OVERFLOW_WRAP,
-                  ROUNDING_NEAR_ZERO);
+                  ROUNDING_DIRECT_ZERO);
 
     result = PyLong_FromLong(scaled_value_to_int(result_fp->scaled_value));
     Py_DECREF(result_fp);

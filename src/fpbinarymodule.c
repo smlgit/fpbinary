@@ -112,10 +112,9 @@ initfpbinary(void)
     PyModule_AddObject(m, "FpBinaryOverflowException",
                        FpBinaryOverflowException);
 
-
-    /* Doing this to ensure the version string is the default type on
-     * each version of python.
-     */
+/* Doing this to ensure the version string is the default type on
+ * each version of python.
+ */
 #if PY_MAJOR_VERSION >= 3
     FpBinaryVersionString = PyUnicode_FromString(FPBINARY_VERSION_STR);
 #else

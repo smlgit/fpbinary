@@ -96,6 +96,7 @@ typedef enum {
     ROUNDING_NEAR_POS_INF = 1,
     ROUNDING_DIRECT_NEG_INF = 2,
     ROUNDING_NEAR_ZERO = 3,
+    ROUNDING_DIRECT_ZERO = 4,
 } fp_round_mode_t;
 
 typedef enum {

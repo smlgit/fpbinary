@@ -704,6 +704,10 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(res, 1.125)
 
             fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 3), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 1.125)
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
             res = fpNum1.resize((2, 3), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, 1.125)
 
@@ -716,6 +720,10 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(res, -0.0234375)
 
             fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, -0.0234375)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
             res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, -0.0234375)
 
@@ -725,6 +733,10 @@ class AbstractTestHider(object):
 
             fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
             res = fpNum1.resize((7, -4), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, -48.0)
+
+            fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
+            res = fpNum1.resize((7, -4), round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, -48.0)
 
             fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
@@ -742,6 +754,10 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(res, 1.0)
 
             fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 2), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 1.0)
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
             res = fpNum1.resize((2, 2), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, 1.0)
 
@@ -752,6 +768,10 @@ class AbstractTestHider(object):
             fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
             res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.direct_neg_inf)
             self.assertEqualWithFloatCast(res, -0.03125)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, -0.015625)
 
             fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
             res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_zero)
@@ -766,7 +786,11 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(res, 56.0)
 
             fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
-            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.near_zero)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 48.0)
+
+            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, 48.0)
 
             # =======================================================================
@@ -778,6 +802,10 @@ class AbstractTestHider(object):
             fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
             res = fpNum1.resize((2, 1), round_mode=RoundingEnum.direct_neg_inf)
             self.assertEqualWithFloatCast(res, -1.5)
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
+            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, -1.0)
 
             fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
             res = fpNum1.resize((2, 1), round_mode=RoundingEnum.near_zero)
@@ -802,7 +830,7 @@ class AbstractTestHider(object):
             # Round down via near zero: 01.10 = 1.5
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=5.625)
             res = fpNum1.resize((2, 2), overflow_mode=OverflowEnum.wrap,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, 1.5)
             # Saturate: b0101.101 -> b01.11
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=5.625)
@@ -817,7 +845,7 @@ class AbstractTestHider(object):
             # Saturate: b0101.101 -> b01.11
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=5.625)
             res = fpNum1.resize((2, 2), overflow_mode=OverflowEnum.sat,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, 1.75)
 
             # =======================================================================
@@ -838,7 +866,7 @@ class AbstractTestHider(object):
             # Round up: b1101.101 -> b01.11
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=-2.375)
             res = fpNum1.resize((2, 2), overflow_mode=OverflowEnum.wrap,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, 1.75)
             # Saturate: b1101.101 -> b10.00
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=-2.375)
@@ -853,7 +881,7 @@ class AbstractTestHider(object):
             # Saturate: b1101.101 -> b10.00
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=-2.375)
             res = fpNum1.resize((2, 2), overflow_mode=OverflowEnum.sat,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, -2.0)
 
             # =======================================================================
@@ -874,7 +902,7 @@ class AbstractTestHider(object):
             # Round up: b1011.111 -> b00.00
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=-4.125)
             res = fpNum1.resize((2, 2), overflow_mode=OverflowEnum.wrap,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, 0.0)
             # Saturate: b1011.111 -> b10.00
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=-4.125)
@@ -889,7 +917,7 @@ class AbstractTestHider(object):
             # Saturate: b1011.111 -> b10.00
             fpNum1 = self.fp_binary_class(4, 3, signed=True, value=-4.125)
             res = fpNum1.resize((2, 2), overflow_mode=OverflowEnum.sat,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, -2.0)
 
             # =======================================================================
@@ -910,7 +938,7 @@ class AbstractTestHider(object):
             # Round up: b1101101.101 -> b01.11
             fpNum1 = self.fp_binary_class(7, 3, signed=True, value=-18.375)
             res = fpNum1.resize((2, 2), overflow_mode=OverflowEnum.wrap,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, 1.75)
             # Saturate: b1101101.101 -> b10.00
             fpNum1 = self.fp_binary_class(7, 3, signed=True, value=-18.375)
@@ -925,7 +953,7 @@ class AbstractTestHider(object):
             # Saturate: b1101101.101 = b10.00
             fpNum1 = self.fp_binary_class(7, 3, signed=True, value=-18.375)
             res = fpNum1.resize((2, 2), overflow_mode=OverflowEnum.sat,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, -2.0)
 
             # =======================================================================
@@ -946,7 +974,7 @@ class AbstractTestHider(object):
             # Round up: b1101101.101 -> b101.11
             fpNum1 = self.fp_binary_class(7, 3, signed=True, value=-18.375)
             res = fpNum1.resize((3, 2), overflow_mode=OverflowEnum.wrap,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, -2.25)
             # Saturate: b1101101.101 -> b100.00
             fpNum1 = self.fp_binary_class(7, 3, signed=True, value=-18.375)
@@ -961,7 +989,7 @@ class AbstractTestHider(object):
             # Saturate: b1101101.101 -> b100.00
             fpNum1 = self.fp_binary_class(7, 3, signed=True, value=-18.375)
             res = fpNum1.resize((3, 2), overflow_mode=OverflowEnum.sat,
-                                round_mode=RoundingEnum.near_zero)
+                                round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, -4.0)
 
         def testCompare(self):
