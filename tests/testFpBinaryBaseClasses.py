@@ -691,7 +691,7 @@ class AbstractTestHider(object):
             fpNum <<= long(1)
             self.assertEqualWithFloatCast(fpNum, 8.0)
 
-        def testRoundingModes(self):
+        def testRoundingDirectNegativeInfinity(self):
             # =======================================================================
             # No change expected after rounding
 
@@ -699,48 +699,144 @@ class AbstractTestHider(object):
             res = fpNum1.resize((2, 3), round_mode=RoundingEnum.direct_neg_inf)
             self.assertEqualWithFloatCast(res, 1.125)
 
-            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
-            res = fpNum1.resize((2, 3), round_mode=RoundingEnum.near_pos_inf)
-            self.assertEqualWithFloatCast(res, 1.125)
-
-            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
-            res = fpNum1.resize((2, 3), round_mode=RoundingEnum.direct_zero)
-            self.assertEqualWithFloatCast(res, 1.125)
-
-            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
-            res = fpNum1.resize((2, 3), round_mode=RoundingEnum.near_zero)
-            self.assertEqualWithFloatCast(res, 1.125)
-
             fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
             res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.direct_neg_inf)
-            self.assertEqualWithFloatCast(res, -0.0234375)
-
-            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
-            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_pos_inf)
-            self.assertEqualWithFloatCast(res, -0.0234375)
-
-            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
-            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.direct_zero)
-            self.assertEqualWithFloatCast(res, -0.0234375)
-
-            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
-            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, -0.0234375)
 
             fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
             res = fpNum1.resize((7, -4), round_mode=RoundingEnum.direct_neg_inf)
             self.assertEqualWithFloatCast(res, -48.0)
 
+            # =======================================================================
+            # Change expected after rounding
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 2), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, 1.0)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, -0.03125)
+
+            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, 48.0)
+
+            # =======================================================================
+            # Change expected after rounding, crossing frac/int boundary
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
+            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, -1.5)
+
+            # =======================================================================
+            # Max and min values frac resized
+
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=3.75)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, 3.5)
+
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=-0.25)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, -0.5)
+
+            fpNum1 = self.fp_binary_class(2, 2, signed=False, value=3.75)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, 3.5)
+
+            # =======================================================================
+            # Tie break explicit testing
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=5.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, 5.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=-5.25)
+            res = fpNum1.resize((4, 1), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, -5.5)
+
+            fpNum1 = self.fp_binary_class(4, 4, signed=False, value=5.125)
+            res = fpNum1.resize((4, 2), round_mode=RoundingEnum.direct_neg_inf)
+            self.assertEqualWithFloatCast(res, 5.0)
+
+        def testRoundingDirectTowardsZero(self):
+            # =======================================================================
+            # No change expected after rounding
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 3), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 1.125)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, -0.0234375)
+
+            # =======================================================================
+            # Change expected after rounding
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 2), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 1.0)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, -0.015625)
+
+            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 48.0)
+
+            # =======================================================================
+            # Change expected after rounding, crossing frac/int boundary
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
+            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, -1.0)
+
+            # =======================================================================
+            # Max and min values frac resized
+
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=3.75)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 3.5)
+
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=-0.25)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 0.0)
+
+            fpNum1 = self.fp_binary_class(2, 2, signed=False, value=3.75)
+            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 3.5)
+
+            # =======================================================================
+            # Tie break explicit testing
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=5.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 5.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=-5.25)
+            res = fpNum1.resize((4, 1), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, -5.0)
+
+            fpNum1 = self.fp_binary_class(4, 4, signed=False, value=5.125)
+            res = fpNum1.resize((4, 2), round_mode=RoundingEnum.direct_zero)
+            self.assertEqualWithFloatCast(res, 5.0)
+
+        def testRoundingNearPositiveInfinity(self):
+            # =======================================================================
+            # No change expected after rounding
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 3), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 1.125)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, -0.0234375)
+
             fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
             res = fpNum1.resize((7, -4), round_mode=RoundingEnum.near_pos_inf)
-            self.assertEqualWithFloatCast(res, -48.0)
-
-            fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
-            res = fpNum1.resize((7, -4), round_mode=RoundingEnum.direct_zero)
-            self.assertEqualWithFloatCast(res, -48.0)
-
-            fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
-            res = fpNum1.resize((7, -4), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, -48.0)
 
             # =======================================================================
@@ -749,49 +845,13 @@ class AbstractTestHider(object):
             res = fpNum1.resize((2, 2), round_mode=RoundingEnum.near_pos_inf)
             self.assertEqualWithFloatCast(res, 1.25)
 
-            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
-            res = fpNum1.resize((2, 2), round_mode=RoundingEnum.direct_neg_inf)
-            self.assertEqualWithFloatCast(res, 1.0)
-
-            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
-            res = fpNum1.resize((2, 2), round_mode=RoundingEnum.direct_zero)
-            self.assertEqualWithFloatCast(res, 1.0)
-
-            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
-            res = fpNum1.resize((2, 2), round_mode=RoundingEnum.near_zero)
-            self.assertEqualWithFloatCast(res, 1.0)
-
             fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
             res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_pos_inf)
             self.assertEqualWithFloatCast(res, -0.015625)
 
-            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
-            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.direct_neg_inf)
-            self.assertEqualWithFloatCast(res, -0.03125)
-
-            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
-            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.direct_zero)
-            self.assertEqualWithFloatCast(res, -0.015625)
-
-            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
-            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_zero)
-            self.assertEqualWithFloatCast(res, -0.015625)
-
-            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
-            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.direct_neg_inf)
-            self.assertEqualWithFloatCast(res, 48.0)
-
             fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
             res = fpNum1.resize((7, -3), round_mode=RoundingEnum.near_pos_inf)
             self.assertEqualWithFloatCast(res, 56.0)
-
-            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
-            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.direct_zero)
-            self.assertEqualWithFloatCast(res, 48.0)
-
-            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
-            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.direct_zero)
-            self.assertEqualWithFloatCast(res, 48.0)
 
             # =======================================================================
             # Change expected after rounding, crossing frac/int boundary
@@ -799,19 +859,112 @@ class AbstractTestHider(object):
             res = fpNum1.resize((2, 1), round_mode=RoundingEnum.near_pos_inf)
             self.assertEqualWithFloatCast(res, -1.0)
 
-            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
-            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.direct_neg_inf)
-            self.assertEqualWithFloatCast(res, -1.5)
+            # =======================================================================
+            # Max and min values frac resized
 
-            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
-            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.direct_zero)
-            self.assertEqualWithFloatCast(res, -1.0)
+            # -- The rounding will cause an overflow...
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=3.75)
+            res = fpNum1.resize((3, 1),
+                                round_mode=RoundingEnum.near_pos_inf,
+                                overflow_mode=OverflowEnum.wrap)
+            self.assertEqualWithFloatCast(res, -4.0)
+
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=-0.25)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 0.0)
+
+            # -- The rounding will cause an overflow...
+            fpNum1 = self.fp_binary_class(2, 2, signed=False, value=3.75)
+            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 0.0)
+
+            # =======================================================================
+            # Tie break explicit testing
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=5.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 6.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=-5.25)
+            res = fpNum1.resize((4, 1), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, -5.0)
+
+            fpNum1 = self.fp_binary_class(4, 4, signed=False, value=5.125)
+            res = fpNum1.resize((4, 2), round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 5.25)
+
+        def testRoundingNearZero(self):
+            # =======================================================================
+            # No change expected after rounding
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 3), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 1.125)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, -0.0234375)
+
+            fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
+            res = fpNum1.resize((7, -4), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, -48.0)
+
+            # =======================================================================
+            # Change expected after rounding
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 2), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 1.0)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, -0.015625)
+
+            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 48.0)
+
+            # =======================================================================
+            # Change expected after rounding, crossing frac/int boundary
 
             fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
             res = fpNum1.resize((2, 1), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, -1.0)
 
+            # =======================================================================
+            # Max and min values frac resized
+
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=3.75)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 3.5)
+
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=-0.25)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 0.0)
+
+            fpNum1 = self.fp_binary_class(2, 2, signed=False, value=3.75)
+            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 3.5)
+
+            # =======================================================================
+            # Tie break explicit testing
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=5.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 5.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=-5.25)
+            res = fpNum1.resize((4, 1), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, -5.0)
+
+            fpNum1 = self.fp_binary_class(4, 4, signed=False, value=5.125)
+            res = fpNum1.resize((4, 2), round_mode=RoundingEnum.near_zero)
+            self.assertEqualWithFloatCast(res, 5.0)
+
         def testRoundingAndWrappingTupleResize(self):
+            """ Tests resize when both int and frac bits change. """
+
+
             # =======================================================================
             # Rounding/Wrapping
             # Positive value
