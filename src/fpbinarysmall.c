@@ -52,6 +52,20 @@ get_sign_bit(FP_UINT_TYPE total_bits)
 }
 
 /*
+ * Assumes the passed value is properly sign extended.
+ */
+static bool
+scaled_value_is_negative(FP_UINT_TYPE value, bool is_signed)
+{
+    if (!is_signed)
+    {
+        return false;
+    }
+
+    return FP_UINT_MAX_SIGN_BIT & value;
+}
+
+/*
  * Modifies the bits in scaled_value to represent the negative 2's complement
  * value.
  */
@@ -252,11 +266,19 @@ copy_fields(FpBinarySmallObject *from_obj, FpBinarySmallObject *to_obj)
 /*
  * Will check the fields in obj for overflow and will modify act on the
  * fields of obj or raise an exception depending on overflow_mode.
+ *
+ * The force_positive_overflow and force_negative_overflow flags allow
+ * a calling function to force check_overflow to act as though an overflow
+ * occured. This is useful if an overflow during a previous operation on
+ * self but isn't detectable from the current value of self. I.e. if
+ * a scaling due to an increase in fractional bits resulted in an overflow.
+ *
  * If there was no exception raised, non-zero is returned.
  * Otherwise, 0 is returned.
  */
 static int
-check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
+check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode,
+               bool force_positive_overflow, bool force_negative_overflow)
 {
     FP_UINT_TYPE new_scaled_value = self->scaled_value;
     FP_UINT_TYPE min_value, max_value;
@@ -266,7 +288,9 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
     min_value = get_min_scaled_value(total_bits, self->is_signed);
     max_value = get_max_scaled_value(total_bits, self->is_signed);
 
-    if (compare_scaled_values(self->is_signed, new_scaled_value, max_value) > 0)
+    if (compare_scaled_values(self->is_signed, new_scaled_value, max_value) >
+            0 ||
+            force_positive_overflow)
     {
         if (overflow_mode == OVERFLOW_WRAP)
         {
@@ -285,7 +309,8 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode)
         }
     }
     else if (compare_scaled_values(self->is_signed, new_scaled_value,
-                                   min_value) < 0)
+                                   min_value) < 0 ||
+            force_negative_overflow)
     {
         if (overflow_mode == OVERFLOW_WRAP)
         {
@@ -373,7 +398,7 @@ build_from_float(double value, FP_INT_TYPE int_bits, FP_INT_TYPE frac_bits,
     }
 
     set_object_fields(output_obj, scaled_value, int_bits, frac_bits, is_signed);
-    return check_overflow(output_obj, overflow_mode);
+    return check_overflow(output_obj, overflow_mode, false, false);
 }
 
 /*
@@ -389,7 +414,12 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
               FP_INT_TYPE new_frac_bits, fp_overflow_mode_t overflow_mode,
               fp_round_mode_t round_mode)
 {
+    bool manual_pos_overflow = false, manual_neg_overflow = false;
+
     FP_UINT_TYPE new_scaled_value = self->scaled_value;
+
+    bool original_is_negative = scaled_value_is_negative(
+                    self->scaled_value, self->is_signed);
 
     /* Rounding */
     if (new_frac_bits < self->frac_bits)
@@ -411,9 +441,7 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
              * "round number". That is, if the chopped bits aren't zero,
              * add NEW LSB 1 to the scaled value and then truncate.
              */
-            if (self->is_signed &&
-                (self->scaled_value &
-                 get_sign_bit(self->int_bits + self->frac_bits)) &&
+            if (self->is_signed && original_is_negative &&
                 (self->scaled_value & get_total_bits_mask(right_shifts)))
             {
                 new_scaled_value += 1;
@@ -426,9 +454,6 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
              * "0.5" to our value, conditioned on the specific near type.
              */
 
-            bool is_negative = self->is_signed &&
-                               (self->scaled_value &
-                                get_sign_bit(self->int_bits + self->frac_bits));
             FP_UINT_TYPE chopped_lsbs_value = 0;
             FP_UINT_TYPE num_chopped_minus_1 = right_shifts - 1;
             FP_UINT_TYPE chopped_msb =
@@ -451,7 +476,7 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
                  * that case, we must truncate WITHOUT the add.
                  */
                 if ((chopped_msb != 0) &&
-                    (is_negative || chopped_lsbs_value != 0))
+                    (original_is_negative || chopped_lsbs_value != 0))
                 {
                     new_scaled_value += 1;
                 }
@@ -470,13 +495,55 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
     }
     else if (new_frac_bits > self->frac_bits)
     {
-        new_scaled_value =
-            fp_uint_lshift(new_scaled_value, new_frac_bits - self->frac_bits);
+        FP_UINT_TYPE lshifts = new_frac_bits - self->frac_bits;
+        new_scaled_value = fp_uint_lshift(new_scaled_value, lshifts);
+
+        /*
+         * Calling classes must ensure that the new format after a resize
+         * has <= the system word length. This means that adding fractional
+         * bits will not result in an overflow UNLESS the user also REDUCES
+         * the number of int bits. In this instance, it is possible for the
+         * scaling for the extra fractional bits will cause the chopped int
+         * bit information to be lost (because the left shift is done on a
+         * native word). This will cause a wrap, regardless of whether the
+         * user asked for a wrap or a saturation/exception. In order to provide
+         * the saturation and exception modes, we need to see if we lost data
+         * in the left shift.
+         *
+         * We need to look at the int bits that will be shifted out and if
+         * they are non zero (for positive values) or non one (for negative)
+         * values, then we overflowed. In addition, if the newly scaled value
+         * is of a different sign than the original, we overflowed.
+         */
+        if (overflow_mode != OVERFLOW_WRAP && new_int_bits < self->int_bits)
+        {
+            bool new_is_negative =
+                    scaled_value_is_negative(new_scaled_value, self->is_signed);
+
+            FP_UINT_TYPE overflow_mask =
+                ~fp_uint_rshift(FP_UINT_ALL_BITS_MASK, lshifts);
+            FP_UINT_TYPE overflow = self->scaled_value & overflow_mask;
+
+            if (original_is_negative)
+            {
+                if (!new_is_negative || ((~overflow & overflow_mask) != 0))
+                {
+                    manual_neg_overflow = true;
+                }
+            }
+            else
+            {
+                if (new_is_negative || overflow != 0)
+                {
+                    manual_pos_overflow = true;
+                }
+            }
+        }
     }
 
     set_object_fields(self, new_scaled_value, new_int_bits, new_frac_bits,
                       self->is_signed);
-    return check_overflow(self, overflow_mode);
+    return check_overflow(self, overflow_mode, manual_pos_overflow, manual_neg_overflow);
 }
 
 static double
@@ -862,7 +929,7 @@ fpbinarysmall_subtract(PyObject *op1, PyObject *op2)
      */
     if (!result->is_signed)
     {
-        check_overflow(result, OVERFLOW_WRAP);
+        check_overflow(result, OVERFLOW_WRAP, false, false);
     }
 
     Py_DECREF(cast_op1);
@@ -968,15 +1035,12 @@ fpbinarysmall_divide(PyObject *op1, PyObject *op2)
     FpBinarySmallObject *cast_op1 = (FpBinarySmallObject *)op1;
     FpBinarySmallObject *cast_op2 = (FpBinarySmallObject *)op2;
 
-    FP_INT_TYPE op1_total_bits = cast_op1->int_bits + cast_op1->frac_bits;
     FP_INT_TYPE op2_total_bits = cast_op2->int_bits + cast_op2->frac_bits;
-    FP_UINT_TYPE op1_sign_bit = get_sign_bit(op1_total_bits);
-    FP_UINT_TYPE op2_sign_bit = get_sign_bit(op2_total_bits);
 
-    bool op1_neg =
-        (cast_op1->is_signed && (cast_op1->scaled_value & op1_sign_bit));
-    bool op2_neg =
-        (cast_op1->is_signed && (cast_op2->scaled_value & op2_sign_bit));
+    bool op1_neg = scaled_value_is_negative(
+            cast_op1->scaled_value, cast_op1->is_signed);
+    bool op2_neg = scaled_value_is_negative(
+            cast_op2->scaled_value, cast_op2->is_signed);
 
     FP_UINT_TYPE op1_scaled_val_mag, op2_scaled_val_mag;
     FP_UINT_TYPE new_scaled_value;
@@ -1512,9 +1576,7 @@ bool
 FpBinarySmall_IsNegative(PyObject *obj)
 {
     FpBinarySmallObject *cast_obj = ((FpBinarySmallObject *)obj);
-    return (cast_obj->is_signed &&
-            (cast_obj->scaled_value &
-             get_sign_bit(cast_obj->int_bits + cast_obj->frac_bits)));
+    return scaled_value_is_negative(cast_obj->scaled_value, cast_obj->is_signed);
 }
 
 PyObject *
