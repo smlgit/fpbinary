@@ -691,6 +691,130 @@ class AbstractTestHider(object):
             fpNum <<= long(1)
             self.assertEqualWithFloatCast(fpNum, 8.0)
 
+            # =======================================================================
+            # Bit width max for native platform - removing int bits and adding frac
+            # bits. This is an odd corner case that could produce odd results on
+            # the _FpBinarySmall implementation.
+
+            # Positive
+            fpNum1 = self.fp_binary_class(8, test_utils.get_small_type_size() - 8,
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(6, test_utils.get_small_type_size() - 6,
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch())
+
+            res = fpNum1.resize((6, test_utils.get_small_type_size() - 6),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            # A reduction in int bits should result in saturation to the largest possible
+            # value for the new format.
+            self.assertEqual(res, fpCheck)
+
+            # Negative
+            fpNum1 = self.fp_binary_class(8, test_utils.get_small_type_size() - 8,
+                                          signed=True,
+                                          bit_field=test_utils.get_min_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(6, test_utils.get_small_type_size() - 6,
+                                           signed=True,
+                                           bit_field=test_utils.get_min_signed_value_bit_field_for_arch())
+
+            res = fpNum1.resize((6, test_utils.get_small_type_size() - 6),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            # A reduction in int bits should result in saturation to the smallest possible
+            # value for the new format.
+            self.assertEqual(res, fpCheck)
+
+
+            # Unsigned
+            fpNum1 = self.fp_binary_class(8, test_utils.get_small_type_size() - 8,
+                                          signed=False,
+                                          bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(6, test_utils.get_small_type_size() - 6,
+                                           signed=False,
+                                           bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch())
+
+            res = fpNum1.resize((6, test_utils.get_small_type_size() - 6),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            # A reduction in int bits should result in saturation to the largest possible
+            # value for the new format.
+            self.assertEqual(res, fpCheck)
+
+            # =======================================================================
+            # Bit width max for native platform MINUS 1 - removing int bits and adding
+            # frac bits.
+
+            fpNum1 = self.fp_binary_class(8, test_utils.get_small_type_size() - 1 - 8,
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch() >> long(1))
+
+            fpCheck = self.fp_binary_class(6, test_utils.get_small_type_size() - 1 - 6,
+                                           signed=True,
+                                           bit_field=test_utils.get_max_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((6, test_utils.get_small_type_size() - 1 - 6),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            # A reduction in int bits should result in saturation to the largest possible
+            # value for the new format.
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(8, test_utils.get_small_type_size() - 1 - 8,
+                                          signed=False,
+                                          bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch() >> long(1))
+
+            fpCheck = self.fp_binary_class(6, test_utils.get_small_type_size() - 1 - 6,
+                                           signed=False,
+                                           bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((6, test_utils.get_small_type_size() - 1 - 6),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            # A reduction in int bits should result in saturation to the largest possible
+            # value for the new format.
+            self.assertEqual(res, fpCheck)
+
+            # =======================================================================
+            # Bit width max for native platform - removing int bits and adding frac
+            # bits, but no saturation required.
+
+            fpNum1 = self.fp_binary_class(8, test_utils.get_small_type_size() - 8,
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch() >> long(2))
+
+            fpCheck = self.fp_binary_class(6, test_utils.get_small_type_size() - 6,
+                                           signed=True,
+                                           bit_field=(test_utils.get_max_signed_value_bit_field_for_arch() >> long(2)) << long(2))
+
+            res = fpNum1.resize((6, test_utils.get_small_type_size() - 6),
+                                overflow_mode=OverflowEnum.wrap,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            self.assertEqual(res, fpCheck)
+
+            # And check that exception raising still actually works
+            fpNum1 = self.fp_binary_class(8, test_utils.get_small_type_size() - 8,
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch())
+
+            try:
+                fpNum1.resize((6, test_utils.get_small_type_size() - 6),
+                              overflow_mode=OverflowEnum.excep,
+                              round_mode=RoundingEnum.direct_neg_inf)
+                self.fail()
+            except FpBinaryOverflowException:
+                pass
+
         def testRoundingDirectNegativeInfinity(self):
             # =======================================================================
             # No change expected after rounding
