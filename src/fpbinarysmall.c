@@ -396,6 +396,13 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
     {
         FP_UINT_TYPE right_shifts = self->frac_bits - new_frac_bits;
 
+        /* We do the main shift first and then add any round inc if the
+         * chopped msb was 1. This avoids the underlying datatype
+         * overflowing if we are using the max number of bits.
+         */
+        new_scaled_value =
+            apply_rshift(self->scaled_value, right_shifts, self->is_signed);
+
         if (round_mode == ROUNDING_DIRECT_ZERO)
         {
             /* Go toward zero to the nearest representable value.
@@ -409,8 +416,7 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
                  get_sign_bit(self->int_bits + self->frac_bits)) &&
                 (self->scaled_value & get_total_bits_mask(right_shifts)))
             {
-                new_scaled_value =
-                    self->scaled_value + fp_uint_lshift(1, right_shifts);
+                new_scaled_value += 1;
             }
         }
         else if (round_mode == ROUNDING_NEAR_POS_INF ||
@@ -424,14 +430,14 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
                                (self->scaled_value &
                                 get_sign_bit(self->int_bits + self->frac_bits));
             FP_UINT_TYPE chopped_lsbs_value = 0;
-            FP_UINT_TYPE inc_value = 1;
+            FP_UINT_TYPE num_chopped_minus_1 = right_shifts - 1;
+            FP_UINT_TYPE chopped_msb =
+                self->scaled_value & fp_uint_lshift(1, num_chopped_minus_1);
 
             if (right_shifts > 1)
             {
-                FP_UINT_TYPE num_chopped_minus_1 = right_shifts - 1;
                 chopped_lsbs_value = self->scaled_value &
                                      get_total_bits_mask(num_chopped_minus_1);
-                inc_value = fp_uint_lshift(1, num_chopped_minus_1);
             }
 
             if (round_mode == ROUNDING_NEAR_ZERO)
@@ -444,22 +450,23 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
                  * boundary (i.e. the chopped LSBs except the MSB are zero). In
                  * that case, we must truncate WITHOUT the add.
                  */
-                if (is_negative || chopped_lsbs_value != 0)
+                if ((chopped_msb != 0) &&
+                    (is_negative || chopped_lsbs_value != 0))
                 {
-                    new_scaled_value = self->scaled_value + inc_value;
+                    new_scaled_value += 1;
                 }
             }
             else if (round_mode == ROUNDING_NEAR_POS_INF)
             {
                 /* Add "new value 0.5" to the old sized value and then truncate
                  */
-                new_scaled_value = self->scaled_value + inc_value;
+                if (chopped_msb != 0)
+                {
+                    new_scaled_value += 1;
+                }
             }
         }
         /* else Default to truncate (ROUNDING_DIRECT_NEG_INF) */
-
-        new_scaled_value =
-            apply_rshift(new_scaled_value, right_shifts, self->is_signed);
     }
     else if (new_frac_bits > self->frac_bits)
     {

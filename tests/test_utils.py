@@ -9,6 +9,23 @@ def get_small_type_size():
     """ Returns the number of bits the FpBinarySmall object should be able to support. """
     return int(math.log(sys.maxsize, 2)) + 1
 
+def get_max_signed_value_bit_field(num_bits):
+    return (long(1) << (num_bits - 1)) - 1
+
+def get_min_signed_value_bit_field(num_bits):
+    return (long(1) << (num_bits - 1))
+
+def get_max_unsigned_value_bit_field(num_bits):
+    return (long(1) << num_bits) - 1
+
+def get_max_signed_value_bit_field_for_arch():
+    return get_max_signed_value_bit_field(get_small_type_size())
+
+def get_min_signed_value_bit_field_for_arch():
+    return get_min_signed_value_bit_field(get_small_type_size())
+
+def get_max_unsigned_value_bit_field_for_arch():
+    return get_max_unsigned_value_bit_field(get_small_type_size())
 
 def convert_float_to_bit_field(value, int_bits, frac_bits):
     mant, exp = math.frexp(value)

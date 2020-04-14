@@ -745,6 +745,55 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(res, 3.5)
 
             # =======================================================================
+            # Max/min values for native platform - check no overflow due to rounding
+            # with saturation overflow mode.
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_max_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_min_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_min_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=False,
+                                          bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=False,
+                                           bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_neg_inf)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            # =======================================================================
             # Tie break explicit testing
 
             fpNum1 = self.fp_binary_class(4, 2, signed=True, value=5.5)
@@ -807,6 +856,56 @@ class AbstractTestHider(object):
             fpNum1 = self.fp_binary_class(2, 2, signed=False, value=3.75)
             res = fpNum1.resize((2, 1), round_mode=RoundingEnum.direct_zero)
             self.assertEqualWithFloatCast(res, 3.5)
+
+            # =======================================================================
+            # Max/min values for native platform - check no overflow due to rounding
+            # with saturation overflow mode.
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_zero)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_min_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_min_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_zero)
+
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=False,
+                                          bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=False,
+                                           bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.direct_zero)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
 
             # =======================================================================
             # Tie break explicit testing
@@ -879,6 +978,55 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(res, 0.0)
 
             # =======================================================================
+            # Max/min values for native platform - check no overflow due to rounding
+            # with saturation overflow mode.
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_max_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_pos_inf)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_min_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_min_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_pos_inf)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=False,
+                                          bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=False,
+                                           bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_pos_inf)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            # =======================================================================
             # Tie break explicit testing
 
             fpNum1 = self.fp_binary_class(4, 2, signed=True, value=5.5)
@@ -945,6 +1093,55 @@ class AbstractTestHider(object):
             fpNum1 = self.fp_binary_class(2, 2, signed=False, value=3.75)
             res = fpNum1.resize((2, 1), round_mode=RoundingEnum.near_zero)
             self.assertEqualWithFloatCast(res, 3.5)
+
+            # =======================================================================
+            # Max/min values for native platform - check no overflow due to rounding
+            # with saturation overflow mode.
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_max_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_zero)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_min_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_min_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_zero)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=False,
+                                          bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=False,
+                                           bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_zero)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
 
             # =======================================================================
             # Tie break explicit testing
