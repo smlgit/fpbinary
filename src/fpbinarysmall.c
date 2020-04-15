@@ -290,7 +290,7 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode,
 
     if (compare_scaled_values(self->is_signed, new_scaled_value, max_value) >
             0 ||
-            force_positive_overflow)
+        force_positive_overflow)
     {
         if (overflow_mode == OVERFLOW_WRAP)
         {
@@ -310,7 +310,7 @@ check_overflow(FpBinarySmallObject *self, fp_overflow_mode_t overflow_mode,
     }
     else if (compare_scaled_values(self->is_signed, new_scaled_value,
                                    min_value) < 0 ||
-            force_negative_overflow)
+             force_negative_overflow)
     {
         if (overflow_mode == OVERFLOW_WRAP)
         {
@@ -418,8 +418,8 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
 
     FP_UINT_TYPE new_scaled_value = self->scaled_value;
 
-    bool original_is_negative = scaled_value_is_negative(
-                    self->scaled_value, self->is_signed);
+    bool original_is_negative =
+        scaled_value_is_negative(self->scaled_value, self->is_signed);
 
     /* Rounding */
     if (new_frac_bits < self->frac_bits)
@@ -448,7 +448,8 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
             }
         }
         else if (round_mode == ROUNDING_NEAR_POS_INF ||
-                 round_mode == ROUNDING_NEAR_ZERO)
+                 round_mode == ROUNDING_NEAR_ZERO ||
+                 round_mode == ROUNDING_NEAR_EVEN)
         {
             /* "Near" rounding modes. This basically means we need to add
              * "0.5" to our value, conditioned on the specific near type.
@@ -465,7 +466,18 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
                                      get_total_bits_mask(num_chopped_minus_1);
             }
 
-            if (round_mode == ROUNDING_NEAR_ZERO)
+            if (round_mode == ROUNDING_NEAR_EVEN)
+            {
+                FP_UINT_TYPE new_lsb =
+                    self->scaled_value & fp_uint_lshift(1, right_shifts);
+
+                if (chopped_msb != 0 &&
+                    (chopped_lsbs_value != 0 || new_lsb != 0))
+                {
+                    new_scaled_value += 1;
+                }
+            }
+            else if (round_mode == ROUNDING_NEAR_ZERO)
             {
                 /*
                  * This is a "near" round but ties are settled towards zero.
@@ -518,7 +530,7 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
         if (overflow_mode != OVERFLOW_WRAP && new_int_bits < self->int_bits)
         {
             bool new_is_negative =
-                    scaled_value_is_negative(new_scaled_value, self->is_signed);
+                scaled_value_is_negative(new_scaled_value, self->is_signed);
 
             FP_UINT_TYPE overflow_mask =
                 ~fp_uint_rshift(FP_UINT_ALL_BITS_MASK, lshifts);
@@ -543,7 +555,8 @@ resize_object(FpBinarySmallObject *self, FP_INT_TYPE new_int_bits,
 
     set_object_fields(self, new_scaled_value, new_int_bits, new_frac_bits,
                       self->is_signed);
-    return check_overflow(self, overflow_mode, manual_pos_overflow, manual_neg_overflow);
+    return check_overflow(self, overflow_mode, manual_pos_overflow,
+                          manual_neg_overflow);
 }
 
 static double
@@ -1037,10 +1050,10 @@ fpbinarysmall_divide(PyObject *op1, PyObject *op2)
 
     FP_INT_TYPE op2_total_bits = cast_op2->int_bits + cast_op2->frac_bits;
 
-    bool op1_neg = scaled_value_is_negative(
-            cast_op1->scaled_value, cast_op1->is_signed);
-    bool op2_neg = scaled_value_is_negative(
-            cast_op2->scaled_value, cast_op2->is_signed);
+    bool op1_neg =
+        scaled_value_is_negative(cast_op1->scaled_value, cast_op1->is_signed);
+    bool op2_neg =
+        scaled_value_is_negative(cast_op2->scaled_value, cast_op2->is_signed);
 
     FP_UINT_TYPE op1_scaled_val_mag, op2_scaled_val_mag;
     FP_UINT_TYPE new_scaled_value;
@@ -1576,7 +1589,8 @@ bool
 FpBinarySmall_IsNegative(PyObject *obj)
 {
     FpBinarySmallObject *cast_obj = ((FpBinarySmallObject *)obj);
-    return scaled_value_is_negative(cast_obj->scaled_value, cast_obj->is_signed);
+    return scaled_value_is_negative(cast_obj->scaled_value,
+                                    cast_obj->is_signed);
 }
 
 PyObject *

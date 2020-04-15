@@ -87,18 +87,18 @@ PyTypeObject OverflowEnumType = {
  *
  */
 
-PyDoc_STRVAR(fpbinaryrounding_enum_doc, "This type is not meant to be "
-                                        "instantiated. Use the global instance "
-                                        "RoundingEnum.\n");
+PyDoc_STRVAR(
+        fpbinaryrounding_enum_doc,
+        "This type is not meant to be instantiated. Use the global instance RoundingEnum.\n"
+        "The enums will generally be of the 'direct' or 'near' types.\n"
+        "'near' implies that a rule is applied if the value is exactly halfway between the representable value.\n"
+        "'direct' implies that no consideration is given to these halfway situations.\n");
 
 PyDoc_STRVAR(
     fpbinaryrounding_npi_doc,
-    "The value is rounded towards the nearest value representable by "
-    "the new format.\n"
+    "The value is rounded towards the nearest value representable by the new format.\n"
     "Ties (i.e. X.5) are rounded towards positive infinity.\n"
-    "The IEEE 754 standard does not have an equivalent, but this is "
-    "the mode used by the VHDL\n"
-    "fixed point library when using the 'round' mode.\n"
+    "The IEEE 754 standard does not have an equivalent, but this is common in general arithmetic that many call 'rounding up'.\n"
     "Examples.\n"
     "    5.5 and 5.6 both go to 6.0 (assuming resizing to zero "
     "fract_bits).\n"
@@ -109,10 +109,8 @@ PyDoc_STRVAR(
     fpbinaryrounding_nz_doc,
     "The value is rounded towards the "
     "nearest value representable by the new "
-    "format. Ties\n"
-    "(i.e. X.5) are rounded towards zero.\n"
-    "The IEEE 754 standard does not have an equivalent, but python uses this\n"
-    "mode when converting floats to ints.\n"
+    "format. Ties (i.e. X.5) are rounded towards zero.\n"
+    "The IEEE 754 standard does not have an equivalent, but python uses this mode when converting floats to ints.\n"
     "Examples.\n"
     "    5.5 goes to 5.0, 5.6 goes to 6.0 (assuming resizing to zero "
     "fract_bits).\n"
@@ -122,9 +120,9 @@ PyDoc_STRVAR(
 PyDoc_STRVAR(
     fpbinaryrounding_dni_doc,
     "The value is rounded in the negative direction to the nearest "
-    "value representable by the\n"
-    "new format. This is often called 'flooring' or, for hardware people, "
-    "'truncation'.\n"
+    "value representable by the new format.\n"
+    "This is a clean truncate of bits without any other processing. It is often called 'flooring'.\n"
+    "This is the mode the VHDL fixed point library applies when using the 'truncate' mode.\n"
     "The IEEE 754 standard calls this 'Round toward -infinity'.\n"
     "Examples.\n"
     "    5.5 and 5.6 both go to 5.0 (assuming resizing to zero fract_bits).\n"
@@ -134,12 +132,26 @@ PyDoc_STRVAR(
 PyDoc_STRVAR(
     fpbinaryrounding_dz_doc,
     "The value is rounded in the direction towards zero to the nearest "
-    "value representable by the\n"
-    "new format.\n"
+    "value representable by the new format.\n"
     "The IEEE 754 standard calls this 'Round toward 0' or 'truncation'.\n"
     "Examples.\n"
     "    5.5 and 5.6 both go to 5.0 (assuming resizing to zero fract_bits).\n"
     "    -5.25 and -5.375 both go to -5.0 (assuming resizing to one "
+    "fract_bit).\n");
+
+PyDoc_STRVAR(
+    fpbinaryrounding_ne_doc,
+    "The value is rounded towards the nearest value representable by "
+    "the new format.\n"
+    "Ties (i.e. X.5) are rounded towards the 'even' representation. This means that, after rounding a tie, the lsb is zero.\n"
+    "The IEEE 754 standard calls this 'Round to nearest, ties to even'.\n"
+    "This is also the mode the VHDL fixed point library applies when using the 'round' mode.\n"
+    "Examples.\n"
+    "    5.5 and 6.5 both go to 6.0 (assuming resizing to zero "
+    "fract_bits).\n"
+    "    -5.5 and -6.5 both go to -6.0 (assuming resizing to zero "
+    "fract_bits).\n"
+    "    5.75 goes to 6.0, 5.25 goes to 5.0 (assuming resizing to one "
     "fract_bit).\n");
 
 static void
@@ -157,6 +169,8 @@ static PyMemberDef roundingenum_members[] = {
      fpbinaryrounding_nz_doc},
     {"direct_zero", T_LONG, offsetof(RoundingEnumObject, direct_zero), 0,
      fpbinaryrounding_dz_doc},
+    {"near_even", T_LONG, offsetof(RoundingEnumObject, near_even), 0,
+     fpbinaryrounding_ne_doc},
     {NULL} /* Sentinel */
 };
 
@@ -171,6 +185,7 @@ roundingenum_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->direct_neg_inf = (long)ROUNDING_DIRECT_NEG_INF;
         self->near_zero = (long)ROUNDING_NEAR_ZERO;
         self->direct_zero = (long)ROUNDING_DIRECT_ZERO;
+        self->near_even = (long)ROUNDING_NEAR_EVEN;
     }
 
     return (PyObject *)self;

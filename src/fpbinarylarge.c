@@ -369,7 +369,8 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
             Py_DECREF(initial_shifted_val);
         }
         else if (round_mode == ROUNDING_NEAR_POS_INF ||
-                 round_mode == ROUNDING_NEAR_ZERO)
+                 round_mode == ROUNDING_NEAR_ZERO ||
+                 round_mode == ROUNDING_NEAR_EVEN)
         {
             /*
              * "Near" rounding modes. This basically means we need to add
@@ -379,10 +380,12 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
             bool chopped_bits_are_nonzero = false;
             bool is_negative =
                 (FpBinary_TpCompare(self->scaled_value, py_zero) < 0);
-            PyObject *inc_value;
+            PyObject *new_lsb_bit_pos, *inc_value;
 
-            inc_value = FP_NUM_METHOD(py_one, nb_lshift)(py_one, right_shifts);
-            FP_NUM_BIN_OP_INPLACE(inc_value, py_one, nb_rshift);
+            new_lsb_bit_pos =
+                FP_NUM_METHOD(py_one, nb_lshift)(py_one, right_shifts);
+            inc_value = FP_NUM_METHOD(new_lsb_bit_pos,
+                                      nb_rshift)(new_lsb_bit_pos, py_one);
 
             /*
              * Work out if our lower bits are non zero.
@@ -394,10 +397,8 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
                     self->scaled_value, frac_bits_mask);
 
                 /* Actually interested in the LSBs minus the most significant of
-                 * them,
-                 * so cheap way from here is to compare with our inc value
-                 * (which
-                 * should be the most significant bit only).
+                 * them, so cheap way from here is to compare with our inc value
+                 * (which should be the most significant bit only).
                  */
                 if (FpBinary_TpCompare(frac_bits, inc_value) > 0)
                 {
@@ -408,7 +409,28 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
                 Py_DECREF(frac_bits);
             }
 
-            if (round_mode == ROUNDING_NEAR_ZERO)
+            if (round_mode == ROUNDING_NEAR_EVEN)
+            {
+                PyObject *new_lsb = FP_NUM_METHOD(self->scaled_value, nb_and)(
+                    self->scaled_value, new_lsb_bit_pos);
+
+                if (chopped_bits_are_nonzero ||
+                    FpBinary_TpCompare(new_lsb, py_zero) != 0)
+                {
+                    new_scaled_value =
+                        FP_NUM_METHOD(self->scaled_value,
+                                      nb_add)(self->scaled_value, inc_value);
+                }
+                else
+                {
+                    new_scaled_value =
+                        FP_NUM_METHOD(self->scaled_value,
+                                      nb_add)(self->scaled_value, py_zero);
+                }
+
+                Py_DECREF(new_lsb);
+            }
+            else if (round_mode == ROUNDING_NEAR_ZERO)
             {
                 /*
                  * This is a "near" round but ties are settled towards zero.
@@ -418,7 +440,7 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
                  * boundary (i.e. the chopped LSBs except the MSB are zero). In
                  * that case, we must truncate WITHOUT the add.
                  */
-                if (is_negative || chopped_bits_are_nonzero != 0)
+                if (is_negative || chopped_bits_are_nonzero)
                 {
                     new_scaled_value =
                         FP_NUM_METHOD(self->scaled_value,
@@ -447,6 +469,7 @@ resize_object(FpBinaryLargeObject *self, PyObject *new_int_bits,
              */
             FP_NUM_BIN_OP_INPLACE(new_scaled_value, right_shifts, nb_rshift);
 
+            Py_DECREF(new_lsb_bit_pos);
             Py_DECREF(inc_value);
         }
         else

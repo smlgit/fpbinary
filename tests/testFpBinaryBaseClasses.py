@@ -1041,6 +1041,156 @@ class AbstractTestHider(object):
             res = fpNum1.resize((4, 2), round_mode=RoundingEnum.near_pos_inf)
             self.assertEqualWithFloatCast(res, 5.25)
 
+        def testRoundingNearEven(self):
+            # =======================================================================
+            # No change expected after rounding
+
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 3), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 1.125)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 7), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, -0.0234375)
+
+            fpNum1 = self.fp_binary_class(7, -3, signed=True, value=-48.0)
+            res = fpNum1.resize((7, -4), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, -48.0)
+
+            # =======================================================================
+            # Change expected after rounding
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=1.125)
+            res = fpNum1.resize((2, 2), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 1.0)
+
+            fpNum1 = self.fp_binary_class(-4, 8, signed=True, value=-0.0234375)
+            res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, -0.03125)
+
+            fpNum1 = self.fp_binary_class(7, -2, signed=True, value=52.0)
+            res = fpNum1.resize((7, -3), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 48.0)
+
+            # =======================================================================
+            # Change expected after rounding, crossing frac/int boundary
+            fpNum1 = self.fp_binary_class(2, 4, signed=True, value=-1.1875)
+            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, -1.0)
+
+            # =======================================================================
+            # Max and min values frac resized
+
+            # -- The rounding will cause an overflow...
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=3.75)
+            res = fpNum1.resize((3, 1),
+                                round_mode=RoundingEnum.near_even,
+                                overflow_mode=OverflowEnum.wrap)
+            self.assertEqualWithFloatCast(res, -4.0)
+
+            fpNum1 = self.fp_binary_class(3, 2, signed=True, value=-0.25)
+            res = fpNum1.resize((3, 1), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 0.0)
+
+            # -- The rounding will cause an overflow...
+            fpNum1 = self.fp_binary_class(2, 2, signed=False, value=3.75)
+            res = fpNum1.resize((2, 1), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 0.0)
+
+            # =======================================================================
+            # Max/min values for native platform - check no overflow due to rounding
+            # with saturation overflow mode.
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_max_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_max_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_even)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True,
+                                          bit_field=test_utils.get_min_signed_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=True,
+                                           bit_field=test_utils.get_min_signed_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_even)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=False,
+                                          bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch())
+
+            fpCheck = self.fp_binary_class(0, test_utils.get_small_type_size() - 1,
+                                           signed=False,
+                                           bit_field=test_utils.get_max_unsigned_value_bit_field_for_arch() >> long(1))
+
+            res = fpNum1.resize((0, test_utils.get_small_type_size() - 1),
+                                overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_even)
+
+            # After resizing, value should be max value for one less bits
+            self.assertEqual(res, fpCheck)
+
+            # =======================================================================
+            # Tie break explicit testing
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=5.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 6.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=6.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 6.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=-5.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, -6.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=-6.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, -6.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=5.75)
+            res = fpNum1.resize((4, 1), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 6.0)
+
+            fpNum1 = self.fp_binary_class(4, 4, signed=True, value=5.25)
+            res = fpNum1.resize((4, 1), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 5.0)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True, value=0.25)
+            res = fpNum1.resize((0, 1), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 0.0)
+
+            fpNum1 = self.fp_binary_class(0, test_utils.get_small_type_size(),
+                                          signed=True, value=0.375)
+            res = fpNum1.resize((0, 2), overflow_mode=OverflowEnum.wrap,
+                                round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, -0.5)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=False, value=5.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 6.0)
+
+            fpNum1 = self.fp_binary_class(4, 2, signed=False, value=6.5)
+            res = fpNum1.resize((4, 0), round_mode=RoundingEnum.near_even)
+            self.assertEqualWithFloatCast(res, 6.0)
+
         def testRoundingNearZero(self):
             # =======================================================================
             # No change expected after rounding
@@ -1499,6 +1649,50 @@ class AbstractTestHider(object):
                 self.fail()
             except FpBinaryOverflowException:
                 pass
+
+            # =======================================================================
+            # Rounding/Wrapping
+            # Increase int bits at same time reducing frac bits - check overflow
+            # doesn't occur
+            # Signed
+            # b0111.10 = 7.5
+            #
+            # Round up: b0111. -> b1000 but with increase int bits -> b01000
+
+            # OverflowEnum.wrap
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=7.5)
+            res = fpNum1.resize((5, 0), overflow_mode=OverflowEnum.wrap,
+                                round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 8.0)
+
+            # OverflowEnum.sat
+            fpNum1 = self.fp_binary_class(4, 2, signed=True, value=7.5)
+            res = fpNum1.resize((5, 0), overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 8.0)
+
+            # =======================================================================
+            # Rounding/Wrapping
+            # Increase int bits at same time reducing frac bits - check overflow
+            # doesn't occur
+            # Unsigned
+            # b111.10 = 7.5
+            #
+            # Round up: b111. -> b000. but with increase int bits -> b1000.
+
+            # OverflowEnum.wrap
+            fpNum1 = self.fp_binary_class(3, 2, signed=False, value=7.5)
+            res = fpNum1.resize((4, 0), overflow_mode=OverflowEnum.wrap,
+                                round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 8.0)
+
+            # OverflowEnum.sat
+            fpNum1 = self.fp_binary_class(3, 2, signed=False, value=7.5)
+            res = fpNum1.resize((4, 0), overflow_mode=OverflowEnum.sat,
+                                round_mode=RoundingEnum.near_pos_inf)
+            self.assertEqualWithFloatCast(res, 8.0)
+
+
 
         def testCompare(self):
             """ Verifies equals, greater than etc."""

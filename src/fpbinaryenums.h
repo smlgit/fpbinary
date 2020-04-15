@@ -25,6 +25,7 @@ typedef struct
     long direct_neg_inf;
     long near_zero;
     long direct_zero;
+    long near_even;
 } RoundingEnumObject;
 
 extern PyTypeObject RoundingEnumType;
