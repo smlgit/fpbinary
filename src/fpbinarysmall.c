@@ -62,7 +62,7 @@ scaled_value_is_negative(FP_UINT_TYPE value, bool is_signed)
         return false;
     }
 
-    return FP_UINT_MAX_SIGN_BIT & value;
+    return ((FP_UINT_MAX_SIGN_BIT & value) != 0);
 }
 
 /*
@@ -269,7 +269,7 @@ copy_fields(FpBinarySmallObject *from_obj, FpBinarySmallObject *to_obj)
  *
  * The force_positive_overflow and force_negative_overflow flags allow
  * a calling function to force check_overflow to act as though an overflow
- * occured. This is useful if an overflow during a previous operation on
+ * occured. This is useful if an overflow occured during a previous operation on
  * self but isn't detectable from the current value of self. I.e. if
  * a scaling due to an increase in fractional bits resulted in an overflow.
  *
