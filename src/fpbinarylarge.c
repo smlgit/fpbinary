@@ -1570,6 +1570,58 @@ FpBinaryLarge_FromDouble(double value, FP_INT_TYPE int_bits,
     return (PyObject *)result;
 }
 
+PyObject *
+FpBinaryLarge_FromPickleDict(PyObject *dict)
+{
+    PyObject *result = (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
+    PyObject *int_bits, *frac_bits, *scaled_value, *is_signed;
+
+    int_bits = PyDict_GetItemString(dict, "int_bits");
+    frac_bits = PyDict_GetItemString(dict, "frac_bits");
+    scaled_value = PyDict_GetItemString(dict, "scaled_value");
+    is_signed = PyDict_GetItemString(dict, "is_signed");
+
+    if (int_bits && frac_bits && scaled_value && is_signed)
+    {
+        set_object_fields((FpBinaryLargeObject *)result, scaled_value,
+                int_bits, frac_bits,
+                (is_signed == Py_True) ? true : false);
+    }
+    else
+    {
+        Py_XDECREF(result);
+        result = NULL;
+        PyErr_SetString(PyExc_KeyError,
+                                        "Pickle dict didn't have a required key.");
+    }
+
+    return result;
+}
+
+bool
+FpBinaryLarge_UpdatePickleDict(PyObject *self, PyObject *dict)
+{
+    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *) self;
+
+    if (!dict)
+    {
+        return false;
+    }
+
+    if (cast_self->int_bits && cast_self->frac_bits && cast_self->scaled_value)
+    {
+        PyDict_SetItemString(dict, "int_bits", cast_self->int_bits);
+        PyDict_SetItemString(dict, "frac_bits", cast_self->frac_bits);
+        PyDict_SetItemString(dict, "scaled_value", cast_self->scaled_value);
+        PyDict_SetItemString(dict, "is_signed", cast_self->is_signed ? Py_True : Py_False);
+        PyDict_SetItemString(dict, "base_obj_id", fp_large_type_id);
+
+        return true;
+    }
+
+    return false;
+}
+
 static PyMethodDef fpbinarylarge_methods[] = {
     {"resize", (PyCFunction)fpbinarylarge_resize, METH_VARARGS | METH_KEYWORDS,
      resize_doc},
@@ -1656,6 +1708,8 @@ fpbinary_private_iface_t FpBinary_LargePrvIface = {
 
     .fp_from_double = FpBinaryLarge_FromDouble,
     .fp_from_bits_pylong = FpBinaryLarge_FromBitsPylong,
+
+    .build_pickle_dict = FpBinaryLarge_UpdatePickleDict,
 
     .getitem = fpbinarylarge_subscript,
 };

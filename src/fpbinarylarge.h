@@ -40,4 +40,7 @@ PyObject *FpBinaryLarge_FromBitsPylong(PyObject *scaled_value,
                                        FP_INT_TYPE int_bits,
                                        FP_INT_TYPE frac_bits, bool is_signed);
 
+PyObject *FpBinaryLarge_FromPickleDict(PyObject *dict);
+bool FpBinaryLarge_UpdatePickleDict(PyObject *self, PyObject *dict);
+
 #endif

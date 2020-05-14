@@ -126,6 +126,8 @@ typedef struct
 
     PyObject *(*getitem)(PyObject *, PyObject *);
 
+    bool (*build_pickle_dict)(PyObject *self, PyObject *dict);
+
 } fpbinary_private_iface_t;
 
 typedef struct
@@ -137,6 +139,13 @@ extern PyObject *FpBinaryOverflowException;
 extern PyObject *py_zero;
 extern PyObject *py_one;
 extern PyObject *py_minus_one;
+extern PyObject *fp_version_major;
+extern PyObject *fp_version_minor;
+
+/* For pickling base objects */
+extern PyObject *fp_small_type_id;
+extern PyObject *fp_large_type_id;
+
 
 FP_UINT_TYPE fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
@@ -164,7 +173,7 @@ void calc_double_to_fp_params(double input_value, double *scaled_value,
 void calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
                              FP_UINT_TYPE *int_bits);
 PyObject *fp_uint_as_pylong(FP_UINT_TYPE value);
-PyObject *fp_int_as_pylong(FP_UINT_TYPE value);
+PyObject *fp_int_as_pylong(FP_INT_TYPE value);
 FP_UINT_TYPE pylong_as_fp_uint(PyObject *val);
 FP_INT_TYPE pylong_as_fp_int(PyObject *val);
 void build_scaled_bits_from_pyfloat(PyObject *value, PyObject *frac_bits,

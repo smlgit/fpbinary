@@ -454,10 +454,14 @@ fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
 
     if (base_obj)
     {
+        PyObject *old = (PyObject *) self->base_obj;
         self->base_obj = base_obj;
+        Py_XDECREF(old);
+
+        return true;
     }
 
-    return (self->base_obj != NULL);
+    return false;
 }
 
 PyDoc_STRVAR(
@@ -576,14 +580,15 @@ PyDoc_STRVAR(
     "will have one extra integer bit than the input operand. Otherwise, the "
     "format will\n"
     "remain the same.\n");
-static PyObject *
-fpbinary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static int
+fpbinary_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
 {
     long int_bits = 1, frac_bits = 0;
     bool is_signed = true;
     double value = 0.0;
     PyObject *bit_field = NULL, *format_instance = NULL;
-    FpBinaryObject *self = (FpBinaryObject *)type->tp_alloc(type, 0);
+    FpBinaryObject *self = (FpBinaryObject*) self_pyobj;
+
 
     if (self)
     {
@@ -591,19 +596,17 @@ fpbinary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
                                         &is_signed, &value, &bit_field,
                                         &format_instance))
         {
-            return NULL;
+            return -1;
         }
 
         if (fpbinary_populate_with_params(self, int_bits, frac_bits, is_signed,
                                           value, bit_field, format_instance))
         {
-            return (PyObject *)self;
+            return 0;
         }
-
-        Py_DECREF(self);
     }
 
-    return NULL;
+    return -1;
 }
 
 /*
@@ -1020,6 +1023,51 @@ fpbinary_getitem(PyObject *self, PyObject *item)
 }
 
 static PyObject *
+fpbinary_getstate(PyObject *self)
+{
+    PyObject *dict = PyDict_New();
+
+    if (dict != NULL)
+    {
+        PyDict_SetItemString(dict, "fp_binary_ver_maj", fp_version_major);
+        PyDict_SetItemString(dict, "fp_binary_ver_min", fp_version_minor);
+        if (!FP_BASE_METHOD(PYOBJ_TO_BASE_FP(self), build_pickle_dict)(PYOBJ_TO_BASE_FP_PYOBJ(self), dict))
+        {
+            Py_DECREF(dict);
+            dict = NULL;
+        }
+    }
+
+    return dict;
+}
+
+static void
+fpbinary_setstate(PyObject *self, PyObject *dict)
+{
+    FpBinaryObject *cast_self = (FpBinaryObject *) self;
+    PyObject *base_obj = NULL;
+    PyObject *base_type_id = PyDict_GetItemString(dict, "base_obj_id");
+
+    if (base_type_id != NULL)
+    {
+        if (base_type_id == fp_small_type_id)
+        {
+            base_obj = FpBinarySmall_FromPickleDict(dict);
+        }
+        else if (base_type_id == fp_large_type_id)
+        {
+            base_obj = FpBinaryLarge_FromPickleDict(dict);
+        }
+    }
+
+    if (base_obj != NULL)
+    {
+        Py_INCREF(base_obj);
+        cast_self->base_obj = (fpbinary_base_t *) base_obj;
+    }
+}
+
+static PyObject *
 fpbinary_str(PyObject *obj)
 {
     return FP_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(obj),
@@ -1097,6 +1145,9 @@ static PyMethodDef fpbinary_methods[] = {
 
     {"__getitem__", (PyCFunction)fpbinary_getitem, METH_O, NULL},
 
+    {"__getstate__", (PyCFunction)fpbinary_getstate, METH_NOARGS, NULL},
+    {"__setstate__", (PyCFunction)fpbinary_setstate, METH_O, NULL},
+
     {NULL} /* Sentinel */
 };
 
@@ -1153,7 +1204,8 @@ PyTypeObject FpBinary_Type = {
     .tp_as_number = &fpbinary_as_number,
     .tp_as_sequence = &fpbinary_as_sequence,
     .tp_as_mapping = &fpbinary_as_mapping,
-    .tp_new = (newfunc)fpbinary_new,
+    .tp_new = (newfunc)PyType_GenericNew,
+    .tp_init = (initproc)fpbinary_init,
     .tp_dealloc = (destructor)fpbinary_dealloc,
     .tp_str = fpbinary_str,
     .tp_repr = fpbinary_str,

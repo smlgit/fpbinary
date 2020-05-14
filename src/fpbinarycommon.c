@@ -9,6 +9,8 @@
  *****************************************************************************/
 
 #include "fpbinarycommon.h"
+#include "fpbinaryversion.h"
+
 #include <float.h>
 #include <math.h>
 
@@ -17,6 +19,12 @@ PyObject *py_one;
 PyObject *py_minus_one;
 PyObject *py_ten;
 PyObject *py_five;
+PyObject *fp_version_major;
+PyObject *fp_version_minor;
+
+/* For pickling base objects */
+PyObject *fp_small_type_id;
+PyObject *fp_large_type_id;
 
 /*
  * Does a left shift SAFELY (shifting by more than the length of the
@@ -351,7 +359,7 @@ fp_uint_as_pylong(FP_UINT_TYPE value)
 }
 
 PyObject *
-fp_int_as_pylong(FP_UINT_TYPE value)
+fp_int_as_pylong(FP_INT_TYPE value)
 {
     return PyLong_FromLongLong(value);
 }
@@ -657,4 +665,10 @@ FpBinaryCommon_InitModule(void)
     py_minus_one = PyLong_FromLong(-1);
     py_five = PyLong_FromLong(5);
     py_ten = PyLong_FromLong(10);
+    fp_version_major = PyLong_FromLong(FPBINARY_MAJOR_VER);
+    fp_version_minor = PyLong_FromLong(FPBINARY_MINOR_VER);
+
+    /* Tells us what type of base object was pickled */
+    fp_small_type_id = PyLong_FromLong(1);
+    fp_large_type_id = PyLong_FromLong(2);
 }

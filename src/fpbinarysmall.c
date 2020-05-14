@@ -1652,6 +1652,73 @@ FpBinarySmall_FromBitsPylong(PyObject *scaled_value, FP_INT_TYPE int_bits,
     return result;
 }
 
+PyObject *
+FpBinarySmall_FromPickleDict(PyObject *dict)
+{
+    PyObject *result = (PyObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
+    PyObject *int_bits, *frac_bits, *scaled_value, *is_signed;
+
+    int_bits = PyDict_GetItemString(dict, "int_bits");
+    frac_bits = PyDict_GetItemString(dict, "frac_bits");
+    scaled_value = PyDict_GetItemString(dict, "scaled_value");
+    is_signed = PyDict_GetItemString(dict, "is_signed");
+
+    if (int_bits && frac_bits && scaled_value && is_signed)
+    {
+
+        set_object_fields((FpBinarySmallObject *)result,
+                pylong_as_fp_uint(scaled_value),
+                pylong_as_fp_int(int_bits),
+                pylong_as_fp_int(frac_bits),
+                (is_signed == Py_True) ? true : false);
+    }
+    else
+    {
+        Py_XDECREF(result);
+        result = NULL;
+        PyErr_SetString(PyExc_KeyError,
+                                        "Pickle dict didn't have a required key.");
+    }
+
+    return result;
+}
+
+bool
+FpBinarySmall_UpdatePickleDict(PyObject *self, PyObject *dict)
+{
+    bool result = false;
+    FpBinarySmallObject *cast_self = (FpBinarySmallObject *) self;
+    PyObject *int_bits, *frac_bits, *scaled_value, *is_signed;
+
+    if (!dict)
+    {
+        return false;
+    }
+
+    int_bits = fp_int_as_pylong(cast_self->int_bits);
+    frac_bits = fp_int_as_pylong(cast_self->frac_bits);
+    scaled_value = fp_uint_as_pylong(cast_self->scaled_value);
+    is_signed = cast_self->is_signed ? Py_True : Py_False;
+
+    if (int_bits && frac_bits && scaled_value)
+    {
+        PyDict_SetItemString(dict, "int_bits", int_bits);
+        PyDict_SetItemString(dict, "frac_bits", frac_bits);
+        PyDict_SetItemString(dict, "scaled_value", scaled_value);
+        PyDict_SetItemString(dict, "is_signed", is_signed);
+        PyDict_SetItemString(dict, "base_obj_id", fp_small_type_id);
+
+        result = true;
+    }
+
+    Py_XDECREF(int_bits);
+    Py_XDECREF(frac_bits);
+    Py_XDECREF(scaled_value);
+    // Didn't create a new bool, no need to decref is_signed
+
+    return result;
+}
+
 bool
 FpBinary_IntCheck(PyObject *ob)
 {
@@ -1752,6 +1819,8 @@ fpbinary_private_iface_t FpBinary_SmallPrvIface = {
 
     .fp_from_double = FpBinarySmall_FromDouble,
     .fp_from_bits_pylong = FpBinarySmall_FromBitsPylong,
+
+    .build_pickle_dict = FpBinarySmall_UpdatePickleDict,
 
     .getitem = fpbinarysmall_subscript,
 };
