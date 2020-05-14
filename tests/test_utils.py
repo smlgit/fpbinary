@@ -65,6 +65,15 @@ def set_float_bit_precision(value, int_bits, frac_bits, is_signed):
     # And convert back to float
     return bit_field / 2.0**frac_bits
 
+def fp_binary_instances_are_totally_equal(op1, op2):
+    """
+    Returns True if the value, format and signed propeties of the instances are equal.
+    """
+    if op1 == op2 and op1.format == op2.format and op1.is_signed == op2.is_signed:
+        return True
+
+    return False
+
 
 if __name__ == '__main__':
     print('{} --> {}'.format(1.0, set_float_bit_precision(1.0, 4, 4, True)))

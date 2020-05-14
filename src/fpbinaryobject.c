@@ -1029,8 +1029,6 @@ fpbinary_getstate(PyObject *self)
 
     if (dict != NULL)
     {
-        PyDict_SetItemString(dict, "fp_binary_ver_maj", fp_version_major);
-        PyDict_SetItemString(dict, "fp_binary_ver_min", fp_version_minor);
         if (!FP_BASE_METHOD(PYOBJ_TO_BASE_FP(self), build_pickle_dict)(PYOBJ_TO_BASE_FP_PYOBJ(self), dict))
         {
             Py_DECREF(dict);
@@ -1050,11 +1048,11 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
 
     if (base_type_id != NULL)
     {
-        if (base_type_id == fp_small_type_id)
+        if (FpBinary_TpCompare(base_type_id, fp_small_type_id) == 0)
         {
             base_obj = FpBinarySmall_FromPickleDict(dict);
         }
-        else if (base_type_id == fp_large_type_id)
+        else if (FpBinary_TpCompare(base_type_id, fp_large_type_id) == 0)
         {
             base_obj = FpBinaryLarge_FromPickleDict(dict);
         }

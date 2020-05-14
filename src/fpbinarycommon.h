@@ -139,8 +139,6 @@ extern PyObject *FpBinaryOverflowException;
 extern PyObject *py_zero;
 extern PyObject *py_one;
 extern PyObject *py_minus_one;
-extern PyObject *fp_version_major;
-extern PyObject *fp_version_minor;
 
 /* For pickling base objects */
 extern PyObject *fp_small_type_id;

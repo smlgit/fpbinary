@@ -2,17 +2,29 @@
 # Unit-tests for FpBinary Python module
 # SML, some tests adapted from RW Penney's Simple Fixed Point module
 
-import sys, unittest, copy
+import sys, unittest, copy, pickle, os
 import test_utils
 from fpbinary import FpBinary, OverflowEnum, RoundingEnum, FpBinaryOverflowException
-
 
 if sys.version_info[0] >= 3:
     from porting_v3_funcs import *
 
 
+pickle_test_file_name = 'pickle_test.data'
+pickle_libs = [pickle]
+try:
+    import cPickle
+    pickle_libs.append(cPickle)
+except:
+    pass
+
+
 class AbstractTestHider(object):
     class WrapperClassesTestAbstract(unittest.TestCase):
+        def tearDown(self):
+            if os.path.exists(pickle_test_file_name):
+                os.remove(pickle_test_file_name)
+
         def assertAlmostEqual(self, first, second, places=7):
             """Overload TestCase.assertAlmostEqual() to avoid use of round()"""
             tol = 10.0 ** -places
@@ -1321,6 +1333,45 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(35, 34, signed=True,
                                          bit_field=((1 << 33) << 34) + ((1 << 34) - 1))
             self.assertTrue(fpNum.str_ex() == '8589934592.9999999999417923390865325927734375')
+
+        def testPickle(self):
+            test_cases = [
+                self.fp_binary_class(8, 8, signed=True, value=0.01234),
+                self.fp_binary_class(8, 8, signed=True, value=-3.01234),
+                self.fp_binary_class(8, 8, signed=False, value=0.01234),
+                self.fp_binary_class(test_utils.get_small_type_size() - 2, 2, signed=True, value=56.789),
+                self.fp_binary_class(test_utils.get_small_type_size() - 2, 3, signed=True, value=56.789),
+                self.fp_binary_class(test_utils.get_small_type_size(),
+                                     test_utils.get_small_type_size(), signed=True,
+                                     bit_field=(1 << (test_utils.get_small_type_size() + 5)) + 23),
+                self.fp_binary_class(test_utils.get_small_type_size(),
+                                     test_utils.get_small_type_size(), signed=False,
+                                     bit_field=(1 << (test_utils.get_small_type_size() * 2)) - 1),
+            ]
+
+
+
+
+            for lib in pickle_libs:
+                # Test saving of individual objects
+                for test_case in test_cases:
+                    with open(pickle_test_file_name, 'wb') as f:
+                        lib.dump(test_case, f, lib.HIGHEST_PROTOCOL)
+
+                    with open(pickle_test_file_name, 'rb') as f:
+                        unpickled = lib.load(f)
+                        self.assertTrue(
+                            test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
+
+                # Test saving of list of objects
+                with open(pickle_test_file_name, 'wb') as f:
+                    lib.dump(test_cases, f, lib.HIGHEST_PROTOCOL)
+
+                with open(pickle_test_file_name, 'rb') as f:
+                    unpickled = lib.load(f)
+                    for expected, loaded in zip(test_cases, unpickled):
+                        self.assertTrue(
+                            test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
 
 
 class FpBinaryTests(AbstractTestHider.WrapperClassesTestAbstract):

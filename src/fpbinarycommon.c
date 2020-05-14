@@ -665,8 +665,6 @@ FpBinaryCommon_InitModule(void)
     py_minus_one = PyLong_FromLong(-1);
     py_five = PyLong_FromLong(5);
     py_ten = PyLong_FromLong(10);
-    fp_version_major = PyLong_FromLong(FPBINARY_MAJOR_VER);
-    fp_version_minor = PyLong_FromLong(FPBINARY_MINOR_VER);
 
     /* Tells us what type of base object was pickled */
     fp_small_type_id = PyLong_FromLong(1);
