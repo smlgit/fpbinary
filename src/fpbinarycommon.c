@@ -643,6 +643,37 @@ FpBinary_IntFromLong(long val)
 #endif
 }
 
+/*
+ * Will take the input and:
+ *     - if it is NOT a PyLong, will attempt to convert to a PyLong
+ *     - if it IS a PyLong, will increment the ref count and return it
+ *
+ * Note that this function should only be called if the input ob is either
+ * a PyLong or a PyInt.
+ */
+PyObject *
+FpBinary_EnsureIsPyLong(PyObject *ob)
+{
+#if PY_MAJOR_VERSION >= 3
+
+    Py_INCREF(ob);
+    return ob;
+
+#else
+
+    if (PyLong_Check(ob))
+    {
+        Py_INCREF(ob);
+        return ob;
+    }
+    else
+    {
+        return PyLong_FromLong(PyInt_AsLong(ob));
+    }
+
+#endif
+}
+
 long
 FpBinary_IntAsLong(PyObject *ob)
 {

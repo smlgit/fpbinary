@@ -580,6 +580,7 @@ PyDoc_STRVAR(
     "will have one extra integer bit than the input operand. Otherwise, the "
     "format will\n"
     "remain the same.\n");
+
 static int
 fpbinary_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
 {
@@ -1039,7 +1040,7 @@ fpbinary_getstate(PyObject *self)
     return dict;
 }
 
-static void
+static PyObject *
 fpbinary_setstate(PyObject *self, PyObject *dict)
 {
     FpBinaryObject *cast_self = (FpBinaryObject *) self;
@@ -1048,6 +1049,13 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
 
     if (base_type_id != NULL)
     {
+        /* Make sure the object is actually a PyLong. I.e. if we are in Python
+         * 2.7, the unpickler may have decided to create a PyInt. Note that after
+         * this call, we have created a new/incremented reference, so we need
+         * to decrement when done.
+         */
+        base_type_id = FpBinary_EnsureIsPyLong(base_type_id);
+
         if (FpBinary_TpCompare(base_type_id, fp_small_type_id) == 0)
         {
             base_obj = FpBinarySmall_FromPickleDict(dict);
@@ -1056,13 +1064,26 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
         {
             base_obj = FpBinaryLarge_FromPickleDict(dict);
         }
+
+        Py_DECREF(base_type_id);
     }
+
+    /*fpbinary_populate_with_params(cast_self, 8, 2, true,
+                                              21.0, NULL, NULL);*/
 
     if (base_obj != NULL)
     {
-        Py_INCREF(base_obj);
+        PyObject *old = (PyObject *) cast_self->base_obj;
         cast_self->base_obj = (fpbinary_base_t *) base_obj;
+        Py_XDECREF(old);
     }
+
+    /*printf("in setstate - ptr: %p size: %ld refs: %ld base: %p  base refs: %ld\n",
+                self,
+                ((PyObject *)self)->ob_type->tp_basicsize, Py_REFCNT(self),
+                cast_self->base_obj, Py_REFCNT(cast_self->base_obj));*/
+
+    Py_RETURN_NONE;
 }
 
 static PyObject *

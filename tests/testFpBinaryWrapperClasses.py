@@ -11,12 +11,6 @@ if sys.version_info[0] >= 3:
 
 
 pickle_test_file_name = 'pickle_test.data'
-pickle_libs = [pickle]
-try:
-    import cPickle
-    pickle_libs.append(cPickle)
-except:
-    pass
 
 
 class AbstractTestHider(object):
@@ -1335,7 +1329,7 @@ class AbstractTestHider(object):
             self.assertTrue(fpNum.str_ex() == '8589934592.9999999999417923390865325927734375')
 
         def testPickle(self):
-            test_cases = [
+            fp_list = [
                 self.fp_binary_class(8, 8, signed=True, value=0.01234),
                 self.fp_binary_class(8, 8, signed=True, value=-3.01234),
                 self.fp_binary_class(8, 8, signed=False, value=0.01234),
@@ -1350,28 +1344,40 @@ class AbstractTestHider(object):
             ]
 
 
+            unpickled = None
 
-
-            for lib in pickle_libs:
-                # Test saving of individual objects
-                for test_case in test_cases:
-                    with open(pickle_test_file_name, 'wb') as f:
-                        lib.dump(test_case, f, lib.HIGHEST_PROTOCOL)
-
-                    with open(pickle_test_file_name, 'rb') as f:
-                        unpickled = lib.load(f)
-                        self.assertTrue(
-                            test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
-
-                # Test saving of list of objects
+            # Test saving of individual objects
+            for test_case in fp_list:
                 with open(pickle_test_file_name, 'wb') as f:
-                    lib.dump(test_cases, f, lib.HIGHEST_PROTOCOL)
+                    pickle.dump(test_case, f, pickle.HIGHEST_PROTOCOL)
 
                 with open(pickle_test_file_name, 'rb') as f:
-                    unpickled = lib.load(f)
-                    for expected, loaded in zip(test_cases, unpickled):
-                        self.assertTrue(
-                            test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+                    unpickled = pickle.load(f)
+                    self.assertTrue(
+                        test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
+
+            # Test saving of list of objects
+
+            with open(pickle_test_file_name, 'wb') as f:
+                pickle.dump(fp_list, f, pickle.HIGHEST_PROTOCOL)
+
+            with open(pickle_test_file_name, 'rb') as f:
+                unpickled = pickle.load(f)
+
+            for expected, loaded in zip(fp_list, unpickled):
+                self.assertTrue(
+                    test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+
+        def testPickleAcrossVersions(self):
+            for fname in test_utils.get_static_pickle_file_paths():
+                print(fname)
+                with open(fname, 'rb') as f:
+                    unpickled = pickle.load(f)
+
+                print(unpickled)
+                for expected, loaded in zip(test_utils.pickle_static_data, unpickled):
+                    self.assertTrue(
+                        test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
 
 
 class FpBinaryTests(AbstractTestHider.WrapperClassesTestAbstract):

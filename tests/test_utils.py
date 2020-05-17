@@ -1,4 +1,5 @@
-import sys, math
+import sys, math, pickle, os
+from fpbinary import FpBinary
 
 
 if sys.version_info[0] >= 3:
@@ -75,11 +76,77 @@ def fp_binary_instances_are_totally_equal(op1, op2):
     return False
 
 
+# ================================================================================
+# Generating and getting back pickled data from multiple versions
+# ================================================================================
+
+pickle_static_file_prefix = 'pickletest'
+pickle_static_file_dir = 'data'
+pickle_static_data = [
+    FpBinary(8, 8, signed=True, value=0.01234),
+    FpBinary(8, 8, signed=True, value=-3.01234),
+    FpBinary(8, 8, signed=False, value=0.01234),
+
+    FpBinary(get_small_type_size() - 2, 2, signed=True, value=56.789),
+    FpBinary(get_small_type_size() - 2, 2, signed=False, value=56.789),
+
+    # All ones, small size
+    FpBinary(get_small_type_size() - 2, 2, signed=True,
+             bit_field=(1 << get_small_type_size()) - 1),
+    FpBinary(get_small_type_size() - 2, 2, signed=False,
+             bit_field=(1 << get_small_type_size()) - 1),
+
+    FpBinary(get_small_type_size() - 2, 3, signed=True, value=56436.25),
+    FpBinary(get_small_type_size() - 2, 3, signed=False, value=56436.25),
+
+    # All ones, large size
+    FpBinary(get_small_type_size() - 2, 3, signed=True,
+             bit_field=(1 << (get_small_type_size() + 1)) - 1),
+    FpBinary(get_small_type_size() - 2, 3, signed=False,
+             bit_field=(1 << (get_small_type_size() + 1)) - 1),
+
+    FpBinary(get_small_type_size(),
+             get_small_type_size(), signed=True,
+             bit_field=(1 << (get_small_type_size() + 5)) + 23),
+    FpBinary(get_small_type_size(),
+             get_small_type_size(), signed=False,
+             bit_field=(1 << (get_small_type_size() * 2)) - 1),
+]
+
+def gen_static_pickle_files():
+    """
+    File name format: pickle_test_v[python_version]_p[pickle protocol].data
+    """
+
+    for protocol in range(2, pickle.HIGHEST_PROTOCOL + 1):
+        fname = '{}_v{}_{}_{}_p{}.data'.format(
+            pickle_static_file_prefix,
+            sys.version_info.major, sys.version_info.minor, sys.version_info.micro,
+            protocol
+        )
+
+        with open(os.path.join(pickle_static_file_dir, fname), 'wb') as f:
+            pickle.dump(pickle_static_data, f, protocol)
+
+def get_static_pickle_file_paths():
+    result = []
+
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(this_dir, pickle_static_file_dir)
+
+    for f in os.listdir(data_dir):
+        if pickle_static_file_prefix in f:
+            file_protocol = int(f.split('_')[4].split('.')[0].strip('p'))
+            maj_ver = int(f.split('_')[2].split('.')[0].strip('v'))
+            if file_protocol <= pickle.HIGHEST_PROTOCOL:
+                result.append(os.path.join(data_dir, f))
+
+    return result
+
+
 if __name__ == '__main__':
-    print('{} --> {}'.format(1.0, set_float_bit_precision(1.0, 4, 4, True)))
-    print('{} --> {}'.format(1.0 / 3.0, set_float_bit_precision(1.0 / 3.0, 4, 4, True)))
-    print('{} --> {}'.format(-7.75, set_float_bit_precision(-7.75, 4, 1, True)))
-    print('{} --> {}'.format(21.0 / 2.0, set_float_bit_precision(21.0/2.0, 8, 0, True)))
-    print('{} --> {}'.format(-21.0 / 2.0, set_float_bit_precision(-21.0 / 2.0, 8, 0, True)))
+    # Generate pickling data
+    gen_static_pickle_files()
+    print(get_static_pickle_file_paths())
 
 

@@ -1581,11 +1581,30 @@ FpBinaryLarge_FromPickleDict(PyObject *dict)
     scaled_value = PyDict_GetItemString(dict, "scaled_value");
     is_signed = PyDict_GetItemString(dict, "is_signed");
 
+    /*printf("i %s %s f %s %s  s %s %s   signed: %s %s\n",
+                int_bits->ob_type->tp_name, PyString_AsString(PyObject_Str(int_bits)),
+                frac_bits->ob_type->tp_name, PyString_AsString(PyObject_Str(frac_bits)),
+                scaled_value->ob_type->tp_name, PyString_AsString(PyObject_Str(scaled_value)),
+                is_signed->ob_type->tp_name, PyString_AsString(PyObject_Str(is_signed)));*/
+
     if (int_bits && frac_bits && scaled_value && is_signed)
     {
+        /* Make sure the objects are actually PyLongs. I.e. if we are in Python
+         * 2.7, the unpickler may have decided to create a PyInt. Note that after
+         * these calls, we have created a new/incremented reference, so we need
+         * to decrement when done.
+         */
+        int_bits = FpBinary_EnsureIsPyLong(int_bits);
+        frac_bits = FpBinary_EnsureIsPyLong(frac_bits);
+        scaled_value = FpBinary_EnsureIsPyLong(scaled_value);
+
         set_object_fields((FpBinaryLargeObject *)result, scaled_value,
                 int_bits, frac_bits,
                 (is_signed == Py_True) ? true : false);
+
+        Py_DECREF(int_bits);
+        Py_DECREF(frac_bits);
+        Py_DECREF(scaled_value);
     }
     else
     {
@@ -1718,6 +1737,7 @@ void
 FpBinaryLarge_InitModule(void)
 {
     PyObject *minus_one_pyfloat = PyFloat_FromDouble(-1.0);
+
     fpbinarylarge_minus_one =
         (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
     build_from_pyfloat(minus_one_pyfloat, py_one, py_zero, true, OVERFLOW_WRAP,
