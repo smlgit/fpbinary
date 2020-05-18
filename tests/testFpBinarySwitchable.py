@@ -12,6 +12,12 @@ if sys.version_info[0] >= 3:
 
 
 pickle_test_file_name = 'pickle_test.data'
+pickle_libs = [pickle]
+try:
+    import cPickle
+    pickle_libs.append(cPickle)
+except:
+    pass
 
 def remove_pickle_file():
     if os.path.exists(pickle_test_file_name):
@@ -545,48 +551,49 @@ class FpBianrySwitchableTests(unittest.TestCase):
             fp3,
         ]
 
-        unpickled = None
+        for pickle_lib in pickle_libs:
+            unpickled = None
 
-        # Test saving of individual objects
-        for test_case in fp_list:
+            # Test saving of individual objects
+            for test_case in fp_list:
+                with open(pickle_test_file_name, 'wb') as f:
+                    pickle_lib.dump(test_case, f, pickle_lib.HIGHEST_PROTOCOL)
+
+                with open(pickle_test_file_name, 'rb') as f:
+                    unpickled = pickle_lib.load(f)
+                    self.assertTrue(
+                        test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
+
+            # With append
+            remove_pickle_file()
+
+            for test_case in fp_list:
+                with open(pickle_test_file_name, 'ab') as f:
+                    pickle_lib.dump(test_case, f, pickle_lib.HIGHEST_PROTOCOL)
+
+            unpickled = []
+            with open(pickle_test_file_name, 'rb') as f:
+                while True:
+                    try:
+                        unpickled.append(pickle_lib.load(f))
+                    except:
+                        break
+
+            for expected, loaded in zip(fp_list, unpickled):
+                self.assertTrue(
+                    test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+
+            # Test saving of list of objects
+
             with open(pickle_test_file_name, 'wb') as f:
-                pickle.dump(test_case, f, pickle.HIGHEST_PROTOCOL)
+                pickle_lib.dump(fp_list, f, pickle_lib.HIGHEST_PROTOCOL)
 
             with open(pickle_test_file_name, 'rb') as f:
-                unpickled = pickle.load(f)
+                unpickled = pickle_lib.load(f)
+
+            for expected, loaded in zip(fp_list, unpickled):
                 self.assertTrue(
-                    test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
-
-        # With append
-        remove_pickle_file()
-
-        for test_case in fp_list:
-            with open(pickle_test_file_name, 'ab') as f:
-                pickle.dump(test_case, f, pickle.HIGHEST_PROTOCOL)
-
-        unpickled = []
-        with open(pickle_test_file_name, 'rb') as f:
-            while True:
-                try:
-                    unpickled.append(pickle.load(f))
-                except:
-                    break
-
-        for expected, loaded in zip(fp_list, unpickled):
-            self.assertTrue(
-                test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
-
-        # Test saving of list of objects
-
-        with open(pickle_test_file_name, 'wb') as f:
-            pickle.dump(fp_list, f, pickle.HIGHEST_PROTOCOL)
-
-        with open(pickle_test_file_name, 'rb') as f:
-            unpickled = pickle.load(f)
-
-        for expected, loaded in zip(fp_list, unpickled):
-            self.assertTrue(
-                test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+                    test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
 
     def testPickleAcrossVersions(self):
         """
@@ -594,13 +601,14 @@ class FpBianrySwitchableTests(unittest.TestCase):
         It includes both FpBinary and FpBinarySwitchable instances.
         :return:
         """
-        for fname in test_utils.get_static_pickle_file_paths():
-            with open(fname, 'rb') as f:
-                unpickled = pickle.load(f)
+        for pickle_lib in pickle_libs:
+            for fname in test_utils.get_static_pickle_file_paths():
+                with open(fname, 'rb') as f:
+                    unpickled = pickle_lib.load(f)
 
-            for expected, loaded in zip(test_utils.pickle_static_data, unpickled):
-                self.assertTrue(
-                    test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+                for expected, loaded in zip(test_utils.pickle_static_data, unpickled):
+                    self.assertTrue(
+                        test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
 
 
 if __name__ == "__main__":

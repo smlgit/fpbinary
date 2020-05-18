@@ -181,6 +181,12 @@ fpbinaryswitchable_populate_new(FpBinarySwitchableObject *self, bool fp_mode,
     {
         self->fp_mode = fp_mode;
 
+        /* If we are replacing the FP object, dec the ref counter for the
+         * old object. Note that the generic allocation method does set
+         * all objects to NULL, so this should be safe when called from __new__.*/
+        Py_XDECREF(self->fp_mode_value);
+        self->fp_mode_value = NULL;
+
         if (fp_mode)
         {
             self->fp_mode_value = fp_mode_value;
@@ -189,7 +195,6 @@ fpbinaryswitchable_populate_new(FpBinarySwitchableObject *self, bool fp_mode,
         }
         else
         {
-            self->fp_mode_value = NULL;
             self->dbl_mode_value = self->dbl_mode_min_value =
                 self->dbl_mode_max_value = dbl_mode_value;
         }
@@ -206,8 +211,13 @@ fpbinaryswitchable_populate_all(FpBinarySwitchableObject *self, bool fp_mode,
 {
     if (self)
     {
-        self->fp_mode = fp_mode;
+        /* If we are replacing the FP object, dec the ref counter for the
+         * old object. Note that the generic allocation method does set
+         * all objects to NULL, so this should be safe when called from __new__.*/
+        Py_XDECREF(self->fp_mode_value);
         self->fp_mode_value = fp_mode_value;
+
+        self->fp_mode = fp_mode;
         self->dbl_mode_value = dbl_mode_value;
         self->dbl_mode_min_value = dbl_mode_min_value;
         self->dbl_mode_max_value = dbl_mode_max_value;
@@ -360,6 +370,13 @@ fpbinaryswitchable_copy(FpBinarySwitchableObject *self, PyObject *args)
 
     return (PyObject *)result;
 }
+
+/*
+ * Picking functions __getstate__ and __setstate__ .
+ *
+ * The pickling strategy is the same as that for FpBinary.
+ * This means that protocols < 2 are not supported.
+ */
 
 static PyObject *
 fpbinaryswitchable_getstate(PyObject *self)
@@ -937,6 +954,7 @@ static PyMethodDef fpbinaryswitchable_methods[] = {
      METH_VARARGS | METH_KEYWORDS, resize_doc},
     {"__copy__", (PyCFunction)fpbinaryswitchable_copy, METH_NOARGS, copy_doc},
 
+    /* Pickling functions */
     {"__getstate__", (PyCFunction)fpbinaryswitchable_getstate, METH_NOARGS, NULL},
     {"__setstate__", (PyCFunction)fpbinaryswitchable_setstate, METH_O, NULL},
 

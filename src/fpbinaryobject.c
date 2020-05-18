@@ -1022,6 +1022,30 @@ fpbinary_getitem(PyObject *self, PyObject *item)
                           getitem)(PYOBJ_TO_BASE_FP_PYOBJ(self), item);
 }
 
+
+/*
+ * Picking funcitons __getstate__ and __setstate__ .
+ *
+ * The pickling strategy is to not implement a __reduce__ method but to implement
+ * __getstate__ and __setstate__. This will cause all pickling code for protocols
+ * >= 2 to pickle the dictionary produced by __getstate__ on pickling and, on
+ * unpickling, call the FpBinary __new__ function but NOT the __init__ function and
+ * instead call the __setstate__ function with the unpickled dict as parameter.
+ *
+ * This strategy does not work for pickle protocols 0 and 1.
+ *
+ * This strategy means that the underlying base classes (FpBinarySmall and FpBinaryLarge)
+ * are never exposed to the outside world, so we can easily get rid of them in
+ * future if we want.
+ *
+ * The underlying base classes populate the dict with whatever they want and then
+ * FpBinary returns it from the __getstate__ funciton. An id is put in the dict so
+ * FpBinary knows which function to call when __setstate__ is called.
+ *
+ * No version number is set in the dict. If changes are made to the objects in future,
+ * a version field can be added to the dict and an absence of a version field in the
+ * unpickled dict indicates the oldest version.
+ */
 static PyObject *
 fpbinary_getstate(PyObject *self)
 {
@@ -1155,6 +1179,7 @@ static PyMethodDef fpbinary_methods[] = {
 
     {"__getitem__", (PyCFunction)fpbinary_getitem, METH_O, NULL},
 
+    /* Pickling functions */
     {"__getstate__", (PyCFunction)fpbinary_getstate, METH_NOARGS, NULL},
     {"__setstate__", (PyCFunction)fpbinary_setstate, METH_O, NULL},
 
