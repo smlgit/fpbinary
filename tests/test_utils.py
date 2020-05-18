@@ -1,5 +1,5 @@
 import sys, math, pickle, os
-from fpbinary import FpBinary
+from fpbinary import FpBinary, FpBinarySwitchable
 
 
 if sys.version_info[0] >= 3:
@@ -66,18 +66,26 @@ def set_float_bit_precision(value, int_bits, frac_bits, is_signed):
     # And convert back to float
     return bit_field / 2.0**frac_bits
 
+
 def fp_binary_instances_are_totally_equal(op1, op2):
     """
-    Returns True if the value, format and signed propeties of the instances are equal.
+    Supports FpBinary, FpBinarySwitchable and basic numeric objects.
+    Returns True if the properties of the two objects are the same.
     """
-    if op1 == op2 and op1.format == op2.format and op1.is_signed == op2.is_signed:
-        return True
 
-    return False
+    if isinstance(op1, FpBinary) and isinstance(op2, FpBinary):
+        return op1.format == op2.format and op1.is_signed == op2.is_signed
+    elif isinstance(op1, FpBinarySwitchable) and isinstance(op2, FpBinarySwitchable):
+        return (op1.fp_mode == op2.fp_mode and op1.min_value == op2.min_value and
+                op1.max_value == op2.max_value and
+                fp_binary_instances_are_totally_equal(op1.value, op2.value))
+
+    return (op1 == op2)
 
 
 # ================================================================================
-# Generating and getting back pickled data from multiple versions
+# Generating and getting back pickled data from multiple versions.
+# This includes FpBinary and FpBinarySwitchable instances
 # ================================================================================
 
 pickle_static_file_prefix = 'pickletest'
@@ -90,6 +98,10 @@ pickle_static_data = [
     FpBinary(get_small_type_size() - 2, 2, signed=True, value=56.789),
     FpBinary(get_small_type_size() - 2, 2, signed=False, value=56.789),
 
+    FpBinarySwitchable(fp_mode=False, fp_value=FpBinary(16, 16, signed=True, value=5.875)),
+    FpBinarySwitchable(fp_mode=False, float_value=-45.6),
+
+
     # All ones, small size
     FpBinary(get_small_type_size() - 2, 2, signed=True,
              bit_field=(1 << get_small_type_size()) - 1),
@@ -99,11 +111,18 @@ pickle_static_data = [
     FpBinary(get_small_type_size() - 2, 3, signed=True, value=56436.25),
     FpBinary(get_small_type_size() - 2, 3, signed=False, value=56436.25),
 
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(get_small_type_size() - 2, 2, signed=True)),
+
     # All ones, large size
     FpBinary(get_small_type_size() - 2, 3, signed=True,
              bit_field=(1 << (get_small_type_size() + 1)) - 1),
     FpBinary(get_small_type_size() - 2, 3, signed=False,
              bit_field=(1 << (get_small_type_size() + 1)) - 1),
+
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(get_small_type_size(),
+                         get_small_type_size(), signed=False,
+                         bit_field=(1 << (get_small_type_size() * 2)) - 1)),
+
 
     FpBinary(get_small_type_size(),
              get_small_type_size(), signed=True,
@@ -111,12 +130,22 @@ pickle_static_data = [
     FpBinary(get_small_type_size(),
              get_small_type_size(), signed=False,
              bit_field=(1 << (get_small_type_size() * 2)) - 1),
+
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(16, 16, signed=True, value=5.875)),
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(get_small_type_size() - 2, 3, signed=True)),
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(get_small_type_size(),
+                         get_small_type_size(), signed=True,
+                         bit_field=(1 << (get_small_type_size() + 5)) + 23)),
+
 ]
 
 def gen_static_pickle_files():
     """
     File name format: pickle_test_v[python_version]_p[pickle protocol].data
     """
+
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(this_dir, pickle_static_file_dir)
 
     for protocol in range(2, pickle.HIGHEST_PROTOCOL + 1):
         fname = '{}_v{}_{}_{}_p{}.data'.format(
@@ -125,7 +154,7 @@ def gen_static_pickle_files():
             protocol
         )
 
-        with open(os.path.join(pickle_static_file_dir, fname), 'wb') as f:
+        with open(os.path.join(data_dir, fname), 'wb') as f:
             pickle.dump(pickle_static_data, f, protocol)
 
 def get_static_pickle_file_paths():

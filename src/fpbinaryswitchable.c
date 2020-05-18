@@ -196,6 +196,24 @@ fpbinaryswitchable_populate_new(FpBinarySwitchableObject *self, bool fp_mode,
     }
 }
 
+/*
+ * fp_mode_value ref count IS NOT incremented.
+ */
+static void
+fpbinaryswitchable_populate_all(FpBinarySwitchableObject *self, bool fp_mode,
+                                PyObject *fp_mode_value, double dbl_mode_value,
+                                double dbl_mode_min_value, double dbl_mode_max_value)
+{
+    if (self)
+    {
+        self->fp_mode = fp_mode;
+        self->fp_mode_value = fp_mode_value;
+        self->dbl_mode_value = dbl_mode_value;
+        self->dbl_mode_min_value = dbl_mode_min_value;
+        self->dbl_mode_max_value = dbl_mode_max_value;
+    }
+}
+
 static FpBinarySwitchableObject *
 fpbinaryswitchable_from_params(bool fp_mode, PyObject *fp_mode_value,
                                double dbl_mode_value)
@@ -213,8 +231,8 @@ fpbinaryswitchable_from_params(bool fp_mode, PyObject *fp_mode_value,
     return self;
 }
 
-static PyObject *
-fpbinaryswitchable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static int
+fpbinaryswitchable_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     /*
      * Parameters for FpBinarySwitchableObject:
@@ -225,7 +243,6 @@ fpbinaryswitchable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
      * is set (in float mode, float_value will be set to float(fp_value) ).
      */
 
-    PyObject *result = NULL;
     PyObject *fp_mode_in = NULL, *fp_value_in = NULL, *float_value_in = NULL,
              *value_obj = NULL;
     bool fp_mode = true;
@@ -235,12 +252,12 @@ fpbinaryswitchable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO", kwlist, &fp_mode_in,
                                      &fp_value_in, &float_value_in))
-        return false;
+        return -1;
 
     if (!fp_mode_in && PyBool_Check(fp_mode_in))
     {
         PyErr_SetString(PyExc_TypeError, "fp_mode must be True or False.");
-        return NULL;
+        return -1;
     }
 
     if (fp_mode_in == Py_False)
@@ -258,7 +275,7 @@ fpbinaryswitchable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             PyErr_SetString(
                 PyExc_TypeError,
                 "Fixed point mode value must be an instance of FpBinary.");
-            return NULL;
+            return -1;
         }
     }
     else
@@ -278,14 +295,13 @@ fpbinaryswitchable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             PyErr_SetString(
                 PyExc_TypeError,
                 "Floating point mode value must be convertable to float.");
-            return NULL;
+            return -1;
         }
     }
 
-    result = type->tp_alloc(type, 0);
-    fpbinaryswitchable_populate_new((FpBinarySwitchableObject *)result, fp_mode,
+    fpbinaryswitchable_populate_new((FpBinarySwitchableObject *)self, fp_mode,
                                     value_obj, dbl_val);
-    return result;
+    return 0;
 }
 
 /*
@@ -343,6 +359,62 @@ fpbinaryswitchable_copy(FpBinarySwitchableObject *self, PyObject *args)
     }
 
     return (PyObject *)result;
+}
+
+static PyObject *
+fpbinaryswitchable_getstate(PyObject *self)
+{
+    FpBinarySwitchableObject *cast_self = (FpBinarySwitchableObject *) self;
+    PyObject *dict = PyDict_New();
+
+    if (dict != NULL)
+    {
+        PyDict_SetItemString(dict, "fpm", (cast_self->fp_mode == true) ? Py_True : Py_False);
+        PyDict_SetItemString(dict, "dv", PyFloat_FromDouble(cast_self->dbl_mode_value));
+        PyDict_SetItemString(dict, "dmax", PyFloat_FromDouble(cast_self->dbl_mode_max_value));
+        PyDict_SetItemString(dict, "dmin", PyFloat_FromDouble(cast_self->dbl_mode_min_value));
+
+        if (cast_self->fp_mode_value != NULL)
+        {
+            PyDict_SetItemString(dict, "fpv", cast_self->fp_mode_value);
+        }
+    }
+
+    return dict;
+}
+
+static PyObject *
+fpbinaryswitchable_setstate(PyObject *self, PyObject *dict)
+{
+    FpBinarySwitchableObject *cast_self = (FpBinarySwitchableObject *) self;
+    PyObject *fp_mode_py, *fp_mode_value_py, *dbl_mode_value_py, *dbl_mode_min_value_py, *dbl_mode_max_value_py;
+
+    fp_mode_py = PyDict_GetItemString(dict, "fpm");
+    fp_mode_value_py = PyDict_GetItemString(dict, "fpv");
+    dbl_mode_value_py = PyDict_GetItemString(dict, "dv");
+    dbl_mode_min_value_py = PyDict_GetItemString(dict, "dmin");
+    dbl_mode_max_value_py = PyDict_GetItemString(dict, "dmax");
+
+    if (fp_mode_py && dbl_mode_value_py && dbl_mode_min_value_py && dbl_mode_max_value_py &&
+            (fp_mode_py == Py_False || fp_mode_value_py))
+    {
+        if (fp_mode_value_py)
+        {
+            Py_INCREF(fp_mode_value_py);
+        }
+
+        fpbinaryswitchable_populate_all(cast_self,
+                (fp_mode_py == Py_True) ? true : false,
+                fp_mode_value_py, PyFloat_AsDouble(dbl_mode_value_py),
+                PyFloat_AsDouble(dbl_mode_min_value_py), PyFloat_AsDouble(dbl_mode_max_value_py));
+    }
+    else
+    {
+        PyErr_SetString(PyExc_KeyError,
+                                "Pickle dict didn't have a required key.");
+    }
+
+    Py_RETURN_NONE;
 }
 
 /*
@@ -865,6 +937,9 @@ static PyMethodDef fpbinaryswitchable_methods[] = {
      METH_VARARGS | METH_KEYWORDS, resize_doc},
     {"__copy__", (PyCFunction)fpbinaryswitchable_copy, METH_NOARGS, copy_doc},
 
+    {"__getstate__", (PyCFunction)fpbinaryswitchable_getstate, METH_NOARGS, NULL},
+    {"__setstate__", (PyCFunction)fpbinaryswitchable_setstate, METH_O, NULL},
+
     {NULL} /* Sentinel */
 };
 
@@ -910,7 +985,8 @@ PyTypeObject FpBinarySwitchable_Type = {
     .tp_methods = fpbinaryswitchable_methods,
     .tp_getset = fpbinaryswitchable_getsetters,
     .tp_as_number = &fpbinaryswitchable_as_number,
-    .tp_new = (newfunc)fpbinaryswitchable_new,
+    .tp_new = (newfunc)PyType_GenericNew,
+    .tp_init = (initproc)fpbinaryswitchable_init,
     .tp_dealloc = (destructor)fpbinaryswitchable_dealloc,
     .tp_str = fpbinaryswitchable_str,
     .tp_repr = fpbinaryswitchable_str,

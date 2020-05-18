@@ -1390,15 +1390,6 @@ class AbstractTestHider(object):
                 self.assertTrue(
                     test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
 
-        def testPickleAcrossVersions(self):
-            for fname in test_utils.get_static_pickle_file_paths():
-                with open(fname, 'rb') as f:
-                    unpickled = pickle.load(f)
-
-                for expected, loaded in zip(test_utils.pickle_static_data, unpickled):
-                    self.assertTrue(
-                        test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
-
 
 class FpBinaryTests(AbstractTestHider.WrapperClassesTestAbstract):
     def setUp(self):

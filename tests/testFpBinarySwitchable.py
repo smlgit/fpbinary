@@ -2,14 +2,20 @@
 # Unit-tests for FpBinary Python module
 # SML
 
-import sys, unittest, random, copy
-import test_utils
+import sys, unittest, random, copy, os, pickle
+import tests.test_utils as test_utils
 from fpbinary import FpBinary, FpBinarySwitchable, OverflowEnum, RoundingEnum
 
 
 if sys.version_info[0] >= 3:
-    from porting_v3_funcs import *
+    from tests.porting_v3_funcs import *
 
+
+pickle_test_file_name = 'pickle_test.data'
+
+def remove_pickle_file():
+    if os.path.exists(pickle_test_file_name):
+        os.remove(pickle_test_file_name)
 
 class FpBianrySwitchableTests(unittest.TestCase):
     def assertAlmostEqual(self, first, second, places=7):
@@ -498,6 +504,103 @@ class FpBianrySwitchableTests(unittest.TestCase):
         switchable = FpBinarySwitchable(fp_mode=False, float_value=5.875)
         self.assertEqual(switchable << long(2), 23.5)
         self.assertEqual(switchable >> long(3), 0.734375)
+
+    def testPickle(self):
+
+        # Instances with min and max values set
+        fp1 = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(16, 16, signed=True, value=5.875),
+                                 float_value=5.875)
+        fp1.value = FpBinary(16, 16, signed=True, value=-34.5)
+        fp1.value = FpBinary(16, 16, signed=True, value=34.5)
+
+        fp2 = FpBinarySwitchable(fp_mode=False, fp_value=FpBinary(16, 16, signed=True, value=5.875),
+                                 float_value=5.875)
+        fp2.value = FpBinary(16, 16, signed=True, value=-34.5)
+        fp2.value = FpBinary(16, 16, signed=True, value=34.5)
+
+        fp3 = FpBinarySwitchable(fp_mode=False, fp_value=FpBinary(16, 16, signed=True, value=5.875),
+                                 float_value=5.875)
+        fp3.value = -56.98
+        fp3.value = 26
+
+        fp_list = [
+            FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(16, 16, signed=True, value=5.875)),
+            FpBinarySwitchable(fp_mode=False, fp_value=FpBinary(16, 16, signed=True, value=5.875)),
+            FpBinarySwitchable(fp_mode=False, float_value=-45.6),
+
+
+
+            # Extreme sized FpBinary instances
+            FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(test_utils.get_small_type_size() - 2, 2, signed=True)),
+            FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(test_utils.get_small_type_size() - 2, 3, signed=True)),
+            FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(test_utils.get_small_type_size(),
+                                 test_utils.get_small_type_size(), signed=True,
+                                 bit_field=(1 << (test_utils.get_small_type_size() + 5)) + 23)),
+            FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(test_utils.get_small_type_size(),
+                                 test_utils.get_small_type_size(), signed=False,
+                                 bit_field=(1 << (test_utils.get_small_type_size() * 2)) - 1)),
+
+            fp1,
+            fp2,
+            fp3,
+        ]
+
+        unpickled = None
+
+        # Test saving of individual objects
+        for test_case in fp_list:
+            with open(pickle_test_file_name, 'wb') as f:
+                pickle.dump(test_case, f, pickle.HIGHEST_PROTOCOL)
+
+            with open(pickle_test_file_name, 'rb') as f:
+                unpickled = pickle.load(f)
+                self.assertTrue(
+                    test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
+
+        # With append
+        remove_pickle_file()
+
+        for test_case in fp_list:
+            with open(pickle_test_file_name, 'ab') as f:
+                pickle.dump(test_case, f, pickle.HIGHEST_PROTOCOL)
+
+        unpickled = []
+        with open(pickle_test_file_name, 'rb') as f:
+            while True:
+                try:
+                    unpickled.append(pickle.load(f))
+                except:
+                    break
+
+        for expected, loaded in zip(fp_list, unpickled):
+            self.assertTrue(
+                test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+
+        # Test saving of list of objects
+
+        with open(pickle_test_file_name, 'wb') as f:
+            pickle.dump(fp_list, f, pickle.HIGHEST_PROTOCOL)
+
+        with open(pickle_test_file_name, 'rb') as f:
+            unpickled = pickle.load(f)
+
+        for expected, loaded in zip(fp_list, unpickled):
+            self.assertTrue(
+                test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+
+    def testPickleAcrossVersions(self):
+        """
+        This tests data saved in multiple files, each one from a different python version/pickle protocol.
+        It includes both FpBinary and FpBinarySwitchable instances.
+        :return:
+        """
+        for fname in test_utils.get_static_pickle_file_paths():
+            with open(fname, 'rb') as f:
+                unpickled = pickle.load(f)
+
+            for expected, loaded in zip(test_utils.pickle_static_data, unpickled):
+                self.assertTrue(
+                    test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
 
 
 if __name__ == "__main__":
