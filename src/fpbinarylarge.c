@@ -1576,16 +1576,10 @@ FpBinaryLarge_FromPickleDict(PyObject *dict)
     PyObject *result = (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
     PyObject *int_bits, *frac_bits, *scaled_value, *is_signed;
 
-    int_bits = PyDict_GetItemString(dict, "int_bits");
-    frac_bits = PyDict_GetItemString(dict, "frac_bits");
-    scaled_value = PyDict_GetItemString(dict, "scaled_value");
-    is_signed = PyDict_GetItemString(dict, "is_signed");
-
-    /*printf("i %s %s f %s %s  s %s %s   signed: %s %s\n",
-                int_bits->ob_type->tp_name, PyString_AsString(PyObject_Str(int_bits)),
-                frac_bits->ob_type->tp_name, PyString_AsString(PyObject_Str(frac_bits)),
-                scaled_value->ob_type->tp_name, PyString_AsString(PyObject_Str(scaled_value)),
-                is_signed->ob_type->tp_name, PyString_AsString(PyObject_Str(is_signed)));*/
+    int_bits = PyDict_GetItemString(dict, "ib");
+    frac_bits = PyDict_GetItemString(dict, "fb");
+    scaled_value = PyDict_GetItemString(dict, "sv");
+    is_signed = PyDict_GetItemString(dict, "sgn");
 
     if (int_bits && frac_bits && scaled_value && is_signed)
     {
@@ -1629,11 +1623,11 @@ FpBinaryLarge_UpdatePickleDict(PyObject *self, PyObject *dict)
 
     if (cast_self->int_bits && cast_self->frac_bits && cast_self->scaled_value)
     {
-        PyDict_SetItemString(dict, "int_bits", cast_self->int_bits);
-        PyDict_SetItemString(dict, "frac_bits", cast_self->frac_bits);
-        PyDict_SetItemString(dict, "scaled_value", cast_self->scaled_value);
-        PyDict_SetItemString(dict, "is_signed", cast_self->is_signed ? Py_True : Py_False);
-        PyDict_SetItemString(dict, "base_obj_id", fp_large_type_id);
+        PyDict_SetItemString(dict, "ib", cast_self->int_bits);
+        PyDict_SetItemString(dict, "fb", cast_self->frac_bits);
+        PyDict_SetItemString(dict, "sv", cast_self->scaled_value);
+        PyDict_SetItemString(dict, "sgn", cast_self->is_signed ? Py_True : Py_False);
+        PyDict_SetItemString(dict, "bid", fp_large_type_id);
 
         return true;
     }

@@ -590,7 +590,6 @@ fpbinary_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
     PyObject *bit_field = NULL, *format_instance = NULL;
     FpBinaryObject *self = (FpBinaryObject*) self_pyobj;
 
-
     if (self)
     {
         if (!fp_binary_new_params_parse(args, kwds, &int_bits, &frac_bits,
@@ -1045,7 +1044,7 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
 {
     FpBinaryObject *cast_self = (FpBinaryObject *) self;
     PyObject *base_obj = NULL;
-    PyObject *base_type_id = PyDict_GetItemString(dict, "base_obj_id");
+    PyObject *base_type_id = PyDict_GetItemString(dict, "bid");
 
     if (base_type_id != NULL)
     {
@@ -1068,20 +1067,12 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
         Py_DECREF(base_type_id);
     }
 
-    /*fpbinary_populate_with_params(cast_self, 8, 2, true,
-                                              21.0, NULL, NULL);*/
-
     if (base_obj != NULL)
     {
         PyObject *old = (PyObject *) cast_self->base_obj;
         cast_self->base_obj = (fpbinary_base_t *) base_obj;
         Py_XDECREF(old);
     }
-
-    /*printf("in setstate - ptr: %p size: %ld refs: %ld base: %p  base refs: %ld\n",
-                self,
-                ((PyObject *)self)->ob_type->tp_basicsize, Py_REFCNT(self),
-                cast_self->base_obj, Py_REFCNT(cast_self->base_obj));*/
 
     Py_RETURN_NONE;
 }

@@ -629,6 +629,20 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     return final_string;
 }
 
+bool
+FpBinary_IntCheck(PyObject *ob)
+{
+#if PY_MAJOR_VERSION >= 3
+
+    return false;
+
+#else
+
+    return PyInt_Check(ob);
+
+#endif
+}
+
 PyObject *
 FpBinary_IntFromLong(long val)
 {

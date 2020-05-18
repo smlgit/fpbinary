@@ -3,7 +3,7 @@ from fpbinary import FpBinary
 
 
 if sys.version_info[0] >= 3:
-    from porting_v3_funcs import *
+    from tests.porting_v3_funcs import *
 
 
 def get_small_type_size():
@@ -137,7 +137,6 @@ def get_static_pickle_file_paths():
     for f in os.listdir(data_dir):
         if pickle_static_file_prefix in f:
             file_protocol = int(f.split('_')[4].split('.')[0].strip('p'))
-            maj_ver = int(f.split('_')[2].split('.')[0].strip('v'))
             if file_protocol <= pickle.HIGHEST_PROTOCOL:
                 result.append(os.path.join(data_dir, f))
 

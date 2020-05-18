@@ -1658,16 +1658,10 @@ FpBinarySmall_FromPickleDict(PyObject *dict)
     PyObject *result = (PyObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
     PyObject *int_bits, *frac_bits, *scaled_value, *is_signed;
 
-    int_bits = PyDict_GetItemString(dict, "int_bits");
-    frac_bits = PyDict_GetItemString(dict, "frac_bits");
-    scaled_value = PyDict_GetItemString(dict, "scaled_value");
-    is_signed = PyDict_GetItemString(dict, "is_signed");
-
-    /*printf("i %s %s f %s %s  s %s %s   signed: %s %s\n",
-            int_bits->ob_type->tp_name, PyString_AsString(PyObject_Str(int_bits)),
-            frac_bits->ob_type->tp_name, PyString_AsString(PyObject_Str(frac_bits)),
-            scaled_value->ob_type->tp_name, PyString_AsString(PyObject_Str(scaled_value)),
-            is_signed->ob_type->tp_name, PyString_AsString(PyObject_Str(is_signed)));*/
+    int_bits = PyDict_GetItemString(dict, "ib");
+    frac_bits = PyDict_GetItemString(dict, "fb");
+    scaled_value = PyDict_GetItemString(dict, "sv");
+    is_signed = PyDict_GetItemString(dict, "sgn");
 
     if (int_bits && frac_bits && scaled_value && is_signed)
     {
@@ -1720,11 +1714,11 @@ FpBinarySmall_UpdatePickleDict(PyObject *self, PyObject *dict)
 
     if (int_bits && frac_bits && scaled_value)
     {
-        PyDict_SetItemString(dict, "int_bits", int_bits);
-        PyDict_SetItemString(dict, "frac_bits", frac_bits);
-        PyDict_SetItemString(dict, "scaled_value", scaled_value);
-        PyDict_SetItemString(dict, "is_signed", is_signed);
-        PyDict_SetItemString(dict, "base_obj_id", fp_small_type_id);
+        PyDict_SetItemString(dict, "ib", int_bits);
+        PyDict_SetItemString(dict, "fb", frac_bits);
+        PyDict_SetItemString(dict, "sv", scaled_value);
+        PyDict_SetItemString(dict, "sgn", is_signed);
+        PyDict_SetItemString(dict, "bid", fp_small_type_id);
 
         result = true;
     }
@@ -1735,20 +1729,6 @@ FpBinarySmall_UpdatePickleDict(PyObject *self, PyObject *dict)
     // Didn't create a new bool, no need to decref is_signed
 
     return result;
-}
-
-bool
-FpBinary_IntCheck(PyObject *ob)
-{
-#if PY_MAJOR_VERSION >= 3
-
-    return false;
-
-#else
-
-    return PyInt_Check(ob);
-
-#endif
 }
 
 static PyMethodDef fpbinarysmall_methods[] = {

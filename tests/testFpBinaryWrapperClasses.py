@@ -3,21 +3,23 @@
 # SML, some tests adapted from RW Penney's Simple Fixed Point module
 
 import sys, unittest, copy, pickle, os
-import test_utils
+import tests.test_utils as test_utils
 from fpbinary import FpBinary, OverflowEnum, RoundingEnum, FpBinaryOverflowException
 
 if sys.version_info[0] >= 3:
-    from porting_v3_funcs import *
+    from tests.porting_v3_funcs import *
 
 
 pickle_test_file_name = 'pickle_test.data'
 
+def remove_pickle_file():
+    if os.path.exists(pickle_test_file_name):
+        os.remove(pickle_test_file_name)
 
 class AbstractTestHider(object):
     class WrapperClassesTestAbstract(unittest.TestCase):
         def tearDown(self):
-            if os.path.exists(pickle_test_file_name):
-                os.remove(pickle_test_file_name)
+            remove_pickle_file()
 
         def assertAlmostEqual(self, first, second, places=7):
             """Overload TestCase.assertAlmostEqual() to avoid use of round()"""
@@ -1356,6 +1358,26 @@ class AbstractTestHider(object):
                     self.assertTrue(
                         test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
 
+            # With append
+            remove_pickle_file()
+
+            for test_case in fp_list:
+                with open(pickle_test_file_name, 'ab') as f:
+                    pickle.dump(test_case, f, pickle.HIGHEST_PROTOCOL)
+
+            unpickled = []
+            with open(pickle_test_file_name, 'rb') as f:
+                while True:
+                    try:
+                        unpickled.append(pickle.load(f))
+                    except:
+                        break
+
+            for expected, loaded in zip(fp_list, unpickled):
+                self.assertTrue(
+                    test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+
+
             # Test saving of list of objects
 
             with open(pickle_test_file_name, 'wb') as f:
@@ -1370,11 +1392,9 @@ class AbstractTestHider(object):
 
         def testPickleAcrossVersions(self):
             for fname in test_utils.get_static_pickle_file_paths():
-                print(fname)
                 with open(fname, 'rb') as f:
                     unpickled = pickle.load(f)
 
-                print(unpickled)
                 for expected, loaded in zip(test_utils.pickle_static_data, unpickled):
                     self.assertTrue(
                         test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
