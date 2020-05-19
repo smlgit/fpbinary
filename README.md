@@ -28,6 +28,7 @@ fpbinary was created with **_fast_** simulation of math-intensive systems destin
 - Switch between fixed and floating point math without changing code
 - Tracking of min/max values for prototyping
 - Follows the VHDL fixed point library conventions (relatively) closely
+- Objects are picklable (only pickle protocols >= 2 are supported)
 
 <a name="install"/>
 
@@ -75,7 +76,7 @@ There are also some useful [demos](./demos).
 
 #### `FpBinary`
 
-This object represents a real number with a specified number of integer and fractional bits. View the documentation via:
+This object represents a real number with a specified number of integer and fractional bits.
 
 Some basic usage:
 
