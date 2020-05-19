@@ -1573,7 +1573,8 @@ FpBinaryLarge_FromDouble(double value, FP_INT_TYPE int_bits,
 PyObject *
 FpBinaryLarge_FromPickleDict(PyObject *dict)
 {
-    PyObject *result = (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
+    PyObject *result =
+        (PyObject *)fpbinarylarge_create_mem(&FpBinary_LargeType);
     PyObject *int_bits, *frac_bits, *scaled_value, *is_signed;
 
     int_bits = PyDict_GetItemString(dict, "ib");
@@ -1584,7 +1585,8 @@ FpBinaryLarge_FromPickleDict(PyObject *dict)
     if (int_bits && frac_bits && scaled_value && is_signed)
     {
         /* Make sure the objects are actually PyLongs. I.e. if we are in Python
-         * 2.7, the unpickler may have decided to create a PyInt. Note that after
+         * 2.7, the unpickler may have decided to create a PyInt. Note that
+         * after
          * these calls, we have created a new/incremented reference, so we need
          * to decrement when done.
          */
@@ -1592,9 +1594,8 @@ FpBinaryLarge_FromPickleDict(PyObject *dict)
         frac_bits = FpBinary_EnsureIsPyLong(frac_bits);
         scaled_value = FpBinary_EnsureIsPyLong(scaled_value);
 
-        set_object_fields((FpBinaryLargeObject *)result, scaled_value,
-                int_bits, frac_bits,
-                (is_signed == Py_True) ? true : false);
+        set_object_fields((FpBinaryLargeObject *)result, scaled_value, int_bits,
+                          frac_bits, (is_signed == Py_True) ? true : false);
 
         Py_DECREF(int_bits);
         Py_DECREF(frac_bits);
@@ -1605,7 +1606,7 @@ FpBinaryLarge_FromPickleDict(PyObject *dict)
         Py_XDECREF(result);
         result = NULL;
         PyErr_SetString(PyExc_KeyError,
-                                        "Pickle dict didn't have a required key.");
+                        "Pickle dict didn't have a required key.");
     }
 
     return result;
@@ -1614,7 +1615,7 @@ FpBinaryLarge_FromPickleDict(PyObject *dict)
 bool
 FpBinaryLarge_UpdatePickleDict(PyObject *self, PyObject *dict)
 {
-    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *) self;
+    FpBinaryLargeObject *cast_self = (FpBinaryLargeObject *)self;
 
     if (!dict)
     {
@@ -1626,7 +1627,8 @@ FpBinaryLarge_UpdatePickleDict(PyObject *self, PyObject *dict)
         PyDict_SetItemString(dict, "ib", cast_self->int_bits);
         PyDict_SetItemString(dict, "fb", cast_self->frac_bits);
         PyDict_SetItemString(dict, "sv", cast_self->scaled_value);
-        PyDict_SetItemString(dict, "sgn", cast_self->is_signed ? Py_True : Py_False);
+        PyDict_SetItemString(dict, "sgn",
+                             cast_self->is_signed ? Py_True : Py_False);
         PyDict_SetItemString(dict, "bid", fp_large_type_id);
 
         return true;

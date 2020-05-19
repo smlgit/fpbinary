@@ -454,7 +454,7 @@ fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
 
     if (base_obj)
     {
-        PyObject *old = (PyObject *) self->base_obj;
+        PyObject *old = (PyObject *)self->base_obj;
         self->base_obj = base_obj;
         Py_XDECREF(old);
 
@@ -588,7 +588,7 @@ fpbinary_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
     bool is_signed = true;
     double value = 0.0;
     PyObject *bit_field = NULL, *format_instance = NULL;
-    FpBinaryObject *self = (FpBinaryObject*) self_pyobj;
+    FpBinaryObject *self = (FpBinaryObject *)self_pyobj;
 
     if (self)
     {
@@ -1022,27 +1022,34 @@ fpbinary_getitem(PyObject *self, PyObject *item)
                           getitem)(PYOBJ_TO_BASE_FP_PYOBJ(self), item);
 }
 
-
 /*
  * Picking funcitons __getstate__ and __setstate__ .
  *
- * The pickling strategy is to not implement a __reduce__ method but to implement
- * __getstate__ and __setstate__. This will cause all pickling code for protocols
+ * The pickling strategy is to not implement a __reduce__ method but to
+ * implement
+ * __getstate__ and __setstate__. This will cause all pickling code for
+ * protocols
  * >= 2 to pickle the dictionary produced by __getstate__ on pickling and, on
- * unpickling, call the FpBinary __new__ function but NOT the __init__ function and
+ * unpickling, call the FpBinary __new__ function but NOT the __init__ function
+ * and
  * instead call the __setstate__ function with the unpickled dict as parameter.
  *
  * This strategy does not work for pickle protocols 0 and 1.
  *
- * The underlying base classes (FpBinarySmall and FpBinaryLarge) are never exposed
+ * The underlying base classes (FpBinarySmall and FpBinaryLarge) are never
+ * exposed
  * to the outside world, so we can easily get rid of them in future if we want.
  *
- * The underlying base classes populate the dict with whatever they want and then
- * FpBinary returns it from the __getstate__ function. An id is put in the dict so
+ * The underlying base classes populate the dict with whatever they want and
+ * then
+ * FpBinary returns it from the __getstate__ function. An id is put in the dict
+ * so
  * FpBinary knows which function to call when __setstate__ is called.
  *
- * No version number is set in the dict. If changes are made to the objects in future,
- * a version field can be added to the dict and an absence of a version field in the
+ * No version number is set in the dict. If changes are made to the objects in
+ * future,
+ * a version field can be added to the dict and an absence of a version field in
+ * the
  * unpickled dict indicates the oldest version.
  */
 static PyObject *
@@ -1052,7 +1059,8 @@ fpbinary_getstate(PyObject *self)
 
     if (dict != NULL)
     {
-        if (!FP_BASE_METHOD(PYOBJ_TO_BASE_FP(self), build_pickle_dict)(PYOBJ_TO_BASE_FP_PYOBJ(self), dict))
+        if (!FP_BASE_METHOD(PYOBJ_TO_BASE_FP(self), build_pickle_dict)(
+                PYOBJ_TO_BASE_FP_PYOBJ(self), dict))
         {
             Py_DECREF(dict);
             dict = NULL;
@@ -1065,14 +1073,15 @@ fpbinary_getstate(PyObject *self)
 static PyObject *
 fpbinary_setstate(PyObject *self, PyObject *dict)
 {
-    FpBinaryObject *cast_self = (FpBinaryObject *) self;
+    FpBinaryObject *cast_self = (FpBinaryObject *)self;
     PyObject *base_obj = NULL;
     PyObject *base_type_id = PyDict_GetItemString(dict, "bid");
 
     if (base_type_id != NULL)
     {
         /* Make sure the object is actually a PyLong. I.e. if we are in Python
-         * 2.7, the unpickler may have decided to create a PyInt. Note that after
+         * 2.7, the unpickler may have decided to create a PyInt. Note that
+         * after
          * this call, we have created a new/incremented reference, so we need
          * to decrement when done.
          */
@@ -1092,8 +1101,8 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
 
     if (base_obj != NULL)
     {
-        PyObject *old = (PyObject *) cast_self->base_obj;
-        cast_self->base_obj = (fpbinary_base_t *) base_obj;
+        PyObject *old = (PyObject *)cast_self->base_obj;
+        cast_self->base_obj = (fpbinary_base_t *)base_obj;
         Py_XDECREF(old);
     }
 

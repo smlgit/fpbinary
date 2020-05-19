@@ -16,6 +16,7 @@
 
 #define FPBINARY_MAJOR_VER 1
 #define FPBINARY_MINOR_VER 2
-#define FPBINARY_VERSION_STR xstr(FPBINARY_MAJOR_VER) "." xstr(FPBINARY_MINOR_VER)
+#define FPBINARY_VERSION_STR                                                   \
+    xstr(FPBINARY_MAJOR_VER) "." xstr(FPBINARY_MINOR_VER)
 
 #endif /* FPBINARYVERSION_H_ */

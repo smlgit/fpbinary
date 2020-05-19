@@ -144,7 +144,6 @@ extern PyObject *py_minus_one;
 extern PyObject *fp_small_type_id;
 extern PyObject *fp_large_type_id;
 
-
 FP_UINT_TYPE fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 

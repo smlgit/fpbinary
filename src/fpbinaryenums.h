@@ -20,8 +20,7 @@ PyObject *overflowenum_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 
 typedef struct
 {
-    PyObject_HEAD
-    long near_pos_inf;
+    PyObject_HEAD long near_pos_inf;
     long direct_neg_inf;
     long near_zero;
     long direct_zero;
