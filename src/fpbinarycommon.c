@@ -9,7 +9,6 @@
  *****************************************************************************/
 
 #include "fpbinarycommon.h"
-#include "fpbinaryversion.h"
 
 #include <float.h>
 #include <math.h>
@@ -19,8 +18,6 @@ PyObject *py_one;
 PyObject *py_minus_one;
 PyObject *py_ten;
 PyObject *py_five;
-PyObject *fp_version_major;
-PyObject *fp_version_minor;
 
 /* For pickling base objects */
 PyObject *fp_small_type_id;

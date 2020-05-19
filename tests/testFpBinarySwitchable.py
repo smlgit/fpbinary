@@ -24,6 +24,9 @@ def remove_pickle_file():
         os.remove(pickle_test_file_name)
 
 class FpBianrySwitchableTests(unittest.TestCase):
+    def tearDown(self):
+        remove_pickle_file()
+        
     def assertAlmostEqual(self, first, second, places=7):
         """Overload TestCase.assertAlmostEqual() to avoid use of round()"""
         tol = 10.0 ** -places

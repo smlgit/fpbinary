@@ -360,19 +360,27 @@ fpbinaryswitchable_getstate(PyObject *self)
 
     if (dict != NULL)
     {
+        PyObject *dbl_mode_value_py =
+            PyFloat_FromDouble(cast_self->dbl_mode_value);
+        PyObject *dbl_mode_max_value_py =
+            PyFloat_FromDouble(cast_self->dbl_mode_max_value);
+        PyObject *dbl_mode_min_value_py =
+            PyFloat_FromDouble(cast_self->dbl_mode_min_value);
+
         PyDict_SetItemString(dict, "fpm",
                              (cast_self->fp_mode == true) ? Py_True : Py_False);
-        PyDict_SetItemString(dict, "dv",
-                             PyFloat_FromDouble(cast_self->dbl_mode_value));
-        PyDict_SetItemString(dict, "dmax",
-                             PyFloat_FromDouble(cast_self->dbl_mode_max_value));
-        PyDict_SetItemString(dict, "dmin",
-                             PyFloat_FromDouble(cast_self->dbl_mode_min_value));
+        PyDict_SetItemString(dict, "dv", dbl_mode_value_py);
+        PyDict_SetItemString(dict, "dmax", dbl_mode_max_value_py);
+        PyDict_SetItemString(dict, "dmin", dbl_mode_min_value_py);
 
         if (cast_self->fp_mode_value != NULL)
         {
             PyDict_SetItemString(dict, "fpv", cast_self->fp_mode_value);
         }
+
+        Py_DECREF(dbl_mode_value_py);
+        Py_DECREF(dbl_mode_max_value_py);
+        Py_DECREF(dbl_mode_min_value_py);
     }
 
     return dict;

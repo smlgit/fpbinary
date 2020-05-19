@@ -1588,7 +1588,8 @@ FpBinaryLarge_FromPickleDict(PyObject *dict)
          * 2.7, the unpickler may have decided to create a PyInt. Note that
          * after
          * these calls, we have created a new/incremented reference, so we need
-         * to decrement when done.
+         * to decrement when done (note that up to this point, the objects are
+         * just a borrowed references from the dict).
          */
         int_bits = FpBinary_EnsureIsPyLong(int_bits);
         frac_bits = FpBinary_EnsureIsPyLong(frac_bits);

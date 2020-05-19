@@ -1083,7 +1083,8 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
          * 2.7, the unpickler may have decided to create a PyInt. Note that
          * after
          * this call, we have created a new/incremented reference, so we need
-         * to decrement when done.
+         * to decrement when done (note that up to this point, base_type_id is
+         * just a borrowed reference from the dict).
          */
         base_type_id = FpBinary_EnsureIsPyLong(base_type_id);
 
