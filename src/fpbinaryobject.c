@@ -1034,12 +1034,11 @@ fpbinary_getitem(PyObject *self, PyObject *item)
  *
  * This strategy does not work for pickle protocols 0 and 1.
  *
- * This strategy means that the underlying base classes (FpBinarySmall and FpBinaryLarge)
- * are never exposed to the outside world, so we can easily get rid of them in
- * future if we want.
+ * The underlying base classes (FpBinarySmall and FpBinaryLarge) are never exposed
+ * to the outside world, so we can easily get rid of them in future if we want.
  *
  * The underlying base classes populate the dict with whatever they want and then
- * FpBinary returns it from the __getstate__ funciton. An id is put in the dict so
+ * FpBinary returns it from the __getstate__ function. An id is put in the dict so
  * FpBinary knows which function to call when __setstate__ is called.
  *
  * No version number is set in the dict. If changes are made to the objects in future,

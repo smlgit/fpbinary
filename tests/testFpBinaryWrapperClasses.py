@@ -1366,6 +1366,10 @@ class AbstractTestHider(object):
                         self.assertTrue(
                             test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
 
+                    # Test that the unpickled object is usable
+                    self.assertEqual(test_case + 1.0, unpickled + 1.0)
+                    self.assertEqual(test_case * 2.0, unpickled * 2.0)
+
                 # With append
                 remove_pickle_file()
 
@@ -1384,6 +1388,10 @@ class AbstractTestHider(object):
                 for expected, loaded in zip(fp_list, unpickled):
                     self.assertTrue(
                         test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+
+                    # Test that the unpickled object is usable
+                    self.assertEqual(expected << 2, loaded << 2)
+                    self.assertEqual(expected >> 3, loaded >> 3)
 
 
                 # Test saving of list of objects

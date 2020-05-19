@@ -428,13 +428,17 @@ class FpBianrySwitchableTests(unittest.TestCase):
 
     def testCopy(self):
         fp_num = FpBinarySwitchable(True, fp_value=FpBinary(10, 10, signed=True, value=1.3125))
+        fp_num.value = fp_num - 1.0
+        fp_num.value = fp_num + 10.0
         fp_copy = copy.copy(fp_num)
-        self.assertEqual(fp_num, fp_copy)
+        self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(fp_num, fp_copy))
         self.assertFalse(fp_num is fp_copy)
 
         fp_num = FpBinarySwitchable(False, float_value=1.3125)
+        # fp_num.value = fp_num - 1.0
+        # fp_num.value = fp_num + 10.0
         fp_copy = copy.copy(fp_num)
-        self.assertEqual(fp_num, fp_copy)
+        self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(fp_num, fp_copy))
         self.assertFalse(fp_num is fp_copy)
 
     def testFormatProperty(self):
@@ -564,6 +568,10 @@ class FpBianrySwitchableTests(unittest.TestCase):
                     self.assertTrue(
                         test_utils.fp_binary_instances_are_totally_equal(test_case, unpickled))
 
+                    # Test that the unpickled object is usable
+                    self.assertEqual(test_case + 1.0, unpickled + 1.0)
+                    self.assertEqual(test_case * 2.0, unpickled * 2.0)
+
             # With append
             remove_pickle_file()
 
@@ -594,6 +602,10 @@ class FpBianrySwitchableTests(unittest.TestCase):
             for expected, loaded in zip(fp_list, unpickled):
                 self.assertTrue(
                     test_utils.fp_binary_instances_are_totally_equal(expected, loaded))
+
+                # Test that the unpickled object is usable
+                self.assertEqual(expected - 2, loaded - 2)
+                self.assertEqual(expected * 3, loaded * 3)
 
     def testPickleAcrossVersions(self):
         """
