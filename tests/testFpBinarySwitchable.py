@@ -430,13 +430,16 @@ class FpBianrySwitchableTests(unittest.TestCase):
         fp_num = FpBinarySwitchable(True, fp_value=FpBinary(10, 10, signed=True, value=1.3125))
         fp_num.value = fp_num - 1.0
         fp_num.value = fp_num + 10.0
+        fp_num.value = FpBinarySwitchable(True, fp_value=FpBinary(10, 10, signed=True, value=1.3125))
         fp_copy = copy.copy(fp_num)
         self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(fp_num, fp_copy))
         self.assertFalse(fp_num is fp_copy)
 
         fp_num = FpBinarySwitchable(False, float_value=1.3125)
-        # fp_num.value = fp_num - 1.0
-        # fp_num.value = fp_num + 10.0
+        # Provide some min and max values
+        fp_num.value = fp_num - 1.0
+        fp_num.value = fp_num + 10.0
+        fp_num.value = 1.3125
         fp_copy = copy.copy(fp_num)
         self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(fp_num, fp_copy))
         self.assertFalse(fp_num is fp_copy)

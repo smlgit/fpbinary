@@ -27,7 +27,6 @@
 #include <math.h>
 
 static PyObject *resize_method_name_str = NULL;
-static PyObject *copy_method_name_str = NULL;
 static PyObject *get_format_method_name_str = NULL;
 static PyObject *py_default_format_tuple = NULL;
 
@@ -341,34 +340,6 @@ fpbinaryswitchable_resize(FpBinarySwitchableObject *self, PyObject *args,
     }
 
     return NULL;
-}
-
-/*
- * See copy_doc
- */
-static PyObject *
-fpbinaryswitchable_copy(FpBinarySwitchableObject *self, PyObject *args)
-{
-    PyObject *result = NULL;
-    PyObject *fp_obj_copy = NULL;
-
-    /* Do a deep copy on the fp_obj */
-    if (self->fp_mode_value &&
-        PyObject_HasAttr(self->fp_mode_value, copy_method_name_str))
-    {
-        fp_obj_copy = forward_call_with_args(self->fp_mode_value,
-                                             copy_method_name_str, args, NULL);
-    }
-
-    result = (PyObject *)fpbinaryswitchable_from_params(
-        self->fp_mode, fp_obj_copy, self->dbl_mode_value);
-
-    if (!result)
-    {
-        Py_XDECREF(fp_obj_copy);
-    }
-
-    return (PyObject *)result;
 }
 
 /*
@@ -944,7 +915,6 @@ void
 FpBinarySwitchable_InitModule(void)
 {
     resize_method_name_str = PyUnicode_FromString("resize");
-    copy_method_name_str = PyUnicode_FromString("__copy__");
     get_format_method_name_str = PyUnicode_FromString("format");
     py_default_format_tuple = PyTuple_Pack(2, py_one, py_zero);
 }
@@ -952,7 +922,6 @@ FpBinarySwitchable_InitModule(void)
 static PyMethodDef fpbinaryswitchable_methods[] = {
     {"resize", (PyCFunction)fpbinaryswitchable_resize,
      METH_VARARGS | METH_KEYWORDS, resize_doc},
-    {"__copy__", (PyCFunction)fpbinaryswitchable_copy, METH_NOARGS, copy_doc},
 
     /* Pickling functions */
     {"__getstate__", (PyCFunction)fpbinaryswitchable_getstate, METH_NOARGS, NULL},
