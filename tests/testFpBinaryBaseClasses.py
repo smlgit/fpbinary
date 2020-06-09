@@ -3,11 +3,11 @@
 # SML, some tests adapted from RW Penney's Simple Fixed Point module
 
 import sys, unittest, copy
-import test_utils
+import tests.test_utils as test_utils
 from fpbinary import FpBinary, _FpBinarySmall, _FpBinaryLarge, OverflowEnum, RoundingEnum, FpBinaryOverflowException
 
 if sys.version_info[0] >= 3:
-    from porting_v3_funcs import *
+    from tests.porting_v3_funcs import *
 
 
 class AbstractTestHider(object):
