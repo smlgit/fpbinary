@@ -116,12 +116,6 @@ FpBinary_TpCompare(PyObject *op1, PyObject *op2)
 }
 
 bool
-check_supported_builtin(PyObject *obj)
-{
-    return (PyFloat_Check(obj) || PyLong_Check(obj) || FpBinary_IntCheck(obj));
-}
-
-bool
 fp_binary_new_params_parse(PyObject *args, PyObject *kwds, long *int_bits,
                            long *frac_bits, bool *is_signed, double *value,
                            PyObject **bit_field, PyObject **format_instance)

@@ -156,7 +156,6 @@ int FpBinary_TpCompare(PyObject *op1, PyObject *op2);
 
 void FpBinaryCommon_InitModule(void);
 
-bool check_supported_builtin(PyObject *obj);
 bool fp_binary_new_params_parse(PyObject *args, PyObject *kwds, long *int_bits,
                                 long *frac_bits, bool *is_signed, double *value,
                                 PyObject **bit_field,
@@ -182,5 +181,11 @@ bool extract_fp_format_from_tuple(PyObject *format_tuple_param,
 bool check_new_method_input_types(PyObject *py_is_signed, PyObject *bit_field);
 PyObject *scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
                                    PyObject *frac_bits);
+
+/*
+ * Macro to check if the PyObject obj is of a type that FpBinary should be able
+ * to do arithmetic operations with.
+ */
+#define check_supported_builtin(obj) ((PyFloat_Check(obj) || PyLong_Check(obj) || FpBinary_IntCheck(obj)))
 
 #endif /* FPBINARYCOMMON_H_ */
