@@ -115,7 +115,7 @@ FpBinary_TpCompare(PyObject *op1, PyObject *op2)
 #endif
 }
 
-inline bool
+bool
 check_supported_builtin(PyObject *obj)
 {
     return (PyFloat_Check(obj) || PyLong_Check(obj) || FpBinary_IntCheck(obj));
