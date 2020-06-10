@@ -1,4 +1,9 @@
 # Changelog
+## [v1.4](//github.com/smlgit/fpbinary/releases/tag/v1.4)
+**Bug fixes:**
+
+- Installation on Windows 10. [#12](//github.com/smlgit/fpbinary/issues/12)
+
 ## [v1.3](//github.com/smlgit/fpbinary/releases/tag/v1.3)
 
 **Enhancements:**
