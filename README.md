@@ -29,6 +29,7 @@ fpbinary was created with **_fast_** simulation of math-intensive systems destin
 - Tracking of min/max values for prototyping
 - Follows the VHDL fixed point library conventions (relatively) closely
 - Objects are picklable (only pickle protocols >= 2 are supported)
+- The fpbinary objects **ARE NOT** subclassable at present
 
 <a name="install"/>
 
@@ -173,6 +174,7 @@ The point of this object is to allow a designer to write their simulation code a
 - [ ] Add global contexts that allows the user to define "hardware" specifications so inputs and outputs to math operations can be resized automatically (i.e. without the need for explicit resizing code). 
 - [ ] Add more advanced operations like log, exp, sin/cos/tan. I have stopped short of doing these thus far because a user may rather simulate the actual hardware implementation (e.g. a lookup table would likely be used for sin). Having said that, a convienient fpbinary method should give the same result.
 - [ ] Add complex number versions of the two main classes.
+- [ ] Allow `FpBinary` and `FpBinarySwitchable` to be subclassable. Would require some basic changes to (mostly) `FpBinarySwitchable` to use the abstract methods from the Python Numeric/Sequence interfaces rather than direct accessing via the type memory. Might reduce speed slightly. 
 
 
 
