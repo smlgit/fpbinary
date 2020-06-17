@@ -1,4 +1,10 @@
 # Changelog
+
+## [Unreleased](https://github.com/smlgit/fpbinary/tree/HEAD)
+**Bug fixes:**
+
+- Division on FpBinary objects may cause a crash [#13](//github.com/smlgit/fpbinary/issues/13)
+
 ## [v1.4](//github.com/smlgit/fpbinary/releases/tag/v1.4)
 **Bug fixes:**
 

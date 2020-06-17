@@ -390,6 +390,28 @@ class AbstractTestHider(object):
                     self.assertEqual(y * scale / 5, float(fpy_small / 5))
                     self.assertEqual(y * scale / 5, float(fpy_large / 5))
 
+
+            # This test just runs through a range of division operand bit lengths.
+            # See https://github.com/smlgit/fpbinary/issues/13 .
+            #
+            # Here the first operand goes up to just over the native word length and
+            # the second goes up to half that size. That makes sure we cross the
+            # small/large type boundary with every result bit length in between.
+            for op1_bits in range(6, test_utils.get_small_type_size() + 2):
+                for op2_bits in range(6, int(test_utils.get_small_type_size() / 2)):
+                    op1_int_bits = int(op1_bits / 2)
+                    op1_frac_bits = op1_bits - op1_int_bits
+                    op2_int_bits = int(op2_bits / 2)
+                    op2_frac_bits = op2_bits - op2_int_bits
+
+                    op2_val = 2**(-(min(op1_frac_bits, op2_frac_bits)))
+                    op1_val = op2_val * 2
+
+                    op1 = self.fp_binary_class(op1_int_bits, op1_frac_bits, signed=True, value=op1_val)
+                    op2 = self.fp_binary_class(op1_frac_bits, op2_frac_bits, signed=True, value=op2_val)
+                    self.assertEqual(op1 / op2, 2.0)
+
+
         def testBitShifts(self):
             """Check effects of left & right shift operators."""
 
@@ -420,7 +442,6 @@ class AbstractTestHider(object):
 
 
             # Negative int_bits
-
             # Small size
             format_fp = self.fp_binary_class(-3, int(test_utils.get_small_type_size()) + 3, signed=True)
             self.assertEqual(self.fp_binary_class(value=0.0322265625, format_inst=format_fp) << 1, -0.060546875)

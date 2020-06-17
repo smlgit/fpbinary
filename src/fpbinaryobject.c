@@ -800,7 +800,7 @@ fpbinary_divide(PyObject *op1, PyObject *op2)
     FpBinaryObject *result = NULL;
     PyObject *cast_op1 = NULL, *cast_op2 = NULL;
 
-    if (prepare_binary_ops(op1, op2, fp_op_type_mult, &cast_op1, &cast_op2))
+    if (prepare_binary_ops(op1, op2, fp_op_type_div, &cast_op1, &cast_op2))
     {
         result = fpbinary_from_base_fp(PYOBJ_FP_BASE(
             FP_NUM_METHOD(cast_op1, nb_true_divide)(cast_op1, cast_op2)));
