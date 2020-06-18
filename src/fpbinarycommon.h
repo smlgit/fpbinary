@@ -149,9 +149,8 @@ FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 
 /* Required for compatibility between v2 and v3 */
 bool FpBinary_IntCheck(PyObject *ob);
-PyObject *FpBinary_IntFromLong(long val);
-long FpBinary_IntAsLong(PyObject *ob);
 PyObject *FpBinary_EnsureIsPyLong(PyObject *ob);
+PyObject *FpBinary_TryConvertToPyInt(PyObject *ob);
 int FpBinary_TpCompare(PyObject *op1, PyObject *op2);
 
 void FpBinaryCommon_InitModule(void);

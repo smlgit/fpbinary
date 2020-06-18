@@ -321,14 +321,9 @@ calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
     *scaled_value = NULL;
     *int_bits = 0;
 
-    if (FpBinary_IntCheck(input_value))
+    if (FpBinary_IntCheck(input_value) || PyLong_Check(input_value))
     {
-        *scaled_value = PyLong_FromLong(PyLong_AsLong(input_value));
-    }
-    else if (PyLong_Check(input_value))
-    {
-        Py_INCREF(input_value);
-        *scaled_value = input_value;
+        *scaled_value = FpBinary_EnsureIsPyLong(input_value);
     }
 
     if (*scaled_value)
@@ -423,32 +418,20 @@ extract_fp_format_from_tuple(PyObject *format_tuple_param, PyObject **int_bits,
         new_int_bits_borrowed = PyTuple_GetItem(format_tuple_param, 0);
         if (new_int_bits_borrowed)
         {
-            if (FpBinary_IntCheck(new_int_bits_borrowed))
+            if (FpBinary_IntCheck(new_int_bits_borrowed) || PyLong_Check(new_int_bits_borrowed))
             {
                 /* Need to convert to long. */
-                *int_bits =
-                    PyLong_FromLong(FpBinary_IntAsLong(new_int_bits_borrowed));
-            }
-            else if (PyLong_Check(new_int_bits_borrowed))
-            {
-                Py_INCREF(new_int_bits_borrowed);
-                *int_bits = new_int_bits_borrowed;
+                *int_bits = FpBinary_EnsureIsPyLong(new_int_bits_borrowed);
             }
         }
 
         new_frac_bits_borrowed = PyTuple_GetItem(format_tuple_param, 1);
         if (new_frac_bits_borrowed)
         {
-            if (FpBinary_IntCheck(new_frac_bits_borrowed))
+            if (FpBinary_IntCheck(new_frac_bits_borrowed) || PyLong_Check(new_frac_bits_borrowed))
             {
                 /* Need to convert to long. */
-                *frac_bits =
-                    PyLong_FromLong(FpBinary_IntAsLong(new_frac_bits_borrowed));
-            }
-            else if (PyLong_Check(new_frac_bits_borrowed))
-            {
-                Py_INCREF(new_frac_bits_borrowed);
-                *frac_bits = new_frac_bits_borrowed;
+                *frac_bits = FpBinary_EnsureIsPyLong(new_frac_bits_borrowed);
             }
         }
 
@@ -634,20 +617,6 @@ FpBinary_IntCheck(PyObject *ob)
 #endif
 }
 
-PyObject *
-FpBinary_IntFromLong(long val)
-{
-#if PY_MAJOR_VERSION >= 3
-
-    return PyLong_FromLong(val);
-
-#else
-
-    return PyInt_FromLong(val);
-
-#endif
-}
-
 /*
  * Will take the input and:
  *     - if it is NOT a PyLong, will attempt to convert to a PyLong
@@ -679,16 +648,34 @@ FpBinary_EnsureIsPyLong(PyObject *ob)
 #endif
 }
 
-long
-FpBinary_IntAsLong(PyObject *ob)
+/*
+ * Will take the input and:
+ *     - if it is NOT a PyInt AND platform supports distinction between Int and Long,
+ *       will convert to a PyInt
+ *     - if it IS a PyLong, will increment the ref count and return it
+ *
+ * Note that this function should only be called if the input ob is either
+ * a PyLong or a PyInt.
+ */
+PyObject *
+FpBinary_TryConvertToPyInt(PyObject *ob)
 {
 #if PY_MAJOR_VERSION >= 3
 
-    return PyLong_AsLong(ob);
+    Py_INCREF(ob);
+    return ob;
 
 #else
 
-    return PyInt_AsLong(ob);
+    if (PyInt_Check(ob))
+    {
+        Py_INCREF(ob);
+        return ob;
+    }
+    else
+    {
+        return PyInt_FromLong(PyLong_AsLong(ob));
+    }
 
 #endif
 }

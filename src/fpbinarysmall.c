@@ -1148,7 +1148,7 @@ fpbinarysmall_long(PyObject *self)
     resize_object(result_fp, cast_self->int_bits, 0, OVERFLOW_WRAP,
                   ROUNDING_DIRECT_ZERO);
 
-    result = PyLong_FromLong(scaled_value_to_int(result_fp->scaled_value));
+    result = PyLong_FromLongLong(scaled_value_to_int(result_fp->scaled_value));
     Py_DECREF(result_fp);
 
     return result;
@@ -1160,7 +1160,7 @@ fpbinarysmall_int(PyObject *self)
     PyObject *result_pylong = fpbinarysmall_long(self);
     PyObject *result = NULL;
 
-    result = FpBinary_IntFromLong(PyLong_AsLong(result_pylong));
+    result = FpBinary_TryConvertToPyInt(result_pylong);
     Py_DECREF(result_pylong);
 
     return result;
