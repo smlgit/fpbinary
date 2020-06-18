@@ -403,7 +403,7 @@ class AbstractTestHider(object):
 
                     self.assertAlmostEqual(y * scale / 5, float(fpy_small / 5),
                                            delta=almost_equal_delta_small)
-                    self.assertEqual(y * scale / 5, float(fpy_large / 5))
+                    self.assertAlmostEqual(y * scale / 5, float(fpy_large / 5))
 
 
             # This test just runs through a range of division operand bit lengths.
@@ -441,7 +441,7 @@ class AbstractTestHider(object):
 
             self.assertEqual(self.fp_binary_class(value=1, format_inst=format_fp) >> 1, 0.5)
             self.assertEqual(self.fp_binary_class(value=12, format_inst=format_fp) >> 2, 3)
-            self.assertEqual(self.fp_binary_class(value=-71 * 1024, format_inst=format_fp) >> 12, -17.75)
+            self.assertEqual(self.fp_binary_class(value=-71 * 64, format_inst=format_fp) >> 12, -1.109375)
 
             # Large size
             format_fp = self.fp_binary_class(test_utils.get_small_type_size(), test_utils.get_small_type_size(),
