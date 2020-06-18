@@ -1,3 +1,3 @@
 
 def long(val):
-    return val
+    return int(val)

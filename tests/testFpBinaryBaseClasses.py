@@ -2051,12 +2051,12 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(fpNum[5], True)
             self.assertEqualWithFloatCast(fpNum[6], False)
 
-            self.assertEqualWithFloatCast(int(fpNum[:]), 42)
-            self.assertEqualWithFloatCast(int(fpNum[4:3]), 1)
+            self.assertEqualWithFloatCast(long(fpNum[:]), 42)
+            self.assertEqualWithFloatCast(long(fpNum[4:3]), 1)
 
             # Negative number
             fpNum = self.fp_binary_class(5, 2, signed=True, value=-8.75)
-            self.assertEqualWithFloatCast(int(fpNum[6:0]), 93)
+            self.assertEqualWithFloatCast(long(fpNum[6:0]), 93)
 
             # Negative int_bits
             fpNum = self.fp_binary_class(-3, 7, signed=True, value=-0.046875)
@@ -2065,8 +2065,8 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(fpNum[2], False)
             self.assertEqualWithFloatCast(fpNum[3], True)
 
-            self.assertEqualWithFloatCast(int(fpNum[:]), 10)
-            self.assertEqualWithFloatCast(int(fpNum[2:1]), 1)
+            self.assertEqualWithFloatCast(long(fpNum[:]), 10)
+            self.assertEqualWithFloatCast(long(fpNum[2:1]), 1)
 
             # Negative frac_bits
             fpNum = self.fp_binary_class(1035, -1030, signed=True, bit_field=long(21))
@@ -2076,8 +2076,8 @@ class AbstractTestHider(object):
             self.assertEqualWithFloatCast(fpNum[3], False)
             self.assertEqualWithFloatCast(fpNum[4], True)
 
-            self.assertEqualWithFloatCast(int(fpNum[:]), 21)
-            self.assertEqualWithFloatCast(int(fpNum[4:2]), 5)
+            self.assertEqualWithFloatCast(long(fpNum[:]), 21)
+            self.assertEqualWithFloatCast(long(fpNum[4:2]), 5)
 
             # Index error check
             try:

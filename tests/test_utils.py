@@ -35,7 +35,7 @@ def convert_float_to_bit_field(value, int_bits, frac_bits):
     # to get the appropriate truncation behavior for negative numbers.
     value_mag = abs(mant)
 
-    scaled_value = int(value_mag * 2.0 ** (exp + frac_bits))
+    scaled_value = long(value_mag * 2.0 ** (exp + frac_bits))
 
     # Now convert back to negative representation if needed
     if value < 0.0:

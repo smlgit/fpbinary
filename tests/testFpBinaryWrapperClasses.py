@@ -46,7 +46,7 @@ class AbstractTestHider(object):
             """
 
             # 128 decimal places should be enough...
-            return str(int(int_value)) + ('%.128f' % frac_value).lstrip('-').lstrip('0').rstrip('0')
+            return str(long(int_value)) + ('%.128f' % frac_value).lstrip('-').lstrip('0').rstrip('0')
 
         def testCreateParams(self):
             """ Checking error is raised on create for wrapper classes. Use for code that
@@ -129,13 +129,13 @@ class AbstractTestHider(object):
             # Small type
             for i in range(-40, 40):
                 x = i / 8.0
-                self.assertEqual(int(x), int(self.fp_binary_class(4, 16, signed=True, value=x)))
+                self.assertEqual(long(x), long(self.fp_binary_class(4, 16, signed=True, value=x)))
 
             # Large type
             # Float comparison should be ok as long as the value is small enough
             for i in range(-40, 40):
                 x = i / 8.0
-                self.assertEqual(int(x), int(self.fp_binary_class(test_utils.get_small_type_size(), 16,
+                self.assertEqual(long(x), long(self.fp_binary_class(test_utils.get_small_type_size(), 16,
                                                                   signed=True, value=x)))
 
         def testNegating(self):
@@ -676,8 +676,8 @@ class AbstractTestHider(object):
             high_order_bits_pos = 0x7A << test_utils.get_small_type_size()
 
             low_order_value = 13.125
-            value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
-            value_bit_field_neg = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits) - \
+            value_bit_field_pos = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits)
+            value_bit_field_neg = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits) - \
                                   (1 << (large_int_bits + frac_bits - 1))
             bit_field_top_nibble_mask = (1 << (large_int_bits + frac_bits - 5)) - 1
 
@@ -711,7 +711,7 @@ class AbstractTestHider(object):
             # Resize to cut the top nibble + sign off: 010101010---01101.001
             fpNum.resize((large_int_bits - 5, frac_bits), overflow_mode=OverflowEnum.wrap)
             # use [:] to create unsigned long to represent large fp value
-            self.assertEqual(int(fpNum[:]), value_bit_field_pos & bit_field_top_nibble_mask)
+            self.assertEqual(long(fpNum[:]), value_bit_field_pos & bit_field_top_nibble_mask)
 
             # =======================================================================
             # Saturation
@@ -788,7 +788,7 @@ class AbstractTestHider(object):
             high_order_bits_pos = 0xAA << test_utils.get_small_type_size()
 
             low_order_value = 13.125
-            value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
+            value_bit_field_pos = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits)
             bit_field_top_nibble_mask = (1 << (large_int_bits + frac_bits - 4)) - 1
 
             # =======================================================================
@@ -821,7 +821,7 @@ class AbstractTestHider(object):
             # Resize to cut the top nibble + sign off: 10101010---01101.001
             fpNum.resize((large_int_bits - 4, frac_bits), overflow_mode=OverflowEnum.wrap)
             # use [:] to create unsigned long to represent large fp value
-            self.assertEqual(int(fpNum[:]), value_bit_field_pos & bit_field_top_nibble_mask)
+            self.assertEqual(long(fpNum[:]), value_bit_field_pos & bit_field_top_nibble_mask)
 
             # =======================================================================
             # Saturation
@@ -898,15 +898,15 @@ class AbstractTestHider(object):
             high_order_bits_pos = 0x7A << test_utils.get_small_type_size()
 
             low_order_value = 13.875
-            value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
-            value_bit_field_neg = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits) - \
+            value_bit_field_pos = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits)
+            value_bit_field_neg = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits) - \
                                   (1 << (large_int_bits + frac_bits - 1))
 
             fpNum_high_order_pos_only = self.fp_binary_class(large_int_bits, frac_bits, signed=True,
                                                              bit_field=(high_order_bits_pos << frac_bits))
             fpNum_high_order_neg_only = self.fp_binary_class(large_int_bits, frac_bits, signed=True,
                                                              bit_field=value_bit_field_neg -
-                                                                       int(low_order_value * 2 ** frac_bits))
+                                                                       long(low_order_value * 2 ** frac_bits))
 
             # =======================================================================
             # No change expected after rounding, low order bits only
@@ -995,7 +995,7 @@ class AbstractTestHider(object):
             high_order_bits_pos = 0xFA << test_utils.get_small_type_size()
 
             low_order_value = 13.875
-            value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
+            value_bit_field_pos = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits)
 
             fpNum_high_order_pos_only = self.fp_binary_class(large_int_bits, frac_bits, signed=False,
                                                              bit_field=(high_order_bits_pos << frac_bits))
@@ -1101,8 +1101,8 @@ class AbstractTestHider(object):
             high_order_bits_pos = 0x7A << test_utils.get_small_type_size()
 
             low_order_value = 13.0625
-            value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
-            value_bit_field_neg = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits) - \
+            value_bit_field_pos = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits)
+            value_bit_field_neg = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits) - \
                                   (1 << (large_int_bits + frac_bits - 1))
 
             # =======================================================================
@@ -1132,7 +1132,7 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(large_int_bits, frac_bits, signed=True,
                                          bit_field=value_bit_field_neg)
             self.assertEqual((fpNum << 15).bits_to_signed(),
-                             int(low_order_value * 2.0 ** frac_bits) << 15)
+                             long(low_order_value * 2.0 ** frac_bits) << 15)
 
             # =======================================================================
             # Signed to unsigned (interpret bits as unsigned int values)
@@ -1252,8 +1252,8 @@ class AbstractTestHider(object):
             self.assertEqual(fpNum[5], True)
             self.assertEqual(fpNum[6], False)
 
-            self.assertEqual(int(fpNum[:]), 42)
-            self.assertEqual(int(fpNum[4:3]), 1)
+            self.assertEqual(long(fpNum[:]), 42)
+            self.assertEqual(long(fpNum[4:3]), 1)
 
             # Index error check
             try:
@@ -1270,7 +1270,7 @@ class AbstractTestHider(object):
 
             # Negative number
             fpNum = self.fp_binary_class(5, 2, signed=True, value=-8.75)
-            self.assertEqual(int(fpNum[6:0]), 93)
+            self.assertEqual(long(fpNum[6:0]), 93)
 
         def testSequenceOpsLarge(self):
             large_int_bits = test_utils.get_small_type_size() + 8 + 1
@@ -1280,8 +1280,8 @@ class AbstractTestHider(object):
             high_order_bits_pos = 0x7A << test_utils.get_small_type_size()
 
             low_order_value = 13.875
-            value_bit_field_pos = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits)
-            value_bit_field_neg = (high_order_bits_pos << frac_bits) + int(low_order_value * 2 ** frac_bits) - \
+            value_bit_field_pos = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits)
+            value_bit_field_neg = (high_order_bits_pos << frac_bits) + long(low_order_value * 2 ** frac_bits) - \
                                   (1 << (large_int_bits + frac_bits - 1))
 
             # # b001111010---1101.1110
@@ -1293,8 +1293,8 @@ class AbstractTestHider(object):
             self.assertEqual(fpNum_positive[total_bits - 1], False)
             self.assertEqual(fpNum_positive[total_bits - 3], True)
 
-            self.assertEqual(int(fpNum_positive[:]), value_bit_field_pos)
-            self.assertEqual(int(fpNum_positive[total_bits - 1:total_bits - 3]), 1)
+            self.assertEqual(long(fpNum_positive[:]), value_bit_field_pos)
+            self.assertEqual(long(fpNum_positive[total_bits - 1:total_bits - 3]), 1)
 
             # Index error check
             try:
@@ -1318,8 +1318,8 @@ class AbstractTestHider(object):
             self.assertEqual(fpNum_negative[total_bits - 1], True)
             self.assertEqual(fpNum_negative[total_bits - 3], True)
 
-            self.assertEqual(int(fpNum_negative[:]), value_bit_field_neg & total_bits_mask)
-            self.assertEqual(int(fpNum_negative[total_bits - 1:total_bits - 3]), 5)
+            self.assertEqual(long(fpNum_negative[:]), value_bit_field_neg & total_bits_mask)
+            self.assertEqual(long(fpNum_negative[total_bits - 1:total_bits - 3]), 5)
 
         def testStrEx(self):
             # Rough estimate of machine precision
