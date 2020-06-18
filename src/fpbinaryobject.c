@@ -1091,6 +1091,30 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
         if (FpBinary_TpCompare(base_type_id, fp_small_type_id) == 0)
         {
             base_obj = FpBinarySmall_FromPickleDict(dict);
+
+            /* FpBinarySmall_FromPickleDict may return a dict if it can't
+             * represent the pickled value (i.e. it was pickled on a larger
+             * word length system). In this case, we need to build an
+             * FpBinaryLarge instead.
+             */
+            if (PyDict_Check(base_obj))
+            {
+                PyObject *int_bits_py = PyDict_GetItemString(base_obj, "ib");
+                PyObject *frac_bits_py = PyDict_GetItemString(base_obj, "fb");
+                PyObject *scaled_value_py = PyDict_GetItemString(base_obj, "sv");
+                PyObject *is_signed_py = PyDict_GetItemString(base_obj, "sgn");
+
+                Py_DECREF(base_obj);
+
+                base_obj = FpBinaryLarge_FromBitsPylong(scaled_value_py,
+                        pylong_as_fp_int(int_bits_py), pylong_as_fp_int(frac_bits_py),
+                        (is_signed_py == Py_True) ? true : false);
+
+                Py_DECREF(int_bits_py);
+                Py_DECREF(frac_bits_py);
+                Py_DECREF(scaled_value_py);
+                Py_DECREF(is_signed_py);
+            }
         }
         else if (FpBinary_TpCompare(base_type_id, fp_large_type_id) == 0)
         {

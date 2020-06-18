@@ -31,11 +31,12 @@
 #include "fpbinaryglobaldoc.h"
 #include <math.h>
 
+#define FP_BINARY_SMALL_FORMAT_SUPPORTED(int_bits, frac_bits) (((FP_UINT_TYPE)(int_bits + frac_bits)) <= FP_UINT_NUM_BITS)
+
 static int
 check_new_bit_len_ok(FpBinarySmallObject *new_obj)
 {
-    if (((FP_UINT_TYPE)(new_obj->int_bits + new_obj->frac_bits)) >
-        FP_UINT_NUM_BITS)
+    if (!FP_BINARY_SMALL_FORMAT_SUPPORTED(new_obj->int_bits, new_obj->frac_bits))
     {
         PyErr_SetString(PyExc_OverflowError,
                         "New FpBinary object has too many bits for this CPU.");
@@ -1652,11 +1653,20 @@ FpBinarySmall_FromBitsPylong(PyObject *scaled_value, FP_INT_TYPE int_bits,
     return result;
 }
 
+/*
+ * Will rebuilt an FpBinarySmall instance and return IF the number of
+ * bits in the instance format are supportable on the current platform.
+ * If not (i.e. user has opened a pickle from a larger wordlength machine),
+ * a Dict will be returned with data that can be used to build an FpBinary
+ * instance (presumably via a FpBinaryLarge instance) using the bitfield
+ * method of creation. The Dict format is:
+ *
+ * {'ib': int_bits_pylong, 'fb': frac_bits_pylong, 'sv': bitfield_pylong, 'sgn': is_signed_pybool}
+ */
 PyObject *
 FpBinarySmall_FromPickleDict(PyObject *dict)
 {
-    PyObject *result =
-        (PyObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
+    PyObject *result = NULL;
     PyObject *int_bits, *frac_bits, *scaled_value, *is_signed;
 
     int_bits = PyDict_GetItemString(dict, "ib");
@@ -1666,6 +1676,8 @@ FpBinarySmall_FromPickleDict(PyObject *dict)
 
     if (int_bits && frac_bits && scaled_value && is_signed)
     {
+        FP_INT_TYPE int_bits_native, frac_bits_native;
+
         /* Make sure the objects are actually PyLongs. I.e. if we are in Python
          * 2.7, the unpickler may have decided to create a PyInt. Note that
          * after
@@ -1677,10 +1689,28 @@ FpBinarySmall_FromPickleDict(PyObject *dict)
         frac_bits = FpBinary_EnsureIsPyLong(frac_bits);
         scaled_value = FpBinary_EnsureIsPyLong(scaled_value);
 
-        set_object_fields(
-            (FpBinarySmallObject *)result, pylong_as_fp_uint(scaled_value),
-            pylong_as_fp_int(int_bits), pylong_as_fp_int(frac_bits),
-            (is_signed == Py_True) ? true : false);
+        int_bits_native = pylong_as_fp_int(int_bits);
+        frac_bits_native = pylong_as_fp_int(frac_bits);
+
+        if (FP_BINARY_SMALL_FORMAT_SUPPORTED(int_bits_native, frac_bits_native))
+        {
+            result = (PyObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
+            set_object_fields(
+                (FpBinarySmallObject *)result, pylong_as_fp_uint(scaled_value),
+                int_bits_native, frac_bits_native,
+                (is_signed == Py_True) ? true : false);
+        }
+        else
+        {
+            /* This pickled value must have been pickled on a system
+             * with a larger word length. Return a dictionary so that
+             * the calling function can created an FpBinaryLarge instance.
+             *
+             * Just using the original dict format.
+             */
+            Py_INCREF(dict);
+            result = dict;
+        }
 
         Py_DECREF(int_bits);
         Py_DECREF(frac_bits);
@@ -1688,8 +1718,6 @@ FpBinarySmall_FromPickleDict(PyObject *dict)
     }
     else
     {
-        Py_XDECREF(result);
-        result = NULL;
         PyErr_SetString(PyExc_KeyError,
                         "Pickle dict didn't have a required key.");
     }
