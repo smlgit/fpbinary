@@ -27,12 +27,19 @@ class AbstractTestHider(object):
         def tearDown(self):
             remove_pickle_file()
 
-        def assertAlmostEqual(self, first, second, places=7):
+        def assertAlmostEqual(self, first, second, places=7, delta=None):
             """Overload TestCase.assertAlmostEqual() to avoid use of round()"""
-            tol = 10.0 ** -places
-            self.assertTrue(float(abs(first - second)) < tol,
-                            '{} and {} differ by more than {} ({})'.format(
-                                first, second, tol, (first - second)))
+            diff = float(abs(first - second))
+
+            if delta is None:
+                tol = 10.0 ** -places
+                self.assertTrue(diff < tol,
+                                '{} and {} differ by more than {} ({})'.format(
+                                    first, second, tol, diff))
+            else:
+                self.assertTrue(diff < delta,
+                                '{} and {} differ by more than {} ({})'.format(
+                                    first, second, delta, diff))
 
         def _build_long_float_str(self, int_value, frac_value):
             """
@@ -330,9 +337,10 @@ class AbstractTestHider(object):
         def testDivision(self):
             """Subtraction operations between different types"""
 
-            almost_equal_places_small = 4
             bits_small = int(test_utils.get_small_type_size() / 4)
             bits_large = test_utils.get_small_type_size()
+
+            almost_equal_delta_small = 2**-bits_small
 
             scale = 0.125
             scale2 = scale * scale
@@ -349,20 +357,26 @@ class AbstractTestHider(object):
                     fpx_large = self.fp_binary_class(signed=True, value=(y * a) * scale2, format_inst=fpa_large)
 
                     # compute various forms of a = (x / y):
-                    self.assertAlmostEqual(fpa_small, (fpx_small / fpy_small).resize(fpa_small.format), places=almost_equal_places_small)
+                    self.assertAlmostEqual(fpa_small, (fpx_small / fpy_small).resize(fpa_small.format),
+                                           delta=almost_equal_delta_small)
                     self.assertAlmostEqual((1 / fpa_small).resize(fpa_small.format),
-                                           (fpy_small / fpx_small).resize(fpa_small.format), places=almost_equal_places_small)
-                    self.assertAlmostEqual((a * scale), float(fpx_small / fpy_small), places=almost_equal_places_small)
+                                           (fpy_small / fpx_small).resize(fpa_small.format),
+                                           delta=almost_equal_delta_small)
+                    self.assertAlmostEqual((a * scale), float(fpx_small / fpy_small),
+                                           delta=almost_equal_delta_small)
 
                     self.assertAlmostEqual(fpa_large, (fpx_large / fpy_large).resize(fpa_large.format))
                     self.assertAlmostEqual((1 / fpa_large).resize(fpa_large.format),
                                            (fpy_large / fpx_large).resize(fpa_large.format))
                     self.assertAlmostEqual((a * scale), float(fpx_large / fpy_large))
 
-                    self.assertAlmostEqual(fpa_small, (fpx_small / fpy_large).resize(fpa_small.format), places=almost_equal_places_small)
+                    self.assertAlmostEqual(fpa_small, (fpx_small / fpy_large).resize(fpa_small.format),
+                                           delta=almost_equal_delta_small)
                     self.assertAlmostEqual((1 / fpa_small).resize(fpa_small.format),
-                                           (fpy_small / fpx_large).resize(fpa_small.format), places=almost_equal_places_small)
-                    self.assertAlmostEqual((a * scale), float(fpx_small / fpy_large), places=almost_equal_places_small)
+                                           (fpy_small / fpx_large).resize(fpa_small.format),
+                                           delta=almost_equal_delta_small)
+                    self.assertAlmostEqual((a * scale), float(fpx_small / fpy_large),
+                                           delta=almost_equal_delta_small)
 
                     self.assertAlmostEqual(fpa_large, (fpx_large / fpy_small).resize(fpa_large.format))
                     self.assertAlmostEqual((1 / fpa_large).resize(fpa_large.format),
@@ -387,7 +401,8 @@ class AbstractTestHider(object):
                     tmp = fpx_large / float(y * scale)
                     self.assertAlmostEqual(fpa_large, tmp.resize(fpa_large.format))
 
-                    self.assertEqual(y * scale / 5, float(fpy_small / 5))
+                    self.assertAlmostEqual(y * scale / 5, float(fpy_small / 5),
+                                           delta=almost_equal_delta_small)
                     self.assertEqual(y * scale / 5, float(fpy_large / 5))
 
 
