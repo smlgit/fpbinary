@@ -1,4 +1,4 @@
-import sys, math, pickle, os
+import sys, math, pickle, os, struct
 from fpbinary import FpBinary, FpBinarySwitchable
 
 
@@ -8,7 +8,7 @@ if sys.version_info[0] >= 3:
 
 def get_small_type_size():
     """ Returns the number of bits the FpBinarySmall object should be able to support. """
-    return int(math.log(sys.maxsize, 2)) + 1
+    return 8 * struct.calcsize("q")
 
 def get_max_signed_value_bit_field(num_bits):
     return (long(1) << (num_bits - 1)) - 1
@@ -141,17 +141,17 @@ pickle_static_data = [
 
 def gen_static_pickle_files():
     """
-    File name format: pickle_test_v[python_version]_p[pickle protocol].data
+    File name format: pickle_test_v[python_version]_p[pickle protocol]_[os_name]_[word_len].data
     """
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(this_dir, pickle_static_file_dir)
 
     for protocol in range(2, pickle.HIGHEST_PROTOCOL + 1):
-        fname = '{}_v{}_{}_{}_p{}.data'.format(
+        fname = '{}_v{}_{}_{}_p{}_{}_{}.data'.format(
             pickle_static_file_prefix,
             sys.version_info.major, sys.version_info.minor, sys.version_info.micro,
-            protocol
+            protocol, sys.platform, get_small_type_size()
         )
 
         with open(os.path.join(data_dir, fname), 'wb') as f:
