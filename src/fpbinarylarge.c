@@ -1070,6 +1070,8 @@ fpbinarylarge_negative(PyObject *self)
 static PyObject *
 fpbinarylarge_long(PyObject *self)
 {
+    PyObject *result = NULL;
+
     /*
      * Just resize to just the int bits with towards zero rounding
      * and return the scaled value;
@@ -1080,9 +1082,10 @@ fpbinarylarge_long(PyObject *self)
                   ROUNDING_DIRECT_ZERO);
 
     Py_INCREF(resized->scaled_value);
+    result = resized->scaled_value;
     Py_DECREF(resized);
 
-    return resized->scaled_value;
+    return result;
 }
 
 static PyObject *
