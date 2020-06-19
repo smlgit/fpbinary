@@ -1,0 +1,93 @@
+# ============================================================================================
+# For windows-only code, we use the cmd: prefix - linux VMs ignore this.
+# For linux-only code, we use the sh: prefix - windows VMs ignore this.
+# We also use PowerShell code with the $isLinux flag to do linux-only scripting.
+
+environment:
+  matrix:
+  
+  # ============================================================================================
+  # Windows builds.
+  #
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    PYTHON: "C:\\Python36-x64"
+    PYTHON_VERSION: "3.6.x"
+    PYTHON_ARCH: "64"
+    
+  # ============================================================================================
+  # Linux builds.
+  #
+  # We use the pre-installed python virtual environments to do all our Linux building/testing
+  # in one job.
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8
+
+install:
+  - ps: type .\VERSION
+
+  # Prepend newly installed Python to the PATH of this build (this cannot be
+  # done from inside the powershell script as it would require to restart
+  # the parent CMD process).
+  - cmd: "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  
+  # Check that we have the expected version and architecture for Python
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+
+  # Upgrade to the latest version of pip to avoid it displaying warnings
+  # about it being out of date.
+  - "python -m pip install --upgrade pip"
+  - "python -m pip install --upgrade wheel"
+
+build_script:
+  # Build the compiled extension
+  
+  # ============================================================================================
+  # Windows builds.
+  #
+  # Can't run the wheel build in PowerShell because it errors out on compiler flag
+  # warnings (https://github.com/pypa/pip/issues/3383).
+  # Windows cmd doesn't error out on the warnings, so using cmd for windows.
+  - cmd: python setup.py bdist_wheel
+  
+  # ============================================================================================
+  # Linux builds.
+  #
+  # We only do a source distribution for Linux, so we use the latest python version virtual env
+  # to build the source dist.
+  - ps: |
+      if ($isLinux)
+      {
+          $e = $env:LINUX_VENVS.Split(",")[-1]
+          
+          . $HOME/$e/bin/activate.ps1
+          python setup.py sdist --formats=zip
+      }
+
+test_script:
+  # ============================================================================================
+  # Windows builds.
+  #
+  # We use pip to install the wheel file in the dist directory.
+  - cmd: "pip install FpBinary --no-index --find-links dist/"
+  - cmd: "python -m unittest discover -s tests -p testFpBinary*"
+  
+  # ============================================================================================
+  # Linux builds.
+  #
+  # For each python version, we use pip to install the source distribution in the dist directory.
+  - ps: |
+      if ($isLinux)
+      {
+          $ar = $env:LINUX_VENVS.Split(",")
+          Foreach ($e in $ar)
+          {
+              . $HOME/$e/bin/activate.ps1
+              pip install FpBinary --no-index --find-links dist/
+              python -m unittest discover -s tests -p testFpBinary*
+          }
+      }
+ 
+artifacts:
+  - path: dist\*
+

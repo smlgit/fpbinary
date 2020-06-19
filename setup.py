@@ -1,33 +1,23 @@
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 
 # Version information
-def get_version_number(num_type):
-    if num_type == 'minor':
-        token = 'FPBINARY_MINOR_VER'
-    else:
-        token = 'FPBINARY_MAJOR_VER'
-
-
-    with open('src/fpbinaryversion.h', 'r') as f:
+def get_version_number():
+    with open('VERSION', 'r') as f:
         for line in f:
-            if token in line:
-                _, _, version = line.split()
-                return version
+            return line.split('.')
 
-    return None
+    return ()
 
-maj_version = get_version_number('major')
-min_version = get_version_number('minor')
+version_tuple = get_version_number()
 
-if maj_version == None or min_version == None:
+if len(version_tuple) < 3:
     raise SystemError("Couldn't find the module version number!")
 
 
-
-
 fpbinary_module = Extension('fpbinary',
-                            define_macros=[('MAJOR_VERSION', maj_version),
-                                           ('MINOR_VERSION', min_version)],
+                            define_macros=[('MAJOR_VERSION', version_tuple[0]),
+                                           ('MINOR_VERSION', version_tuple[1]),
+                                           ('MICRO_VERSION', version_tuple[2])],
                             sources=['src/fpbinarymodule.c',
                                      'src/fpbinaryglobaldoc.c',
                                      'src/fpbinarycommon.c',
@@ -38,7 +28,7 @@ fpbinary_module = Extension('fpbinary',
                                      'src/fpbinaryenums.c'])
 
 setup(name='FpBinary',
-      version='{}.{}'.format(maj_version, min_version),
+      version='{}.{}.{}'.format(version_tuple[0], version_tuple[1], version_tuple[2]),
       description='Provides binary fixed point functionality.',
       author_email='smlgit@protonmail.com',
       ext_modules=[fpbinary_module])
