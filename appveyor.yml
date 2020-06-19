@@ -23,8 +23,12 @@ environment:
     LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8
 
 install:
-  - ps: type .\VERSION
-
+  # Set the build name
+  - ps: |
+      $version = Get-Content .\VERSION
+      $version | Select-Object -First 1
+      Update-AppveyorBuild -Version "$env:APPVEYOR_REPO_BRANCH-$version.$env:APPVEYOR_BUILD_NUMBER"
+    
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).

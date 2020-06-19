@@ -27,7 +27,7 @@ fpbinary_module = Extension('fpbinary',
                                      'src/fpbinaryswitchable.c',
                                      'src/fpbinaryenums.c'])
 
-setup(name='FpBinary',
+setup(name='fpbinary',
       version='{}.{}.{}'.format(version_tuple[0], version_tuple[1], version_tuple[2]),
       description='Provides binary fixed point functionality.',
       author_email='smlgit@protonmail.com',
