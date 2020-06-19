@@ -7,8 +7,14 @@ if sys.version_info[0] >= 3:
 
 
 def get_small_type_size():
-    """ Returns the number of bits the FpBinarySmall object should be able to support. """
+    """ Returns the number of bits the FpBinarySmall object should be able to support.
+        This is based on the assumption that FpBinary uses the long long type . """
     return 8 * struct.calcsize("q")
+
+def get_interpreter_arch_size():
+    """ Returns the number of bits the python environment was compiled for.
+        Note that this could be 32 on a 64 bit machine if running python in 32 bit. """
+    return 8 * struct.calcsize("P")
 
 def get_max_signed_value_bit_field(num_bits):
     return (long(1) << (num_bits - 1)) - 1
@@ -95,47 +101,37 @@ pickle_static_data = [
     FpBinary(8, 8, signed=True, value=-3.01234),
     FpBinary(8, 8, signed=False, value=0.01234),
 
-    FpBinary(get_small_type_size() - 2, 2, signed=True, value=56.789),
-    FpBinary(get_small_type_size() - 2, 2, signed=False, value=56.789),
+    FpBinary(64 - 2, 2, signed=True, value=56.789),
+    FpBinary(64 - 2, 2, signed=False, value=56.789),
 
     FpBinarySwitchable(fp_mode=False, fp_value=FpBinary(16, 16, signed=True, value=5.875)),
     FpBinarySwitchable(fp_mode=False, float_value=-45.6),
 
 
     # All ones, small size
-    FpBinary(get_small_type_size() - 2, 2, signed=True,
-             bit_field=(1 << get_small_type_size()) - 1),
-    FpBinary(get_small_type_size() - 2, 2, signed=False,
-             bit_field=(1 << get_small_type_size()) - 1),
+    FpBinary(64 - 2, 2, signed=True, bit_field=(1 << 64) - 1),
+    FpBinary(64 - 2, 2, signed=False, bit_field=(1 << 64) - 1),
 
-    FpBinary(get_small_type_size() - 2, 3, signed=True, value=56436.25),
-    FpBinary(get_small_type_size() - 2, 3, signed=False, value=56436.25),
+    FpBinary(64 - 2, 3, signed=True, value=56436.25),
+    FpBinary(64 - 2, 3, signed=False, value=56436.25),
 
-    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(get_small_type_size() - 2, 2, signed=True)),
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(64 - 2, 2, signed=True)),
 
     # All ones, large size
-    FpBinary(get_small_type_size() - 2, 3, signed=True,
-             bit_field=(1 << (get_small_type_size() + 1)) - 1),
-    FpBinary(get_small_type_size() - 2, 3, signed=False,
-             bit_field=(1 << (get_small_type_size() + 1)) - 1),
+    FpBinary(64 - 2, 3, signed=True, bit_field=(1 << (64 + 1)) - 1),
+    FpBinary(64 - 2, 3, signed=False, bit_field=(1 << (64 + 1)) - 1),
 
-    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(get_small_type_size(),
-                         get_small_type_size(), signed=False,
-                         bit_field=(1 << (get_small_type_size() * 2)) - 1)),
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(64, 64, signed=False,
+                         bit_field=(1 << (64 * 2)) - 1)),
 
 
-    FpBinary(get_small_type_size(),
-             get_small_type_size(), signed=True,
-             bit_field=(1 << (get_small_type_size() + 5)) + 23),
-    FpBinary(get_small_type_size(),
-             get_small_type_size(), signed=False,
-             bit_field=(1 << (get_small_type_size() * 2)) - 1),
+    FpBinary(64, 64, signed=True, bit_field=(1 << (64 + 5)) + 23),
+    FpBinary(64, 64, signed=False, bit_field=(1 << (64 * 2)) - 1),
 
     FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(16, 16, signed=True, value=5.875)),
-    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(get_small_type_size() - 2, 3, signed=True)),
-    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(get_small_type_size(),
-                         get_small_type_size(), signed=True,
-                         bit_field=(1 << (get_small_type_size() + 5)) + 23)),
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(64 - 2, 3, signed=True)),
+    FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(64, 64, signed=True,
+                    bit_field=(1 << (64 + 5)) + 23)),
 
 ]
 
@@ -151,7 +147,7 @@ def gen_static_pickle_files():
         fname = '{}_v{}_{}_{}_p{}_{}_{}.data'.format(
             pickle_static_file_prefix,
             sys.version_info.major, sys.version_info.minor, sys.version_info.micro,
-            protocol, sys.platform, get_small_type_size()
+            protocol, sys.platform, get_interpreter_arch_size()
         )
 
         with open(os.path.join(data_dir, fname), 'wb') as f:

@@ -1099,21 +1099,19 @@ fpbinary_setstate(PyObject *self, PyObject *dict)
              */
             if (PyDict_Check(base_obj))
             {
-                PyObject *int_bits_py = PyDict_GetItemString(base_obj, "ib");
-                PyObject *frac_bits_py = PyDict_GetItemString(base_obj, "fb");
-                PyObject *scaled_value_py = PyDict_GetItemString(base_obj, "sv");
-                PyObject *is_signed_py = PyDict_GetItemString(base_obj, "sgn");
+                PyObject *returned_dict = base_obj;
 
-                Py_DECREF(base_obj);
+                /* BORROWED references */
+                PyObject *int_bits_py = PyDict_GetItemString(returned_dict, "ib");
+                PyObject *frac_bits_py = PyDict_GetItemString(returned_dict, "fb");
+                PyObject *scaled_value_py = PyDict_GetItemString(returned_dict, "sv");
+                PyObject *is_signed_py = PyDict_GetItemString(returned_dict, "sgn");
 
                 base_obj = FpBinaryLarge_FromBitsPylong(scaled_value_py,
                         pylong_as_fp_int(int_bits_py), pylong_as_fp_int(frac_bits_py),
                         (is_signed_py == Py_True) ? true : false);
 
-                Py_DECREF(int_bits_py);
-                Py_DECREF(frac_bits_py);
-                Py_DECREF(scaled_value_py);
-                Py_DECREF(is_signed_py);
+                Py_DECREF(returned_dict);
             }
         }
         else if (FpBinary_TpCompare(base_type_id, fp_large_type_id) == 0)
