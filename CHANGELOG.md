@@ -3,6 +3,7 @@
 ## [Unreleased](https://github.com/smlgit/fpbinary/tree/HEAD)
 **Bug fixes:**
 
+- Unpickling an FpBinary instance that was created on a larger word length machine could theoretically produce the wrong value [#15](//github.com/smlgit/fpbinary/issues/15)
 - FpBinary int() method may return incorrect value when running 32 bit python on a 64 bit machine [#14](//github.com/smlgit/fpbinary/issues/14)
 - Division on FpBinary objects may cause a crash [#13](//github.com/smlgit/fpbinary/issues/13)
 
