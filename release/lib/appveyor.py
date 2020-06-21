@@ -1,6 +1,5 @@
 import logging, ntpath, os
 import requests
-import http.client as http_client
 from . import common
 import time
 
