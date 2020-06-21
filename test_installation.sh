@@ -58,7 +58,15 @@ for v in ${pyenv_versions[@]}; do
 	
 	# Install via pip
 	if [ ${#args[@]} -le 1 ]; then
-	    echo "You must specify the pypi site url to install from pypi"
+	    echo "You must specify either 'pip' or 'test' as the pypi install location."
+	    (exit 1);
+	fi
+
+        location=${args[1]}
+	
+	# Install via pip
+	if [ "$location" != "pip" ] && [ "$location" != "test" ]; then
+	    echo "You must specify either 'pip' or 'test' as the pypi install location."
 	    (exit 1);
 	fi
 
@@ -66,10 +74,22 @@ for v in ${pyenv_versions[@]}; do
 	if [ ${#args[@]} -ge 3 ]; then
 	    version=${args[2]}
 	fi
-
+	
+	if [ "$version" == "" ]; then
+	    package="fpbinary"
+	else
+	    package="fpbinary==$version"
+	fi
+	
 	echo "======================================================"
-	echo "Installing $version via pypi site ${args[1]}"
+	echo "Installing $package via pypi site $location"
 	echo "======================================================"
+	
+	if [ "$location" == "test" ]; then
+	    pip install --no-cache-dir --index-url https://test.pypi.org/simple/ --no-deps $package
+	else
+	    pip install --no-cache-dir fpbinary $package
+	fi
 	
     else
 	
@@ -83,6 +103,7 @@ for v in ${pyenv_versions[@]}; do
 
     # Deactivate virtualenv
     deactivate
+    rm -rf venv$v
 done
 
 echo Success!

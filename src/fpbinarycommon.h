@@ -6,11 +6,7 @@
 #define FPBINARYCOMMON_H_
 
 #include "Python.h"
-
-/* To stop MS VC++ compilers pre version 12 from choking. */
-typedef unsigned char bool;
-#define true 1
-#define false 0
+#include <stdbool.h>
 
 /* defines for compatability between v2 and v3 */
 #if PY_MAJOR_VERSION >= 3

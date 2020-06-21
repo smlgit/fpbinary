@@ -47,6 +47,10 @@ def get_last_build(auth_token, account_name, project_name, branch='master'):
         _appveyor_get_full_url('projects/{}/{}/branch/{}'.format(
             account_name, project_name, branch)),
         headers=_appveyor_rest_api_build_headers(auth_token))
+
+    if r.status_code == 404:
+        logging.error('Appveyor responded with client error when attempting to get the last build. '
+                      'Branch {} may not have been built before...'.format(branch))
     r.raise_for_status()
     return r.json()['build']
 
