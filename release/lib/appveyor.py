@@ -110,7 +110,7 @@ def download_job_artifacts(auth_token, job_id, output_dir_path):
         # windows format, so need to use ntpath instead of os.path
         filename = ntpath.basename(artifact['fileName'])
 
-        logging.info('Downloading file {} to {}  ...'.format(
+        logging.info('Downloading file {} to {}'.format(
             filename, output_dir_path
         ))
 
