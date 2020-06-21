@@ -49,8 +49,10 @@ def get_last_build(auth_token, account_name, project_name, branch='master'):
         headers=_appveyor_rest_api_build_headers(auth_token))
 
     if r.status_code == 404:
-        logging.error('Appveyor responded with client error when attempting to get the last build. '
-                      'Branch {} may not have been built before...'.format(branch))
+        # Not found error
+        # Assume there has been no build for this branch and return None.
+        return None
+
     r.raise_for_status()
     return r.json()['build']
 
@@ -139,17 +141,21 @@ def download_build_artifacts(auth_token, account_name, project_name, output_dir_
         download_job_artifacts(auth_token, job['jobId'], output_dir_path)
 
 
-def start_build(auth_token, account_name, project_name, branch,
-                build_number=None, wait_for_finish=False):
+def start_build(auth_token, account_name, project_name, branch, wait_for_finish=False):
     """
     If successfully started, returns the build id.
     Else, returns None.
     """
 
-    if build_number is None:
-        logging.info('Retrieving last build for branch {}...'.format(branch))
-        build_number =\
-            get_last_build(auth_token, account_name, project_name, branch)['buildNumber'] + 1
+    logging.info('Retrieving last build for branch {}...'.format(branch))
+    last_build = get_last_build(auth_token, account_name, project_name, branch)
+    if last_build is None:
+        logging.warning('No builds for branch {} were found. Assuming this is the first...'.format(
+            branch
+        ))
+        build_number = 1
+    else:
+        build_number = last_build['buildNumber'] + 1
 
     if build_number is not None:
         logging.info('Setting build number to {}'.format(build_number))
