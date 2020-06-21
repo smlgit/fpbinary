@@ -73,7 +73,7 @@ test_script:
   # Windows builds.
   #
   # We use pip to install the wheel file in the dist directory.
-  - cmd: "pip install FpBinary --no-index --find-links dist/"
+  - cmd: "pip install fpbinary --no-index --find-links dist/"
   - cmd: "python -m unittest discover -s tests -p testFpBinary*"
   
   # ============================================================================================
@@ -87,7 +87,7 @@ test_script:
           Foreach ($e in $ar)
           {
               . $HOME/$e/bin/activate.ps1
-              pip install FpBinary --no-index --find-links dist/
+              pip install fpbinary --no-index --find-links dist/
               python -m unittest discover -s tests -p testFpBinary*
           }
       }
