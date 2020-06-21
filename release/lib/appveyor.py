@@ -6,7 +6,7 @@ import time
 
 appveyor_api_url_prefix = 'https://ci.appveyor.com/api/'
 appveyor_ok_codes = [200, 204]
-max_time_to_wait_for_build_secs = 300
+max_time_to_wait_for_build_secs = 1800
 
 
 def _appveyor_rest_api_build_headers(auth_token, customer_headers={},
@@ -167,6 +167,7 @@ def start_build(auth_token, account_name, project_name, branch, wait_for_finish=
             _appveyor_get_full_url('builds'),
             headers=_appveyor_rest_api_build_headers(auth_token),
             json={'accountName': account_name, 'projectSlug': project_name, 'branch': branch})
+        r.raise_for_status()
         build_id = r.json()['buildId']
 
         accum_secs = 0

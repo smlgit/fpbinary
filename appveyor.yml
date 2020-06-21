@@ -3,10 +3,11 @@
 # For linux-only code, we use the sh: prefix - windows VMs ignore this.
 # We also use PowerShell code with the $isLinux flag to do linux-only scripting.
 
+matrix:
+  fast_finish: true
+
 environment:
   matrix:
-
-  fast_finish: true
 
   # ============================================================================================
   # Windows builds.
