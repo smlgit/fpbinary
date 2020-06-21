@@ -1,12 +1,12 @@
-import os, configparser
+import os, json
 
 
 def get_security_config_file_path():
-    if (os.path.exists('security.ini')):
-        return os.path.abspath('security.ini')
+    if (os.path.exists('security.json')):
+        return os.path.abspath('security.json')
 
-    if (os.path.exists('release/security.ini')):
-        return os.path.abspath('release/security.ini')
+    if (os.path.exists('release/security.json')):
+        return os.path.abspath('release/security.json')
 
     return None
 
@@ -37,8 +37,8 @@ def get_appveyor_security():
     security_file = get_security_config_file_path()
 
     if security_file is not None:
-        config = configparser.ConfigParser()
-        config.read(security_file)
+        with open(security_file, 'r') as f:
+            config = json.load(f)
 
         return config['APPVEYOR']
 
