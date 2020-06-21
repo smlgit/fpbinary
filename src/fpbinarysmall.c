@@ -178,8 +178,8 @@ compare_scaled_values(bool are_signed, FP_UINT_TYPE op1, FP_UINT_TYPE op2)
 {
     if (are_signed)
     {
-        bool op1_negative = op1 & FP_UINT_MAX_SIGN_BIT;
-        bool op2_negative = op2 & FP_UINT_MAX_SIGN_BIT;
+        bool op1_negative = ((op1 & FP_UINT_MAX_SIGN_BIT) != 0);
+        bool op2_negative = ((op2 & FP_UINT_MAX_SIGN_BIT) != 0);
 
         if ((op1_negative == op2_negative && op1 > op2) ||
             (!op1_negative && op2_negative))
