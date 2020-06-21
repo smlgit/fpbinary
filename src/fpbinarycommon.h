@@ -6,7 +6,6 @@
 #define FPBINARYCOMMON_H_
 
 #include "Python.h"
-#include <stdint.h>
 
 /* To stop MS VC++ compilers pre version 12 from choking. */
 typedef unsigned char bool;
