@@ -1,6 +1,10 @@
 import argparse, logging, os
 from lib.appveyor import start_build, download_build_artifacts
-from lib.common import get_appveyor_security
+from lib.pypi import upload_to_test_pypi
+from lib.common import get_appveyor_security, get_testpypi_security, get_fpbinary_version
+
+
+default_output_dir = os.path.abspath('download_dir')
 
 
 def main():
@@ -12,24 +16,46 @@ def main():
                         help='The fpbinary Github branch to run a build on.')
     parser.add_argument('--output-dir', type=str, default=None,
                         help='If specified, the artifacts of the build will be downloaded to this directory.')
+    parser.add_argument('--upload-dest', type=str, default=None, choices=['pypi', 'testpypi'],
+                        help='Specify to upload the artifacts to the respective package server.')
     parser.add_argument('--wait-complete', action='store_true',
                         help='If specified, will wait until the build is finished.')
+    parser.add_argument('--release', action='store_true',
+                        help='If specified, do the build without the \'rc\' pre release specifier in the output files.')
+
     args = parser.parse_args()
+
+
+    if args.upload_dest is not None and args.output_dir is None:
+        args.output_dir = default_output_dir
 
     if args.output_dir is not None:
         args.wait_complete = True
 
-    security_dict = get_appveyor_security()
+    appveyor_security_dict = get_appveyor_security()
+    testpypi_security_dict = get_testpypi_security()
 
-    build_id = start_build(security_dict['token'], security_dict['account'], 'fpbinary',
-                           args.branch, wait_for_finish=args.wait_complete)
+    result_tuple = start_build(appveyor_security_dict['token'], appveyor_security_dict['account'],
+                               'fpbinary', args.branch, get_fpbinary_version(),
+                               is_release_build=args.release, wait_for_finish=args.wait_complete)
 
-    if build_id is not None:
-        if args.output_dir is not None and args.wait_complete:
-            download_build_artifacts(security_dict['token'], security_dict['account'],
-                                     'fpbinary', os.path.abspath(args.output_dir), build_id=build_id)
-    else:
+    if not args.wait_complete:
+        return
+
+    if result_tuple is None:
         logging.error('Build didn\'t start')
+        exit(1)
+
+    build_success = result_tuple[0]
+    build_id = result_tuple[1]
+
+    if build_success is True and args.output_dir is not None:
+        download_build_artifacts(appveyor_security_dict['token'], appveyor_security_dict['account'],
+                                 'fpbinary', os.path.abspath(args.output_dir), build_id=build_id)
+
+        if args.upload_dest is not None:
+            upload_to_test_pypi(testpypi_security_dict['token'], args.output_dir)
+
 
 
 if __name__ == '__main__':

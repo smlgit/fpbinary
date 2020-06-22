@@ -1,2 +1,3 @@
 include src/*.h
 include VERSION
+include ALPHA

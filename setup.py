@@ -9,27 +9,31 @@ def get_version_number():
 
     return ()
 
+# alpha build information
+def get_alpha_str():
+    if os.path.exists('ALPHA'):
+        with open('ALPHA', 'r') as f:
+            for line in f:
+                return line.strip()
+
+    return None
+
 version_tuple = get_version_number()
 
 if len(version_tuple) < 3:
     raise SystemError("Couldn't find the module version number!")
 
 version = '{}.{}.{}'.format(version_tuple[0], version_tuple[1], version_tuple[2])
+alpha_str = get_alpha_str()
 
-# Can specify alpha_build_num to show build in release files.
-# Can specify private_build_num to only show build number in python __build_num_ variable.
-build_num = 'none'
-if 'alpha_build_num' in os.environ:
-    build_num = os.environ['alpha_build_num']
-    version += 'a{}'.format(build_num)
-elif 'private_build_num' in os.environ:
-    build_num = os.environ['private_build_num']
+if alpha_str is not None:
+    version += alpha_str
 
 fpbinary_module = Extension('fpbinary',
                             define_macros=[('MAJOR_VERSION', version_tuple[0]),
                                            ('MINOR_VERSION', version_tuple[1]),
                                            ('MICRO_VERSION', version_tuple[2]),
-                                           ('BUILD_VERSION', build_num),
+                                           ('BUILD_VERSION', 'none'),
                                            ('VERSION_STRING', version)],
                             sources=['src/fpbinarymodule.c',
                                      'src/fpbinaryglobaldoc.c',

@@ -61,9 +61,13 @@ environment:
     LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8
 
 install:
-  # Set the build name
+  # Set the build name and alpha release number
   - ps: |
       Update-AppveyorBuild -Version "$env:build_name"
+      if (Test-Path "$env:alpha_build_num")
+      {
+          Set-Content -Path "ALPHA" -Value "$env:alpha_build_num"
+      }
     
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart

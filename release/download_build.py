@@ -1,6 +1,7 @@
 import argparse, logging, os
 from lib.appveyor import get_build_from_name, get_last_build, download_build_artifacts
-from lib.common import get_appveyor_security
+from lib.pypi import upload_to_test_pypi
+from lib.common import get_appveyor_security, get_testpypi_security
 
 
 def main():
@@ -13,7 +14,10 @@ def main():
                              'Enter a branch name if you want to download the latest build from that branch.')
     parser.add_argument('outputdir', type=str,
                         help='The artifacts of the build will be downloaded to this directory.')
+    parser.add_argument('--upload-dest', type=str, default=None, choices=['pypi', 'testpypi'],
+                        help='Specify to upload the artifacts to the respective package server.')
     args = parser.parse_args()
+
 
     security_dict = get_appveyor_security()
 
@@ -44,6 +48,9 @@ def main():
     logging.info('Downloading build {} ...'.format(build_name))
     download_build_artifacts(security_dict['token'], security_dict['account'],
                              'fpbinary', os.path.abspath(args.outputdir), build_name=build_name)
+
+    if args.upload_dest is not None:
+        upload_to_test_pypi(get_testpypi_security()['token'], args.outputdir)
 
 
 if __name__ == '__main__':

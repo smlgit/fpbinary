@@ -86,9 +86,9 @@ for v in ${pyenv_versions[@]}; do
 	echo "======================================================"
 	
 	if [ "$location" == "test" ]; then
-	    pip install --no-cache-dir --index-url https://test.pypi.org/simple/ --no-deps $package
+	    pip install -I --pre --no-cache-dir --index-url https://test.pypi.org/simple/ --no-deps $package
 	else
-	    pip install --no-cache-dir fpbinary $package
+	    pip install -I --pre --no-cache-dir fpbinary $package
 	fi
 	
     else

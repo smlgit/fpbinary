@@ -1,4 +1,4 @@
-import logging, ntpath, os
+import logging, ntpath, os, subprocess
 import requests
 from . import common
 import time
@@ -137,13 +137,20 @@ def download_build_artifacts(auth_token, account_name, project_name, output_dir_
     elif build_id is not None:
         build = get_build_from_id(auth_token, account_name, project_name, build_id)
 
+    if not os.path.exists(output_dir_path):
+        os.mkdir(output_dir_path)
+
+    subprocess.run(['rm', '-f', '{}'.format(
+        os.path.join(output_dir_path, '/*'))])
+
     for job in build['jobs']:
         download_job_artifacts(auth_token, job['jobId'], output_dir_path)
 
 
-def start_build(auth_token, account_name, project_name, branch, wait_for_finish=False):
+def start_build(auth_token, account_name, project_name, branch, version,
+                is_release_build=False, wait_for_finish=False):
     """
-    If successfully started, returns the build id.
+    If successfully started, returns a tuple with (success, build id).
     Else, returns None.
     """
 
@@ -163,10 +170,27 @@ def start_build(auth_token, account_name, project_name, branch, wait_for_finish=
 
         logging.info('Starting build...')
 
+        # The Appveyor build name (they call it the version) is always in the format:
+        # <branch>-<version>a<build_number> . E.g. master-1.5.2a45
+        #
+        # The private_build_num is always set and is used so an end user can access
+        # the build number via the __build_num__ variable in python.
+        #
+        # The alpha_build_num is set if the build IS NOT a release build. This makes
+        # the version format as seen by users and Pypi the same as the build_name. I.e.
+        # <branch>-<version>a<build_number> .
+        # If is_release_build is set to True, the alpha/build notation is left off.
+
+        data = {'accountName': account_name, 'projectSlug': project_name, 'branch': branch,
+                'environmentVariables': {'private_build_num': '{}'.format(build_number)}}
+        data['environmentVariables']['build_name'] = '{}-{}a{}'.format(branch, version, build_number)
+
+        if is_release_build is False:
+            data['environmentVariables']['alpha_build_num'] = str(build_number)
+
         r = requests.post(
             _appveyor_get_full_url('builds'),
-            headers=_appveyor_rest_api_build_headers(auth_token),
-            json={'accountName': account_name, 'projectSlug': project_name, 'branch': branch})
+            headers=_appveyor_rest_api_build_headers(auth_token), json=data)
         r.raise_for_status()
         build_id = r.json()['buildId']
 
@@ -174,6 +198,7 @@ def start_build(auth_token, account_name, project_name, branch, wait_for_finish=
         sleep_secs = 30
 
         logging.info('Started build: {}'.format(build_id))
+
         if wait_for_finish:
             logging.info('Waiting for build to finish...')
             while accum_secs < max_time_to_wait_for_build_secs:
@@ -186,7 +211,7 @@ def start_build(auth_token, account_name, project_name, branch, wait_for_finish=
                 if 'finished' in build:
                     logging.info('Build {} completed with status {}'.format(
                         build['version'], build['status']))
-                    return build_id
+                    return build['status'] == 'success', build_id
 
             logging.error('Build completion timed out')
 
