@@ -14,10 +14,10 @@
 
 #include "fpbinarycommon.h"
 
-/* MAJOR_VERSION, MINOR_VERSION and MICRO_VERSION need to be set when the comiler
+/* VERSION_STRING and BUILD_VERSION need to be set when the compiler
  * is invoked (normally done by setup.py).
  */
-#define FPBINARY_VERSION_STR                                                   \
-    xstr(MAJOR_VERSION) "." xstr(MINOR_VERSION) "." xstr(MICRO_VERSION)
+#define FPBINARY_VERSION_STR xstr(VERSION_STRING)
+#define FPBINARY_BUILD_NUM_STR xstr(BUILD_VERSION)
 
 #endif /* FPBINARYVERSION_H_ */
