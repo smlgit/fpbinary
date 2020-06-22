@@ -186,7 +186,7 @@ def start_build(auth_token, account_name, project_name, branch, version,
         data['environmentVariables']['build_name'] = '{}-{}a{}'.format(branch, version, build_number)
 
         if is_release_build is False:
-            data['environmentVariables']['alpha_build_num'] = str(build_number)
+            data['environmentVariables']['alpha_build_num'] = 'a{}'.format(build_number)
 
         r = requests.post(
             _appveyor_get_full_url('builds'),
