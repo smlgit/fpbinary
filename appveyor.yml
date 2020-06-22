@@ -68,7 +68,7 @@ install:
       Test-Path '$env:alpha_build_num'
       Test-Path '$env:alpha_build_num '
       Test-Path env:alpha_build_num
-      if (Test-Path '$env:alpha_build_num ')
+      if (Test-Path env:alpha_build_num)
       {
           Set-Content -Path .\ALPHA -Value "$env:alpha_build_num"
       }
