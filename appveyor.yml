@@ -149,7 +149,7 @@ test_script:
           $install_version = python setup.py --version
           $install_version
           curl https://test.pypi.org
-          pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary==1.4.3a30
+          pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
       }
       else
       {
