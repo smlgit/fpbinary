@@ -148,15 +148,14 @@ test_script:
       {
           $install_version = python setup.py --version
           $install_version
-          curl https://test.pypi.org
-          pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary==1.4.3a33
+          pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
       }
       else
       {
           pip install fpbinary --no-index --find-links dist/
       }
 
-      python -m unittest discover -s tests -p testFpBinary*
+  - cmd: python -m unittest discover -s tests -p testFpBinary*
 
   
   # ============================================================================================
