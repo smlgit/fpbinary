@@ -145,7 +145,7 @@ test_script:
   - ps: |
       if (Test-Path env:install_from_pypi)
       {
-          install_version = python setup.py --version
+          $install_version = python setup.py --version
           $install_version
           pip install -I --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
       }
@@ -154,7 +154,7 @@ test_script:
           pip install fpbinary --no-index --find-links dist/
       }
 
-      "python -m unittest discover -s tests -p testFpBinary*"
+      python -m unittest discover -s tests -p testFpBinary*
 
   
   # ============================================================================================
