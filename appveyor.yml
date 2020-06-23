@@ -93,6 +93,12 @@ install:
   - "python -m pip install --upgrade pip"
   - "python -m pip install --upgrade wheel"
 
+  $env:install_from_pypi
+  if (Test-Path env:install_from_pypi)
+  {
+      python -m pip install --upgrade twine
+  }
+
 build_script:
   # Build the compiled extension
   
@@ -124,10 +130,9 @@ build_script:
   #
   # Upload files to test pypi if requested.
   - ps: |
-      $env:install_from_pypi
       if (Test-Path env:install_from_pypi)
       {
-          python -m twine upload --repository -u __token__ -p "$env:testpypi_pw" "dist/*
+          python -m twine upload --repository -u __token__ -p "$env:testpypi_pw" dist/*
       }
 
 test_script:
