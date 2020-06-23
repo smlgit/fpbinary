@@ -78,6 +78,12 @@ install:
       {
           Set-Content -Path .\ALPHA -Value "$env:alpha_build_num"
       }
+
+      $env:install_from_pypi
+      if (Test-Path env:install_from_pypi)
+      {
+          python -m pip install --upgrade twine
+      }
     
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
@@ -93,11 +99,6 @@ install:
   - "python -m pip install --upgrade pip"
   - "python -m pip install --upgrade wheel"
 
-  $env:install_from_pypi
-  if (Test-Path env:install_from_pypi)
-  {
-      python -m pip install --upgrade twine
-  }
 
 build_script:
   # Build the compiled extension
