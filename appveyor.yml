@@ -142,7 +142,6 @@ test_script:
   # Windows builds.
   #
   # We use pip to install the wheel file in the dist directory.
-  - cmd: "python -m unittest discover -s tests -p testFpBinary*"
   - ps: |
       if (Test-Path env:install_from_pypi)
       {
@@ -154,6 +153,8 @@ test_script:
       {
           pip install fpbinary --no-index --find-links dist/
       }
+
+      "python -m unittest discover -s tests -p testFpBinary*"
 
   
   # ============================================================================================
