@@ -19,7 +19,7 @@ environment:
     PYTHON: "C:\\Python35-x64"
     PYTHON_VERSION: "3.5.x"
     PYTHON_ARCH: "64"
-    
+
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     PYTHON: "C:\\Python35"
     PYTHON_VERSION: "3.5.x"
@@ -135,7 +135,7 @@ build_script:
       if (Test-Path env:install_from_pypi)
       {
           python -m twine upload --repository testpypi -u __token__ -p "$env:testpypi_pw" dist/*
-          Start-Sleep -s 180
+          Start-Sleep -s 30
       }
 
 test_script:
@@ -148,7 +148,8 @@ test_script:
       {
           $install_version = python setup.py --version
           $install_version
-          pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
+          curl https://test.pypi.org
+          pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary==1.4.3a30
       }
       else
       {
