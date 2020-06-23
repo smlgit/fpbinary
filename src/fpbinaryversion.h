@@ -14,10 +14,9 @@
 
 #include "fpbinarycommon.h"
 
-/* VERSION_STRING and BUILD_VERSION need to be set when the compiler
+/* VERSION_STRING needs to be set when the compiler
  * is invoked (normally done by setup.py).
  */
 #define FPBINARY_VERSION_STR xstr(VERSION_STRING)
-#define FPBINARY_BUILD_NUM_STR xstr(BUILD_VERSION)
 
 #endif /* FPBINARYVERSION_H_ */

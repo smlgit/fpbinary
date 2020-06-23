@@ -7,6 +7,9 @@ matrix:
   fast_finish: true
 
 environment:
+  testpypi_pw:
+    secure: /Wa2jI4VqSUhZRCL2vxfb9y36bGjzg+oN5Jm5g+/8jxcekWfv3YkEdF51D2+X/gT5m6rDXIYCLJixDBP4sIHsyULuhyGS9MATmakFhPT2fXvaaXiR2Rjpkt36w1m/Hv2Gz7t6xMljCbIREDJGYtNF1GCMm3a5HrtWiUl7zVI+198cLMEjfw0ZjcUBccHYaPf77boJwaxJRzwR3VBFNjbFiLOq5WyxJR8ava2yVsnMAFJUKo8w3BKVr1AMD/0bCKE
+
   matrix:
 
   # ============================================================================================
@@ -64,16 +67,17 @@ install:
   # Set the build name and alpha release number
   - ps: |
       Update-AppveyorBuild -Version "$env:build_name"
-      Test-Path $env:alpha_build_num
-      Test-Path '$env:alpha_build_num'
-      Test-Path '$env:alpha_build_num '
-      Test-Path env:alpha_build_num
+
+      <#
+      If the package files need extra information in the version field,
+      a file called ALPHA with the string to append must be written to
+      the root of the project. Set the environment variable alpha_build_num
+      with the string when running Appveyor builds.
+      #>
       if (Test-Path env:alpha_build_num)
       {
           Set-Content -Path .\ALPHA -Value "$env:alpha_build_num"
       }
-      $env:alpha_build_num
-      Get-Content -Path .\ALPHA
     
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
@@ -114,6 +118,18 @@ build_script:
           python setup.py sdist --formats=zip
       }
 
+
+  # ============================================================================================
+  # Both builds.
+  #
+  # Upload files to test pypi if requested.
+  - ps: |
+      $env:install_from_pypi
+      if (Test-Path env:install_from_pypi)
+      {
+          python -m twine upload --repository -u __token__ -p "$env:testpypi_pw" "dist/*
+      }
+
 test_script:
   # ============================================================================================
   # Windows builds.
@@ -121,6 +137,18 @@ test_script:
   # We use pip to install the wheel file in the dist directory.
   - cmd: "pip install fpbinary --no-index --find-links dist/"
   - cmd: "python -m unittest discover -s tests -p testFpBinary*"
+  - ps: |
+      if (Test-Path env:install_from_pypi)
+      {
+          install_version = python setup.py --version
+          $install_version
+          pip install -I --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
+      }
+      else
+      {
+          pip install fpbinary --no-index --find-links dist/
+      }
+
   
   # ============================================================================================
   # Linux builds.

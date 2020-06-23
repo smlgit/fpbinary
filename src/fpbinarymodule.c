@@ -118,13 +118,10 @@ initfpbinary(void)
  */
 #if PY_MAJOR_VERSION >= 3
     FpBinaryVersionString = PyUnicode_FromString(FPBINARY_VERSION_STR);
-    FpBinaryBuildNumString = PyUnicode_FromString(FPBINARY_BUILD_NUM_STR);
 #else
     FpBinaryVersionString = PyString_FromString(FPBINARY_VERSION_STR);
-    FpBinaryBuildNumString = PyString_FromString(FPBINARY_BUILD_NUM_STR);
 #endif
     PyModule_AddObject(m, "__version__", FpBinaryVersionString);
-    PyModule_AddObject(m, "__build_num__", FpBinaryBuildNumString);
 
 #if PY_MAJOR_VERSION >= 3
     return m;

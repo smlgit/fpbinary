@@ -22,6 +22,8 @@ def main():
                         help='If specified, will wait until the build is finished.')
     parser.add_argument('--release', action='store_true',
                         help='If specified, do the build without the \'rc\' pre release specifier in the output files.')
+    parser.add_argument('--install_from_testpypi', action='store_true',
+                        help='If specified, the build will upload to test pypi and install from it.')
 
     args = parser.parse_args()
 

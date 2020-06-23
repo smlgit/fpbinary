@@ -9,7 +9,10 @@ def get_version_number():
 
     return ()
 
-# alpha build information
+# Alpha build information
+# Builder must create a file in the fpbinary root directory called "ALPHA"
+# with the alpha build string in it if they want the build to have a version
+# with extra information appended to it.
 def get_alpha_str():
     if os.path.exists('ALPHA'):
         with open('ALPHA', 'r') as f:
@@ -33,7 +36,6 @@ fpbinary_module = Extension('fpbinary',
                             define_macros=[('MAJOR_VERSION', version_tuple[0]),
                                            ('MINOR_VERSION', version_tuple[1]),
                                            ('MICRO_VERSION', version_tuple[2]),
-                                           ('BUILD_VERSION', 'none'),
                                            ('VERSION_STRING', version)],
                             sources=['src/fpbinarymodule.c',
                                      'src/fpbinaryglobaldoc.c',
