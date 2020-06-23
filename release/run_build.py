@@ -22,7 +22,7 @@ def main():
                         help='If specified, will wait until the build is finished.')
     parser.add_argument('--release', action='store_true',
                         help='If specified, do the build without the \'rc\' pre release specifier in the output files.')
-    parser.add_argument('--install_from_testpypi', action='store_true',
+    parser.add_argument('--install-from-testpypi', action='store_true',
                         help='If specified, the build will upload to test pypi and install from it.')
 
     args = parser.parse_args()
@@ -39,6 +39,7 @@ def main():
 
     result_tuple = start_build(appveyor_security_dict['token'], appveyor_security_dict['account'],
                                'fpbinary', args.branch, get_fpbinary_version(),
+                               install_from_testpypi=args.install_from_testpypi,
                                is_release_build=args.release, wait_for_finish=args.wait_complete)
 
     if not args.wait_complete:

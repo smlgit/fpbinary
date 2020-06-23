@@ -20,7 +20,6 @@
 
 PyObject *FpBinaryOverflowException;
 static PyObject *FpBinaryVersionString;
-static PyObject *FpBinaryBuildNumString;
 
 static PyMethodDef fpbinarymod_methods[] = {
     {NULL}, /* Sentinel */

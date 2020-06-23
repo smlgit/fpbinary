@@ -186,7 +186,7 @@ def start_build(auth_token, account_name, project_name, branch, version,
             data['environmentVariables']['alpha_build_num'] = 'a{}'.format(build_number)
 
         if install_from_testpypi is True:
-            data['environmentVariables']['install_from_pypi'] = 1
+            data['environmentVariables']['install_from_pypi'] = '1'
 
         r = requests.post(
             _appveyor_get_full_url('builds'),

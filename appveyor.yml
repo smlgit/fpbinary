@@ -15,45 +15,45 @@ environment:
   # ============================================================================================
   # Windows builds.
   #
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-#    PYTHON: "C:\\Python35-x64"
-#    PYTHON_VERSION: "3.5.x"
-#    PYTHON_ARCH: "64"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-#    PYTHON: "C:\\Python35"
-#    PYTHON_VERSION: "3.5.x"
-#    PYTHON_ARCH: "32"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    PYTHON: "C:\\Python36"
-#    PYTHON_VERSION: "3.6.x"
-#    PYTHON_ARCH: "32"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    PYTHON: "C:\\Python36-x64"
-#    PYTHON_VERSION: "3.6.x"
-#    PYTHON_ARCH: "64"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    PYTHON: "C:\\Python37"
-#    PYTHON_VERSION: "3.7.x"
-#    PYTHON_ARCH: "32"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    PYTHON: "C:\\Python37-x64"
-#    PYTHON_VERSION: "3.7.x"
-#    PYTHON_ARCH: "64"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    PYTHON: "C:\\Python38"
-#    PYTHON_VERSION: "3.8.x"
-#    PYTHON_ARCH: "32"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    PYTHON: "C:\\Python38-x64"
-#    PYTHON_VERSION: "3.8.x"
-#    PYTHON_ARCH: "64"
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    PYTHON: "C:\\Python35-x64"
+    PYTHON_VERSION: "3.5.x"
+    PYTHON_ARCH: "64"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    PYTHON: "C:\\Python35"
+    PYTHON_VERSION: "3.5.x"
+    PYTHON_ARCH: "32"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    PYTHON: "C:\\Python36"
+    PYTHON_VERSION: "3.6.x"
+    PYTHON_ARCH: "32"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    PYTHON: "C:\\Python36-x64"
+    PYTHON_VERSION: "3.6.x"
+    PYTHON_ARCH: "64"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    PYTHON: "C:\\Python37"
+    PYTHON_VERSION: "3.7.x"
+    PYTHON_ARCH: "32"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    PYTHON: "C:\\Python37-x64"
+    PYTHON_VERSION: "3.7.x"
+    PYTHON_ARCH: "64"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    PYTHON: "C:\\Python38"
+    PYTHON_VERSION: "3.8.x"
+    PYTHON_ARCH: "32"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    PYTHON: "C:\\Python38-x64"
+    PYTHON_VERSION: "3.8.x"
+    PYTHON_ARCH: "64"
     
   # ============================================================================================
   # Linux builds.
@@ -91,9 +91,8 @@ install:
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
-  # about it being out of date.
-  - "python -m pip install --upgrade pip"
-  - "python -m pip install --upgrade wheel"
+  # about it being out of date on windows.
+  - cmd: "python -m pip install --upgrade pip"
 
   - ps: |
       if (Test-Path env:install_from_pypi)
@@ -102,6 +101,7 @@ install:
           {
               . $HOME/$env:LINUX_VENV_LATEST/bin/activate.ps1
           }
+          python -m pip install --upgrade wheel
           python -m pip install --upgrade twine
       }
 
