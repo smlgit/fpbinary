@@ -16,14 +16,14 @@ environment:
   # Windows builds.
   #
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    PYTHON: "C:\\Python35"
-    PYTHON_VERSION: "3.5.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     PYTHON: "C:\\Python35-x64"
     PYTHON_VERSION: "3.5.x"
     PYTHON_ARCH: "64"
+    
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    PYTHON: "C:\\Python35"
+    PYTHON_VERSION: "3.5.x"
+    PYTHON_ARCH: "32"
 
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     PYTHON: "C:\\Python36"
