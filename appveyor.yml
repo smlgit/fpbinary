@@ -62,6 +62,7 @@ environment:
   # in one job.
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8
+    LINUX_VENV_LATEST: venv3.8
 
 install:
   # Set the build name and alpha release number
@@ -97,6 +98,10 @@ install:
   - ps: |
       if (Test-Path env:install_from_pypi)
       {
+          if ($isLinux)
+          {
+              . $HOME/$env:LINUX_VENV_LATEST/bin/activate.ps1
+          }
           python -m pip install --upgrade twine
       }
 
@@ -120,9 +125,7 @@ build_script:
   - ps: |
       if ($isLinux)
       {
-          $e = $env:LINUX_VENVS.Split(",")[-1]
-          
-          . $HOME/$e/bin/activate.ps1
+          . $HOME/$env:LINUX_VENV_LATEST/bin/activate.ps1
           python setup.py sdist --formats=zip
       }
 
