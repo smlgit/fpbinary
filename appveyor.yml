@@ -15,45 +15,45 @@ environment:
   # ============================================================================================
   # Windows builds.
   #
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    PYTHON: "C:\\Python35-x64"
-    PYTHON_VERSION: "3.5.x"
-    PYTHON_ARCH: "64"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    PYTHON: "C:\\Python35"
-    PYTHON_VERSION: "3.5.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python36"
-    PYTHON_VERSION: "3.6.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python36-x64"
-    PYTHON_VERSION: "3.6.x"
-    PYTHON_ARCH: "64"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python37"
-    PYTHON_VERSION: "3.7.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python37-x64"
-    PYTHON_VERSION: "3.7.x"
-    PYTHON_ARCH: "64"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python38"
-    PYTHON_VERSION: "3.8.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python38-x64"
-    PYTHON_VERSION: "3.8.x"
-    PYTHON_ARCH: "64"
+#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+#    PYTHON: "C:\\Python35-x64"
+#    PYTHON_VERSION: "3.5.x"
+#    PYTHON_ARCH: "64"
+#
+#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+#    PYTHON: "C:\\Python35"
+#    PYTHON_VERSION: "3.5.x"
+#    PYTHON_ARCH: "32"
+#
+#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+#    PYTHON: "C:\\Python36"
+#    PYTHON_VERSION: "3.6.x"
+#    PYTHON_ARCH: "32"
+#
+#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+#    PYTHON: "C:\\Python36-x64"
+#    PYTHON_VERSION: "3.6.x"
+#    PYTHON_ARCH: "64"
+#
+#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+#    PYTHON: "C:\\Python37"
+#    PYTHON_VERSION: "3.7.x"
+#    PYTHON_ARCH: "32"
+#
+#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+#    PYTHON: "C:\\Python37-x64"
+#    PYTHON_VERSION: "3.7.x"
+#    PYTHON_ARCH: "64"
+#
+#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+#    PYTHON: "C:\\Python38"
+#    PYTHON_VERSION: "3.8.x"
+#    PYTHON_ARCH: "32"
+#
+#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+#    PYTHON: "C:\\Python38-x64"
+#    PYTHON_VERSION: "3.8.x"
+#    PYTHON_ARCH: "64"
     
   # ============================================================================================
   # Linux builds.
@@ -135,7 +135,7 @@ build_script:
       if (Test-Path env:install_from_pypi)
       {
           python -m twine upload --repository testpypi -u __token__ -p "$env:testpypi_pw" dist/*
-          Start-Sleep -s 1800
+          Start-Sleep -s 600
       }
 
 test_script:
@@ -147,7 +147,6 @@ test_script:
       if (Test-Path env:install_from_pypi)
       {
           $install_version = python setup.py --version
-          $install_version
           pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
       }
       else
@@ -157,7 +156,7 @@ test_script:
 
   - cmd: python -m unittest discover -s tests -p testFpBinary*
 
-  
+
   # ============================================================================================
   # Linux builds.
   #
@@ -169,7 +168,17 @@ test_script:
           Foreach ($e in $ar)
           {
               . $HOME/$e/bin/activate.ps1
-              pip install fpbinary --no-index --find-links dist/
+
+              if (Test-Path env:install_from_pypi)
+              {
+                  $install_version = python setup.py --version
+                  pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
+              }
+              else
+              {
+                  pip install fpbinary --no-index --find-links dist/
+              }
+
               python -m unittest discover -s tests -p testFpBinary*
           }
       }
