@@ -135,7 +135,7 @@ build_script:
       if (Test-Path env:install_from_pypi)
       {
           python -m twine upload --repository testpypi -u __token__ -p "$env:testpypi_pw" dist/*
-          Start-Sleep -s 30
+          Start-Sleep -s 1800
       }
 
 test_script:
