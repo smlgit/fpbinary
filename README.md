@@ -74,7 +74,7 @@ help(FpBinary)
 help(FpBinarySwitchable)
 ```
 
-There are also some useful [demos](./demos).
+There are also some useful [demos](https://github.com/smlgit/fpbinary/tree/master/demos).
  
  Below is a very brief introduction to the objects.
  
