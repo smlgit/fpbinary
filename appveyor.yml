@@ -101,6 +101,7 @@ install:
           {
               . $HOME/$env:LINUX_VENV_LATEST/bin/activate.ps1
           }
+          python -m pip install --upgrade setuptools
           python -m pip install --upgrade wheel
           python -m pip install --upgrade twine
       }
