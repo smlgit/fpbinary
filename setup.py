@@ -32,6 +32,9 @@ alpha_str = get_alpha_str()
 if alpha_str is not None:
     version += alpha_str
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 fpbinary_module = Extension('fpbinary',
                             define_macros=[('MAJOR_VERSION', version_tuple[0]),
                                            ('MINOR_VERSION', version_tuple[1]),
@@ -50,5 +53,9 @@ fpbinary_module = Extension('fpbinary',
 setup(name='fpbinary',
       version=version,
       description='Provides binary fixed point functionality.',
+      long_description=long_description,
+      long_description_content_type="text/markdown",
+      python_requires='>=2.7',
+      url="https://github.com/smlgit/fpbinary",
       author_email='smlgit@protonmail.com',
       ext_modules=[fpbinary_module])
