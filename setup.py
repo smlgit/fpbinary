@@ -1,5 +1,10 @@
-import os
+import os, sys
 from setuptools import setup, Extension
+
+# Requires variables
+python_version_min_windows = '>=3.5'
+python_version_min_default = '>=2.7'
+
 
 # Version information
 def get_version_number():
@@ -55,7 +60,14 @@ setup(name='fpbinary',
       description='Provides binary fixed point functionality.',
       long_description=long_description,
       long_description_content_type="text/markdown",
-      python_requires='>=2.7',
+      python_requires=python_version_min_windows if 'win' in sys.platform.lower() else python_version_min_default,
+
+      classifiers=[
+          'Operating System :: Microsoft :: Windows',
+          'Operating System :: POSIX',
+          'Programming Language :: Python :: 2.7'
+          'Programming Language :: Python :: 3'],
+
       url="https://github.com/smlgit/fpbinary",
       author_email='smlgit@protonmail.com',
       ext_modules=[fpbinary_module])

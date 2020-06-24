@@ -46,7 +46,7 @@ The easiest way is to use pip:
 pip install git+https://github.com/smlgit/fpbinary.git
 ```
 
-This will download the source from git and rund the setup script for you.
+This will download the source from git and run the setup script for you.
 
 Alternatively, you can clone the fpbinary repository and run the setup script: 
 
