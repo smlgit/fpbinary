@@ -93,7 +93,8 @@ install:
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date on windows.
   - cmd: "python -m pip install --upgrade pip"
-
+  - cmd: "python -m pip install --upgrade setuptools"
+  
   - ps: |
       if (Test-Path env:install_from_pypi)
       {
@@ -101,7 +102,6 @@ install:
           {
               . $HOME/$env:LINUX_VENV_LATEST/bin/activate.ps1
           }
-          python -m pip install --upgrade setuptools
           python -m pip install --upgrade wheel
           python -m pip install --upgrade twine
       }
