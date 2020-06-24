@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 # ==================================================================
 # The following need to be installed for this script to run:
@@ -32,8 +32,8 @@ if [ ${#args[@]} -lt 1 ]; then
 fi
 
 location=${args[0]}
-if [ "$location" != "pip" ] && [ "$location" != "test" ]; then
-    echo "You must specify either 'pip' or 'test' as the pypi install location."
+if [ "$location" != "pypi" ] && [ "$location" != "test" ]; then
+    echo "You must specify either 'pypi' or 'test' as the pypi install location."
     (exit 1);
 fi
 
@@ -74,7 +74,7 @@ for v in ${pyenv_versions[@]}; do
     if [ "$location" == "test" ]; then
 	pip install -I --pre --no-cache-dir --index-url https://test.pypi.org/simple/ --no-deps $package
     else
-	pip install -I --pre --no-cache-dir fpbinary $package
+	pip install -I --pre --no-cache-dir --no-deps $package
     fi
 	
     # Run fpbinary tests

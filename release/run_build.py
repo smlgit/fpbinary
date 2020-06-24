@@ -1,6 +1,6 @@
 import argparse, logging, os
 from lib.appveyor import start_build, download_build_artifacts
-from lib.pypi import upload_to_test_pypi
+from lib.pypi import upload_to_pypi_server
 from lib.common import get_appveyor_security, get_testpypi_security, get_fpbinary_version
 
 
@@ -19,9 +19,10 @@ def main():
     parser.add_argument('--upload-dest', type=str, default=None, choices=['pypi', 'testpypi'],
                         help='Specify to upload the artifacts to the respective package server.')
     parser.add_argument('--wait-complete', action='store_true',
-                        help='If specified, will wait until the build is finished.')
+                        help='If specified, will wait until the build is finished. Automatically set if'
+                             '--upload-dest or --output-dir are set.')
     parser.add_argument('--release', action='store_true',
-                        help='If specified, do the build without the \'rc\' pre release specifier in the output files.')
+                        help='If specified, do the build without the \'a\' pre release specifier in the output files.')
     parser.add_argument('--install-from-testpypi', action='store_true',
                         help='If specified, the build will upload to test pypi and install from it.')
 
@@ -57,7 +58,7 @@ def main():
                                  'fpbinary', os.path.abspath(args.output_dir), build_id=build_id)
 
         if args.upload_dest is not None:
-            upload_to_test_pypi(testpypi_security_dict['token'], args.output_dir)
+            upload_to_pypi_server(testpypi_security_dict['token'], args.output_dir, server='testpypi')
 
 
 

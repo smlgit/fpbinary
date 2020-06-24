@@ -150,7 +150,7 @@ test_script:
       if (Test-Path env:install_from_pypi)
       {
           $install_version = python setup.py --version
-          pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
+          pip install -I --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
       }
       else
       {
@@ -175,7 +175,7 @@ test_script:
               if (Test-Path env:install_from_pypi)
               {
                   $install_version = python setup.py --version
-                  pip install -Iv --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
+                  pip install -I --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
               }
               else
               {

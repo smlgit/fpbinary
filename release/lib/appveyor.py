@@ -5,8 +5,12 @@ import time
 
 
 appveyor_api_url_prefix = 'https://ci.appveyor.com/api/'
-appveyor_ok_codes = [200, 204]
-max_time_to_wait_for_build_secs = 1800
+
+
+# Need to allow for uploading/installing from test pypi which seems to require
+# a 10 minute delay PER artifact produced. Allow for about 10 artifacts, round
+# to 2 hours.
+max_time_to_wait_for_build_secs = 7200
 
 
 def _appveyor_rest_api_build_headers(auth_token, customer_headers={},
@@ -39,13 +43,20 @@ def get_project_id(auth_token, project_name):
     return None
 
 
-def get_last_build(auth_token, account_name, project_name, branch='master'):
+def get_last_build(auth_token, account_name, project_name, branch=None):
     """
-    Returns the 'build' dict of the last build on branch.
+    Returns the 'build' dict of the last build on branch. If branch is None,
+    will return the 'build' dict of the last build on the project.
     """
+
+    if branch is None:
+        request_url = 'projects/{}/{}'.format(account_name, project_name)
+    else:
+        request_url = 'projects/{}/{}/branch/{}'.format(
+            account_name, project_name, branch)
+
     r = requests.get(
-        _appveyor_get_full_url('projects/{}/{}/branch/{}'.format(
-            account_name, project_name, branch)),
+        _appveyor_get_full_url(request_url),
         headers=_appveyor_rest_api_build_headers(auth_token))
 
     if r.status_code == 404:
@@ -131,11 +142,16 @@ def download_job_artifacts(auth_token, job_id, output_dir_path):
 
 def download_build_artifacts(auth_token, account_name, project_name, output_dir_path,
                              build_name=None, build_id=None):
+    """
+    If neither build_name or build_id is specified, the latest build will be downloaded.
+    """
 
     if build_name is not None:
         build = get_build_from_name(auth_token, account_name, project_name, build_name)
     elif build_id is not None:
         build = get_build_from_id(auth_token, account_name, project_name, build_id)
+    else:
+        build = get_last_build(auth_token, account_name, project_name)
 
     if not os.path.exists(output_dir_path):
         os.mkdir(output_dir_path)
@@ -156,6 +172,7 @@ def start_build(auth_token, account_name, project_name, branch, version,
     """
 
     logging.info('Retrieving last build for branch {}...'.format(branch))
+
     last_build = get_last_build(auth_token, account_name, project_name, branch)
     if last_build is None:
         logging.warning('No builds for branch {} were found. Assuming this is the first...'.format(
@@ -211,7 +228,7 @@ def start_build(auth_token, account_name, project_name, branch, version,
                 if 'finished' in build:
                     logging.info('Build {} completed with status {}'.format(
                         build['version'], build['status']))
-                    return build['status'] == 'success', build_id
+                    return build_is_successful(build), build_id
 
             logging.error('Build completion timed out')
 
@@ -220,3 +237,13 @@ def start_build(auth_token, account_name, project_name, branch, version,
     return None
 
 
+def build_is_successful(appveyor_build_dict):
+    return appveyor_build_dict['status'] == 'success'
+
+
+def get_build_summary(appveyor_build_dict):
+    return 'Name: {}\nBranch: {}\nCommit: {}\nFinished: {}\nStatus: {}'.format(
+        appveyor_build_dict['version'], appveyor_build_dict['branch'],
+        appveyor_build_dict['commitId'], appveyor_build_dict['finished'],
+        appveyor_build_dict['status']
+    )
