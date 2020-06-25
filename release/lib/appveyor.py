@@ -1,4 +1,4 @@
-import logging, ntpath, os, subprocess
+import logging, ntpath, os
 import requests
 from . import common
 import time
@@ -156,8 +156,8 @@ def download_build_artifacts(auth_token, account_name, project_name, output_dir_
     if not os.path.exists(output_dir_path):
         os.mkdir(output_dir_path)
 
-    subprocess.run(['rm', '-f', '{}'.format(
-        os.path.join(output_dir_path, '/*'))])
+    # Clear download directory
+    [os.remove(os.path.join(output_dir_path, p)) for p in os.listdir(output_dir_path)]
 
     for job in build['jobs']:
         download_job_artifacts(auth_token, job['jobId'], output_dir_path)

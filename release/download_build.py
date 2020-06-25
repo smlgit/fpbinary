@@ -1,6 +1,6 @@
 import argparse, logging, os
 from lib.appveyor import get_build_from_name, get_last_build, download_build_artifacts
-from lib.pypi import upload_to_test_pypi
+from lib.pypi import upload_to_pypi_server
 from lib.common import get_appveyor_security, get_testpypi_security
 
 
@@ -17,7 +17,6 @@ def main():
     parser.add_argument('--upload-dest', type=str, default=None, choices=['pypi', 'testpypi'],
                         help='Specify to upload the artifacts to the respective package server.')
     args = parser.parse_args()
-
 
     security_dict = get_appveyor_security()
 
@@ -50,7 +49,7 @@ def main():
                              'fpbinary', os.path.abspath(args.outputdir), build_name=build_name)
 
     if args.upload_dest is not None:
-        upload_to_test_pypi(get_testpypi_security()['token'], args.outputdir)
+        upload_to_pypi_server(get_testpypi_security()['token'], args.outputdir, server=args.upload_dest)
 
 
 if __name__ == '__main__':

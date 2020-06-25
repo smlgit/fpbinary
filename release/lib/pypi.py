@@ -1,4 +1,4 @@
-import os, subprocess
+import subprocess
 
 
 def upload_to_pypi_server(password, files_dir, server='testpypi'):
