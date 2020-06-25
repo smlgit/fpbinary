@@ -1,3 +1,4 @@
 include src/*.h
 include VERSION
 include ALPHA
+include README.rst

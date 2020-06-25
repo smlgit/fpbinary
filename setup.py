@@ -37,7 +37,7 @@ alpha_str = get_alpha_str()
 if alpha_str is not None:
     version += alpha_str
 
-with open("README.md", "r") as fh:
+with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 fpbinary_module = Extension('fpbinary',
