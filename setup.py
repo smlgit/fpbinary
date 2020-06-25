@@ -59,7 +59,6 @@ setup(name='fpbinary',
       version=version,
       description='Provides binary fixed point functionality.',
       long_description=long_description,
-      long_description_content_type="text/markdown",
       python_requires=python_version_min_windows if 'win' in sys.platform.lower() else python_version_min_default,
 
       classifiers=[
