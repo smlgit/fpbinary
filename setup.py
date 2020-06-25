@@ -1,10 +1,6 @@
 import os, sys
 from setuptools import setup, Extension
 
-# Requires variables
-python_version_min_windows = '>=3.5'
-python_version_min_default = '>=2.7'
-
 
 # Version information
 def get_version_number():
@@ -59,6 +55,7 @@ setup(name='fpbinary',
       version=version,
       description='Provides binary fixed point functionality.',
       long_description=long_description,
+      python_requires='>=2.7',
 
       classifiers=[
           'Operating System :: Microsoft :: Windows',
