@@ -7,3 +7,4 @@ fpbinary
 
    intro
    objects
+   changelog
