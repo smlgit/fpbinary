@@ -35,20 +35,34 @@ fpbinary was created with **_fast_** simulation of math-intensive systems destin
 
 ## Installation
 
-Installation is currently only via source download and build. You require an installation of git, python >= 2.7.12 and a C99 compliant compiler.
+### Linux
 
->**Installing on Windows**: fpbinary is developed using Linux, but it does get tested using Windows 10. Windows testing currently uses the Python-recommended Visual C++ compiler which is specified for each python version at [Windows Compilers](https://wiki.python.org/moin/WindowsCompilers). fpbinary testing on Windows currently uses [Microsoft Build Tools for Visual Studio 2019](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2019).
+Source distributions are available on PyPi and can be installed via pip:
 
+```bash
+pip install fpbinary
+```
 
-The easiest way is to use pip:
+This does require a C99 compliant compiler on your system, which your distribution is likely to already have. If not, install something like gcc.
+
+### Windows
+
+fpbinary is tested on Windows 10 and binaries are produced on PyPi. Only python versions >= 3.5 are supported for Windows. Install via:
+
+```bash
+pip install fpbinary
+```
+
+### Going Bush
+
+If you want to test the very latest source code or for some other reason you want to install directly from the repository, you can install via:
+
 
 ```bash
 pip install git+https://github.com/smlgit/fpbinary.git
 ```
 
-This will download the source from git and run the setup script for you.
-
-Alternatively, you can clone the fpbinary repository and run the setup script: 
+or: 
 
 
 ```bash
@@ -57,10 +71,6 @@ git clone https://github.com/smlgit/fpbinary.git
 cd fpbinary
 python setup install
 ```
-
-The library has been tested on:
-- Linux 16.04 LTS: python versions 2.7.12, 3.5.2, 3.6.5, 3.7.5 and 3.8.2 .
-- Windows 10: VS Build Tools 2019 v16.6 (compiler version 19.26), python versions 3.6.5, 3.7.5 and 3.8.0 .
 
 <a name="use"/>
 
