@@ -21,6 +21,8 @@ project = 'fpbinary'
 copyright = '2020, smlgit'
 author = 'smlgit'
 
+master_doc = 'index'
+
 
 # -- General configuration ---------------------------------------------------
 
