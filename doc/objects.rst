@@ -1,6 +1,8 @@
 FpBinary Objects
 ================
-	     
+
+.. automodule:: fpbinary
+
 FpBinary
 --------
 .. automodule:: fpbinary.FpBinary
