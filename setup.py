@@ -3,7 +3,7 @@ from setuptools import setup, Extension
 
 # Requires variables
 python_version_min_windows = '>=3.5'
-python_version_min_default = '>=2.7'
+python_version_min_default = '>=2.6'
 
 
 # Version information
