@@ -73,11 +73,11 @@ install:
 
       if (Test-Path env:is_release_build)
       {
-          Update-AppveyorBuild -Version "$env:APPVEYOR_REPO_BRANCH-$base_versionrc$env:APPVEYOR_BUILD_NUMBER"
+          Update-AppveyorBuild -Version "$env:APPVEYOR_REPO_BRANCH-$($base_version)rc$env:APPVEYOR_BUILD_NUMBER"
       }
       else
       {
-          Update-AppveyorBuild -Version "$env:APPVEYOR_REPO_BRANCH-$base_versiona$env:APPVEYOR_BUILD_NUMBER"
+          Update-AppveyorBuild -Version "$env:APPVEYOR_REPO_BRANCH-$($base_version)a$env:APPVEYOR_BUILD_NUMBER"
 
           <#
           If the package files need extra information in the version field,
