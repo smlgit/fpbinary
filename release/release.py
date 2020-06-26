@@ -1,7 +1,7 @@
 import argparse, logging, os, re, time, subprocess
-from lib.appveyor import start_build, download_build_artifacts, get_build_from_name, build_is_successful, get_build_summary
+from lib.appveyor import download_build_artifacts, get_build_from_name, build_is_successful, get_build_summary
 from lib.pypi import upload_to_pypi_server
-from lib.common import get_appveyor_security, get_pypi_security
+from lib.common import get_appveyor_security, get_pypi_security, get_version_from_appveyor_build_name
 
 
 default_output_dir = os.path.abspath('download_dir')
@@ -19,9 +19,9 @@ def main():
 
     args = parser.parse_args()
 
-    # if not re.match('^.+-[0-9]+\.[0-9]\.+[0-9]+$', args.buildname):
-    #     raise ValueError('The version number {} doesn\'t appear to be a valid release version. '
-    #                      'Expecting <branch>-d.d.d format.'.format(args.buildname))
+    version = get_version_from_appveyor_build_name(args.buildname)
+    if version is None:
+        raise ValueError('Couldn\'t parse build name {} to a valid version.'.format(args.buildname))
 
     appveyor_security_dict = get_appveyor_security()
     pypi_security_dict = get_pypi_security()
@@ -36,6 +36,7 @@ def main():
 
     logging.info('Releasing build:')
     logging.info(get_build_summary(build_dict))
+    logging.info('Version: {}'.format(version))
     ans = input('Are you sure you want to continue? (y/n)')
 
     if ans != 'y':
@@ -56,7 +57,7 @@ def main():
 
     # Run test scripts
     test_script_abs = os.path.abspath('release/test_all_pypi.sh')
-    subprocess.run([str(test_script_abs), 'pypi', args.buildname.split('-')[1]], check=True)
+    subprocess.run([str(test_script_abs), 'pypi', version], check=True)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,25 @@
-import os, json
+import os, json, re
+
+
+def get_version_from_appveyor_build_name(build_name):
+    # For release builds, build name is:
+    #    branch_name-<base-version>rc<build_number>
+    # and need to return:
+    #    <base-version>
+    #
+    # For non-release builds, build name is:
+    #    branch_name-<base-version>a<build_number>
+    # and need to return:
+    #    <base-version>a<build_number>
+
+    if re.match('^.+-[0-9].[0-9].[0-9]rc[0-9]+$', build_name):
+        # Release build
+        return re.sub('rc[0-9]+$', '', re.sub('^.+-', '', build_name))
+    elif re.match('^.+-[0-9].[0-9].[0-9]a[0-9]+$', build_name):
+        # Non-release build
+        return re.sub('^.+-', '', build_name)
+
+    return None
 
 
 def get_security_config_file_path():

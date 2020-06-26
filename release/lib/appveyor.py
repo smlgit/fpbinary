@@ -171,62 +171,45 @@ def start_build(auth_token, account_name, project_name, branch,
     Else, returns None.
     """
 
-    logging.info('Retrieving last build for branch {}...'.format(branch))
+    logging.info('Starting build...')
 
-    last_build = get_last_build(auth_token, account_name, project_name, branch)
-    if last_build is None:
-        logging.warning('No builds for branch {} were found. Assuming this is the first...'.format(
-            branch
-        ))
-        build_number = 1
-    else:
-        build_number = last_build['buildNumber'] + 1
+    data = {'accountName': account_name, 'projectSlug': project_name, 'branch': branch,
+            'environmentVariables': {}}
 
-    if build_number is not None:
-        logging.info('Setting build number to {}'.format(build_number))
-        set_build_number(auth_token, account_name, project_name, build_number)
+    if is_release_build is True:
+        data['environmentVariables']['is_release_build'] = '1'
 
-        logging.info('Starting build...')
+    if install_from_testpypi is True:
+        data['environmentVariables']['install_from_pypi'] = '1'
 
-        data = {'accountName': account_name, 'projectSlug': project_name, 'branch': branch,
-                'environmentVariables': {}}
+    r = requests.post(
+        _appveyor_get_full_url('builds'),
+        headers=_appveyor_rest_api_build_headers(auth_token), json=data)
+    r.raise_for_status()
+    build_id = r.json()['buildId']
 
-        if is_release_build is True:
-            data['environmentVariables']['is_release_build'] = '1'
+    accum_secs = 0
+    sleep_secs = 30
 
-        if install_from_testpypi is True:
-            data['environmentVariables']['install_from_pypi'] = '1'
+    logging.info('Started build: {}'.format(build_id))
 
-        r = requests.post(
-            _appveyor_get_full_url('builds'),
-            headers=_appveyor_rest_api_build_headers(auth_token), json=data)
-        r.raise_for_status()
-        build_id = r.json()['buildId']
+    if wait_for_finish:
+        logging.info('Waiting for build to finish...')
+        while accum_secs < max_time_to_wait_for_build_secs:
 
-        accum_secs = 0
-        sleep_secs = 30
+            time.sleep(sleep_secs)
+            accum_secs += sleep_secs
 
-        logging.info('Started build: {}'.format(build_id))
+            build = get_build_from_id(auth_token, account_name, project_name, build_id)
 
-        if wait_for_finish:
-            logging.info('Waiting for build to finish...')
-            while accum_secs < max_time_to_wait_for_build_secs:
+            if 'finished' in build:
+                logging.info('Build {} completed with status {}'.format(
+                    build['version'], build['status']))
+                return build_is_successful(build), build_id
 
-                time.sleep(sleep_secs)
-                accum_secs += sleep_secs
+        logging.error('Build completion timed out')
 
-                build = get_build_from_id(auth_token, account_name, project_name, build_id)
-
-                if 'finished' in build:
-                    logging.info('Build {} completed with status {}'.format(
-                        build['version'], build['status']))
-                    return build_is_successful(build), build_id
-
-            logging.error('Build completion timed out')
-
-        return build_id
-
-    return None
+    return build_id
 
 
 def build_is_successful(appveyor_build_dict):

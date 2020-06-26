@@ -28,7 +28,6 @@ def main():
 
     args = parser.parse_args()
 
-
     if args.upload_dest is not None and args.output_dir is None:
         args.output_dir = default_output_dir
 
