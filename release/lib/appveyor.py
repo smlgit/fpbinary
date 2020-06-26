@@ -163,7 +163,7 @@ def download_build_artifacts(auth_token, account_name, project_name, output_dir_
         download_job_artifacts(auth_token, job['jobId'], output_dir_path)
 
 
-def start_build(auth_token, account_name, project_name, branch, version,
+def start_build(auth_token, account_name, project_name, branch,
                 install_from_testpypi=False,
                 is_release_build=False, wait_for_finish=False):
     """
@@ -188,19 +188,11 @@ def start_build(auth_token, account_name, project_name, branch, version,
 
         logging.info('Starting build...')
 
-        # The Appveyor build name (they call it the version) is always in the format:
-        # <branch>-<version>a<build_number> . E.g. master-1.5.2a45
-        #
-        # The alpha_build_num is set if the build IS NOT a release build. This makes
-        # the version format as seen by END users and Pypi the same as the build_name. I.e.
-        # <branch>-<version>a<build_number> .
-        # If is_release_build is set to True, the alpha/build notation is left off.
-
         data = {'accountName': account_name, 'projectSlug': project_name, 'branch': branch,
-                'environmentVariables': {'build_name': '{}-{}a{}'.format(branch, version, build_number)}}
+                'environmentVariables': {}}
 
-        if is_release_build is False:
-            data['environmentVariables']['alpha_build_num'] = 'a{}'.format(build_number)
+        if is_release_build is True:
+            data['environmentVariables']['is_release_build'] = '1'
 
         if install_from_testpypi is True:
             data['environmentVariables']['install_from_pypi'] = '1'

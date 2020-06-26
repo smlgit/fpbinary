@@ -67,17 +67,25 @@ environment:
 install:
   # Set the build name and alpha release number
   - ps: |
-      Update-AppveyorBuild -Version "$env:build_name"
 
-      <#
-      If the package files need extra information in the version field,
-      a file called ALPHA with the string to append must be written to
-      the root of the project. Set the environment variable alpha_build_num
-      with the string when running Appveyor builds.
-      #>
-      if (Test-Path env:alpha_build_num)
+      $base_version = Get-Content .\VERSION
+      $base_version | Select-Object -First 1
+
+      if (Test-Path env:is_release_build)
       {
-          Set-Content -Path .\ALPHA -Value "$env:alpha_build_num"
+          Update-AppveyorBuild -Version "$env:APPVEYOR_REPO_BRANCH-$base_versionrc$env:APPVEYOR_BUILD_NUMBER"
+      }
+      else
+      {
+          Update-AppveyorBuild -Version "$env:APPVEYOR_REPO_BRANCH-$base_versiona$env:APPVEYOR_BUILD_NUMBER"
+
+          <#
+          If the package files need extra information in the version field,
+          a file called ALPHA with the string to append must be written to
+          the root of the project. This will occur unless the environment
+          variable is_release_build is set.
+          #>
+          Set-Content -Path .\ALPHA -Value "a$env:APPVEYOR_BUILD_NUMBER"
       }
 
     

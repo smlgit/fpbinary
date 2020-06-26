@@ -1,7 +1,7 @@
 import argparse, logging, os
 from lib.appveyor import start_build, download_build_artifacts
 from lib.pypi import upload_to_pypi_server
-from lib.common import get_appveyor_security, get_testpypi_security, get_fpbinary_version
+from lib.common import get_appveyor_security, get_testpypi_security
 
 
 default_output_dir = os.path.abspath('download_dir')
@@ -39,7 +39,7 @@ def main():
     testpypi_security_dict = get_testpypi_security()
 
     result_tuple = start_build(appveyor_security_dict['token'], appveyor_security_dict['account'],
-                               'fpbinary', args.branch, get_fpbinary_version(),
+                               'fpbinary', args.branch,
                                install_from_testpypi=args.install_from_testpypi,
                                is_release_build=args.release, wait_for_finish=args.wait_complete)
 
