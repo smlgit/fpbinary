@@ -76,7 +76,7 @@ fpbinary provides two main objects - ``FpBinary`` and ``FpBinarySwitchable``. Th
    help(FpBinary)
    help(FpBinarySwitchable)
 
-This documentation is also avaliable at `Help Docs <objects.html>`_. There are also some useful `demos <https://github.com/smlgit/fpbinary/tree/master/demos>`_.
+This documentation is also avaliable at `Read the Docs <https://fpbinary.readthedocs.io/en/latest/>`_. There are also some useful `demos <https://github.com/smlgit/fpbinary/tree/master/demos>`_.
 
 Below is a very brief introduction to the objects.
 

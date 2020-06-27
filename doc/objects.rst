@@ -19,4 +19,8 @@ RoundingEnum
 ------------
 .. autoclass:: fpbinary.RoundingEnum
 
+FpBinaryOverflowException
+-------------------------
+.. autoclass:: fpbinary.FpBinaryOverflowException
+
 
