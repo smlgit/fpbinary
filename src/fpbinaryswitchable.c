@@ -844,10 +844,10 @@ fpbinaryswitchable_getformat(PyObject *self, void *closure)
 }
 
 PyDoc_STRVAR(value_doc,
-        "float-castable : If `fp_mode` is True, may set to a FpBinary or FpBinarySwitchable type. "
-        "If `fp_mode` is False may set any object that is castable to a float. "
-        "This property can be used to set the underlying value of a monitoring variable "
-        "for the purposes of profiling the min and max values at a given point in execution.\n");
+        "float-castable : If `fp_mode` is True, may set to a FpBinary or FpBinarySwitchable type. \n"
+        "If `fp_mode` is False may set any object that is castable to a float. \n"
+        "This property can be used to set the underlying value of a monitoring variable \n"
+        "for the purposes of profiling the min and max values at a given point in execution. \n");
 static PyObject *
 fpbinaryswitchable_getvalue(PyObject *self, void *closure)
 {
@@ -945,9 +945,8 @@ fpbinaryswitchable_setvalue(PyObject *self, PyObject *value, void *closure)
 
 PyDoc_STRVAR(
     minvalue_doc,
-    "float : Will return the lowest value the `value` property has been set to. "
-    "This only applies when `fp_mode` is False. If `fp_mode` is True, this "
-    "property will return 0.0 .\n");
+    "float : Will return the lowest value the `value` property has been set to. \n"
+    "This only applies when `fp_mode` is False. If `fp_mode` is True, this property will return 0.0 .\n");
 static PyObject *
 fpbinaryswitchable_getminvalue(PyObject *self, void *closure)
 {
@@ -956,9 +955,8 @@ fpbinaryswitchable_getminvalue(PyObject *self, void *closure)
 }
 
 PyDoc_STRVAR(maxvalue_doc,
-        "float : Will return the highest value the `value` property has been set to. "
-        "This only applies when `fp_mode` is False. If `fp_mode` is True, this "
-        "property will return 0.0 .\n");
+        "float : Will return the highest value the `value` property has been set to. \n"
+        "This only applies when `fp_mode` is False. If `fp_mode` is True, this property will return 0.0 .\n");
 static PyObject *
 fpbinaryswitchable_getmaxvalue(PyObject *self, void *closure)
 {

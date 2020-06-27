@@ -48,7 +48,6 @@ initfpbinary(void)
 #endif
 {
     PyObject *m;
-    PyObject *overflow_enum, *rounding_enum;
 
     if (PyType_Ready(&FpBinary_SmallType) < 0)
         INITERROR;
@@ -98,14 +97,12 @@ initfpbinary(void)
 
     /* Create enum instances */
     Py_INCREF(&OverflowEnumType);
-    overflow_enum =
-        overflowenum_new((PyTypeObject *)&OverflowEnumType, NULL, NULL);
-    PyModule_AddObject(m, "OverflowEnum", overflow_enum);
+    PyModule_AddObject(m, "OverflowEnum", (PyObject *)&OverflowEnumType);
 
     Py_INCREF(&RoundingEnumType);
-    rounding_enum =
-        roundingenum_new((PyTypeObject *)&RoundingEnumType, NULL, NULL);
-    PyModule_AddObject(m, "RoundingEnum", rounding_enum);
+    PyModule_AddObject(m, "RoundingEnum", (PyObject *)&RoundingEnumType);
+
+    fpbinaryenums_InitModule();
 
     FpBinaryOverflowException =
         PyErr_NewException("fpbinary.FpBinaryOverflowException", NULL, NULL);
