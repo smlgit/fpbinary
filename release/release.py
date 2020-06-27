@@ -1,7 +1,8 @@
-import argparse, logging, os, re, time, subprocess
+import argparse, logging, os, time, subprocess
 from lib.appveyor import download_build_artifacts, get_build_from_name, build_is_successful, get_build_summary
 from lib.pypi import upload_to_pypi_server
-from lib.common import get_appveyor_security, get_pypi_security, get_version_from_appveyor_build_name
+from lib.github import create_light_tag
+from lib.common import get_appveyor_security, get_pypi_security, get_github_security, get_version_from_appveyor_build_name
 
 
 default_output_dir = os.path.abspath('download_dir')
@@ -25,6 +26,7 @@ def main():
 
     appveyor_security_dict = get_appveyor_security()
     pypi_security_dict = get_pypi_security()
+    github_security_dict = get_github_security()
 
     build_dict = get_build_from_name(appveyor_security_dict['token'], appveyor_security_dict['account'],
                                      'fpbinary', args.buildname)
@@ -42,12 +44,19 @@ def main():
     if ans != 'y':
         return
 
+
+    # ====================================================
     # Download from Appveyor
+    # ====================================================
+
     download_dir_abs = os.path.abspath(default_output_dir)
     download_build_artifacts(appveyor_security_dict['token'], appveyor_security_dict['account'],
                              'fpbinary', download_dir_abs, build_name=args.buildname)
 
+
+    # ====================================================
     # Upload to PyPi
+    # ====================================================
 
     logging.info('Uploading to PyPi...')
     upload_to_pypi_server(pypi_security_dict['token'], download_dir_abs, server='pypi')
@@ -55,9 +64,26 @@ def main():
     logging.info('Sleeping to give PyPi time to get sorted...')
     time.sleep(pypi_upload_delay_minutes * 60)
 
+
+    # ====================================================
     # Run test scripts
+    # ====================================================
+
     test_script_abs = os.path.abspath('release/test_all_pypi.sh')
     subprocess.run([str(test_script_abs), 'pypi', version], check=True)
+
+
+    # ====================================================
+    # Create tag at Github
+    # ====================================================
+
+    tag_str = 'v' + version
+    logging.info('Creating tag {} on commit {}...'.format(tag_str, build_dict['commitId']))
+    create_light_tag(github_security_dict['token'], 'smlgit', 'fpbinary',
+                     build_dict['commitId'], tag_str)
+
+    
+    logging.info('Release of version {} is complete.'.format(version))
 
 
 if __name__ == '__main__':
