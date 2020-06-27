@@ -2,6 +2,14 @@
 Changelog
 =========
 
+`Unreleased <//github.com/smlgit/fpbinary/tree/HEAD>`_
+----------------------------------------------------------------
+
+**Enhancements:**
+
+* Modify the Overflow and Rounding enums to be static classes. `#18 <//github.com/smlgit/fpbinary/issues/18>`_
+
+
 `v1.5.1 <//github.com/smlgit/fpbinary/releases/tag/v1.5.1>`_
 ----------------------------------------------------------------
 
