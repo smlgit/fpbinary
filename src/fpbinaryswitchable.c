@@ -243,6 +243,29 @@ fpbinaryswitchable_from_params(bool fp_mode, PyObject *fp_mode_value,
     return self;
 }
 
+PyDoc_STRVAR(
+    fpbinaryswitchable_doc,
+    "FpBinarySwitchable(fp_mode, fp_value=None, float_value=0.0)\n"
+    "--\n\n"
+    "Represents a fixed point OR floating point value depending on the `fp_mode` constructor parameter.\n"
+    "Also enables tracking of minimum and maximum values during the lifetime of the object via the `value` property.\n"
+    "This class can be used in math and resize operations and act like an FpBinary instance when `fp_mode` is \n"
+    "True and act sensibly (normally do nothing) when `fp_mode` is False.\n"
+    "\n"
+    "Parameters\n"
+    "----------\n"
+    "fp_mode : bool\n"
+    "    If True, the underlying data/operations are fixed point.\n"
+    "    If False, a native double type will be used.\n"
+    "    If True, the `fp_value` parameter must be set to an FpBinary instance.\n"
+    "    This instance will define the fixed point data and initial value.\n"
+    "\n"
+    "fp_value : FpBinary, optional if `fp_mode` is False.\n"
+    "    This instance will define the fixed point data and initial value.\n"
+    "\n"
+    "float_value : float, optional\n"
+    "    Sets the initial value when `fp_mode` is False. Defaults to 0.0.\n"
+    "\n");
 static int
 fpbinaryswitchable_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -316,9 +339,23 @@ fpbinaryswitchable_init(PyObject *self, PyObject *args, PyObject *kwds)
     return 0;
 }
 
-/*
- * See resize_doc
- */
+FP_GLOBAL_Doc_STRVAR(
+    fpswitchable_resize_doc,
+    "resize(format, overflow_mode=fpbinary.OverflowEnum.wrap, "
+    "round_mode=fpbinary.RoundingEnum.direct_neg_inf)\n"
+    "--\n"
+    "\n"
+    "If `fp_mode` is True, this method does what FpBinary.resize() does.\n"
+    "If `fp_mode` is False, nothing is done.\n"
+    "\n"
+    "Parameters\n"
+    "----------\n"
+    "See FpBinary.resize()\n"
+    "\n"
+    "Returns\n"
+    "----------\n"
+    "FpBinarySwitchable\n"
+    "    `self`\n");
 static PyObject *
 fpbinaryswitchable_resize(FpBinarySwitchableObject *self, PyObject *args,
                           PyObject *kwds)
@@ -777,7 +814,7 @@ fpbinaryswitchable_dealloc(FpBinarySwitchableObject *self)
 }
 
 PyDoc_STRVAR(fp_mode_doc,
-             "bool : True if the object is in fixed point mode (read only).");
+             "bool : Read-only. True if the object is in fixed point mode.");
 static PyObject *
 fpbinaryswitchable_get_fp_mode(PyObject *self, void *closure)
 {
@@ -787,6 +824,9 @@ fpbinaryswitchable_get_fp_mode(PyObject *self, void *closure)
         Py_RETURN_FALSE;
 }
 
+PyDoc_STRVAR(fpbinaryswitchable_format_doc,
+        "tuple : Read-only (int_bits, frac_bits) tuple representing the fixed point format. \n"
+        "If `fp_mode` is False, (1, 0) is returned.\n");
 static PyObject *
 fpbinaryswitchable_getformat(PyObject *self, void *closure)
 {
@@ -803,11 +843,11 @@ fpbinaryswitchable_getformat(PyObject *self, void *closure)
     return py_default_format_tuple;
 }
 
-PyDoc_STRVAR(value_doc, "Fixed point type or float-castable : If in fp_mode, "
-                        "may set to a FpBinary or"
-                        "FpBinarySwitchable type. If not in fp_mode, may be "
-                        "set any object that is castable \n"
-                        "to a float.");
+PyDoc_STRVAR(value_doc,
+        "float-castable : If `fp_mode` is True, may set to a FpBinary or FpBinarySwitchable type. "
+        "If `fp_mode` is False may set any object that is castable to a float. "
+        "This property can be used to set the underlying value of a monitoring variable "
+        "for the purposes of profiling the min and max values at a given point in execution.\n");
 static PyObject *
 fpbinaryswitchable_getvalue(PyObject *self, void *closure)
 {
@@ -905,10 +945,9 @@ fpbinaryswitchable_setvalue(PyObject *self, PyObject *value, void *closure)
 
 PyDoc_STRVAR(
     minvalue_doc,
-    "float : Will return the lowest value the value property has been set to.\n"
-    "This only applies to an object NOT in fp_mode. If in fp_mode, this "
-    "property\n"
-    "will return 0.0.");
+    "float : Will return the lowest value the `value` property has been set to. "
+    "This only applies when `fp_mode` is False. If `fp_mode` is True, this "
+    "property will return 0.0 .\n");
 static PyObject *
 fpbinaryswitchable_getminvalue(PyObject *self, void *closure)
 {
@@ -916,11 +955,10 @@ fpbinaryswitchable_getminvalue(PyObject *self, void *closure)
         ((FpBinarySwitchableObject *)self)->dbl_mode_min_value);
 }
 
-PyDoc_STRVAR(maxvalue_doc, "float : Will return the highest value the value "
-                           "property has been set to.\n"
-                           "This only applies to an object NOT in fp_mode. If "
-                           "in fp_mode, this property\n"
-                           "will return 0.0.");
+PyDoc_STRVAR(maxvalue_doc,
+        "float : Will return the highest value the `value` property has been set to. "
+        "This only applies when `fp_mode` is False. If `fp_mode` is True, this "
+        "property will return 0.0 .\n");
 static PyObject *
 fpbinaryswitchable_getmaxvalue(PyObject *self, void *closure)
 {
@@ -938,7 +976,7 @@ FpBinarySwitchable_InitModule(void)
 
 static PyMethodDef fpbinaryswitchable_methods[] = {
     {"resize", (PyCFunction)fpbinaryswitchable_resize,
-     METH_VARARGS | METH_KEYWORDS, resize_doc},
+     METH_VARARGS | METH_KEYWORDS, fpswitchable_resize_doc},
 
     /* Pickling functions */
     {"__getstate__", (PyCFunction)fpbinaryswitchable_getstate, METH_NOARGS,
@@ -951,7 +989,7 @@ static PyMethodDef fpbinaryswitchable_methods[] = {
 static PyGetSetDef fpbinaryswitchable_getsetters[] = {
     {"fp_mode", (getter)fpbinaryswitchable_get_fp_mode, NULL, fp_mode_doc,
      NULL},
-    {"format", (getter)fpbinaryswitchable_getformat, NULL, format_doc, NULL},
+    {"format", (getter)fpbinaryswitchable_getformat, NULL, fpbinaryswitchable_format_doc, NULL},
     {"value", (getter)fpbinaryswitchable_getvalue,
      (setter)fpbinaryswitchable_setvalue, value_doc, NULL},
     {"min_value", (getter)fpbinaryswitchable_getminvalue, NULL, minvalue_doc,
@@ -983,7 +1021,7 @@ static PyNumberMethods fpbinaryswitchable_as_number = {
 
 PyTypeObject FpBinarySwitchable_Type = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name = "fpbinary.FpBinarySwitchable",
-    .tp_doc = "Fixed point binary objects",
+    .tp_doc = fpbinaryswitchable_doc,
     .tp_basicsize = sizeof(FpBinarySwitchableObject),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES,

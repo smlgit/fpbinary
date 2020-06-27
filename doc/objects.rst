@@ -1,14 +1,15 @@
-FpBinary Objects
+fpbinary Objects
 ================
-
-.. automodule:: fpbinary
 
 FpBinary
 --------
-.. automodule:: fpbinary.FpBinary
+.. autoclass:: fpbinary.FpBinary
    :members:
 
 FpBinarySwitchable
 ------------------
-.. automodule:: fpbinary.FpBinarySwitchable
+.. autoclass:: fpbinary.FpBinarySwitchable
    :members:
+
+
+
