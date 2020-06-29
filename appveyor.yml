@@ -1,7 +1,36 @@
 # ============================================================================================
-# For windows-only code, we use the cmd: prefix - linux VMs ignore this.
-# For linux-only code, we use the sh: prefix - windows VMs ignore this.
+# For windows-only code, we use the cmd: prefix - linux/macOS VMs ignore this.
 # We also use PowerShell code with the $isLinux flag to do linux-only scripting.
+#
+# Using cibuildwheel
+# ------------------
+# Creating macOS binaries is a bit tricky because setuptools/python will use the
+# macOS SDK that Python was built with. SDKs are backwards compatible, so the older
+# SDK used the more users are catered for with one binary. The problem is that package
+# managers like Homebrew have python binaries that are built with the latest SDK present.
+# So, e.g., the Python binary from Homebrew on macOS 10.15 will use the 10.15 SDK.
+# Appveyor has the latest macOS, and appears to have Python binaries from Homebrew.
+# The binaries from Python.org, however, are built with older SDKs so as many OS versions
+# as possible are supported. So, we want to build our wheels with the Python.org python installs.
+#
+# cibuildwheel does this for us. It will install the Python.org binaries and do the wheel build
+# and then test. The tool is pretty simple and I think it is safe to rely on it.
+#
+# cibuildwheel also supports windows builds. It downloads nuget windows python binaries
+# and runs the wheel building in vitrualenvs. This is nicer that listing an Appveyor
+# job for every windows wheel, so I've decided to use cibuildwheel for windows too.
+#
+# We aren't using cibuildwheel for Linux because we only do a source distribution for linux
+# and cibuildwheel doesn't support NOT building wheels. It also needs a manylinux VM to run.
+#
+# Hacking the options
+# -------------------
+# One issue with cibuildwheel is that it insists on installing the wheels it builds locally
+# and running the tests. There is no explicit option to specify different install behavior
+# (like, e.g., uploading to testpypi and installing from there). So I have abused the
+# CIBW_REPAIR_WHEEL_COMMAND, CIBW_BEFORE_TEST and CIBW_TEST_COMMAND options to (when desired)
+# upload to testpypi, uninstall the local install and install from pypi all before running
+# the tests.
 
 matrix:
   fast_finish: true
@@ -13,58 +42,41 @@ environment:
   matrix:
 
   # ============================================================================================
-  # Windows builds.
-  #
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    PYTHON: "C:\\Python35-x64"
-    PYTHON_VERSION: "3.5.x"
-    PYTHON_ARCH: "64"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    PYTHON: "C:\\Python35"
-    PYTHON_VERSION: "3.5.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python36"
-    PYTHON_VERSION: "3.6.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python36-x64"
-    PYTHON_VERSION: "3.6.x"
-    PYTHON_ARCH: "64"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python37"
-    PYTHON_VERSION: "3.7.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python37-x64"
-    PYTHON_VERSION: "3.7.x"
-    PYTHON_ARCH: "64"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python38"
-    PYTHON_VERSION: "3.8.x"
-    PYTHON_ARCH: "32"
-
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    PYTHON: "C:\\Python38-x64"
-    PYTHON_VERSION: "3.8.x"
-    PYTHON_ARCH: "64"
-    
-  # ============================================================================================
   # Linux builds.
   #
   # We use the pre-installed python virtual environments to do all our Linux building/testing
   # in one job.
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8
-    LINUX_VENV_LATEST: venv3.8
+
+
+  # ============================================================================================
+  # Windows builds.
+  # We use cibuildwheel.
+  #
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    CIBW_BUILD: cp35-win32 cp35-win_amd64 cp36-win32 cp36-win_amd64 cp37-win32 cp37-win_amd64 cp38-win32 cp38-win_amd64
+    CIBW_BUILD_VERBOSITY: 2
+    WIN_LATEST_PYTHON: "C:\\Python38-x64"
+    PYPI_DELAY_CMD: "TIMEOUT 420"
+
+  # ============================================================================================
+  # MacOS builds.
+  #
+  # We use cibuildwheel.
+  #
+  - APPVEYOR_BUILD_WORKER_IMAGE: macos-mojave
+    CIBW_BUILD: cp27-macosx_x86_64 cp35-macosx_x86_64 cp36-macosx_x86_64 cp37-macosx_x86_64 cp38-macosx_x86_64
+    CIBW_BUILD_VERBOSITY: 2
+    PYPI_DELAY_CMD: "SLEEP 420"
+
+
+# Need to make sure initial setup is done with latest python (especially for cibuildwheel)
+stack: python 3.8
+
 
 install:
+
   # Set the build name and alpha release number
   - ps: |
 
@@ -88,86 +100,106 @@ install:
           Set-Content -Path .\ALPHA -Value "a$env:APPVEYOR_BUILD_NUMBER"
       }
 
-    
-  # Prepend newly installed Python to the PATH of this build (this cannot be
-  # done from inside the powershell script as it would require to restart
-  # the parent CMD process).
-  - cmd: "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+
+  # Need to make sure initial setup is done with latest python (especially for cibuildwheel)
+  # This cmd is windows-specific.
+  - cmd: "SET PATH=%WIN_LATEST_PYTHON%;%WIN_LATEST_PYTHON%\\Scripts;%PATH%"
   
-  # Check that we have the expected version and architecture for Python
+  # Check that we have the expected version for Python
   - "python --version"
-  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date on windows.
   - cmd: "python -m pip install --upgrade pip"
-  - cmd: "python -m pip install --upgrade setuptools"
-  - "python -m pip install --upgrade wheel"
 
   - ps: |
-      if (Test-Path env:install_from_pypi)
+
+      <#
+
+      Set up cibuildwheel environment variables.
+      If we are installing locally, this just requires setting the test script.
+      If we want to install from testpypi, we need to store the built wheel in our own dir,
+      make sure the wheel is present in the "repaired wheel" dir (because when we set our
+      own CIBW_REPAIR_WHEEL_COMMAND, cibuildwheel still expects this file to exist but doesn't
+      do it itself), upload to testpypi, then uninstall the local version that cibuildwheel
+      installs just before the test command is run, install from testpypi and then finally
+      run our actual tests.
+
+      Note that the {wheel} file path placeholder isn't accessible at all parts of the flow,
+      so that is why CIBW_REPAIR_WHEEL_COMMAND is being used.
+
+      #>
+      if (-Not $isLinux)
       {
-          if ($isLinux)
+          if (Test-Path env:install_from_pypi)
           {
-              . $HOME/$env:LINUX_VENV_LATEST/bin/activate.ps1
+              $install_version = python setup.py --version
+              Set-Item -Path Env:CIBW_REPAIR_WHEEL_COMMAND -Value ("rm -rf upload_dir && mkdir upload_dir && cp {wheel} upload_dir && cp {wheel} {dest_dir}")
+              Set-Item -Path Env:CIBW_BEFORE_TEST -Value ("pip install --upgrade twine && twine upload --repository testpypi -u __token__ -p " + $env:testpypi_pw + " upload_dir/* && " + $env:PYPI_DELAY_CMD)
+              Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("pip uninstall -y fpbinary && pip install -I --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary==" + $install_version + " && cd {project} && python -m unittest discover -s tests -p testFpBinary*")
+          }
+          else
+          {
+              Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("cd {project} && python -m unittest discover -s tests -p testFpBinary*")
           }
 
-          python -m pip install --upgrade twine
+          python -m pip install cibuildwheel
       }
 
 
 build_script:
-  # Build the compiled extension
-  
-  # ============================================================================================
-  # Windows builds.
-  #
-  # Can't run the wheel build in PowerShell because it errors out on compiler flag
-  # warnings (https://github.com/pypa/pip/issues/3383).
-  # Windows cmd doesn't error out on the warnings, so using cmd for windows.
-  - cmd: python setup.py bdist_wheel
   
   # ============================================================================================
   # Linux builds.
   #
   # We only do a source distribution for Linux, so we use the latest python version virtual env
   # to build the source dist.
+  #
+  # macOS builds.
+  # Just run cibuildwheel - it gets everything from the env variables previously set.
+  #
   - ps: |
       if ($isLinux)
       {
-          . $HOME/$env:LINUX_VENV_LATEST/bin/activate.ps1
+          python -m pip install --upgrade wheel
           python setup.py sdist --formats=zip
+
+          <# Linux doesn't use cibuildwheel, so need to do the wheel upload here. #>
+          if (Test-Path env:install_from_pypi)
+          {
+              python -m pip install --upgrade twine
+              python -m twine upload --repository testpypi -u __token__ -p "$env:testpypi_pw" dist/*
+              Start-Sleep -s 420
+          }
       }
+      elseif (-Not $isWindows)
+      {
+          python -m cibuildwheel --output-dir dist
+      }
+
+  # ============================================================================================
+  # Windoes builds.
+  # Also uses cibuildwheel to do everything, but we can't run the wheel build in PowerShell
+  # because it errors out on compiler flag warnings (https://github.com/pypa/pip/issues/3383).
+  # Windows cmd doesn't error out on the warnings, so using cmd for windows.
+  - cmd: python -m cibuildwheel --output-dir dist
 
 
   # ============================================================================================
-  # Both builds.
+  # All builds.
   #
   # Upload files to test pypi if requested.
   - ps: |
-      if (Test-Path env:install_from_pypi)
-      {
-          python -m twine upload --repository testpypi -u __token__ -p "$env:testpypi_pw" dist/*
-          Start-Sleep -s 600
-      }
+
+
 
 test_script:
-  # ============================================================================================
-  # Windows builds.
-  #
-  # We use pip to install the wheel file in the dist directory.
-  - ps: |
-      if (Test-Path env:install_from_pypi)
-      {
-          $install_version = python setup.py --version
-          pip install -I --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary=="$install_version"
-      }
-      else
-      {
-          pip install fpbinary --no-index --find-links dist/
-      }
 
-  - cmd: python -m unittest discover -s tests -p testFpBinary*
+  # ============================================================================================
+  # Windows and macOS builds.
+  #
+  # Tests are specified in env variables for cibuildwheel to do the tests as part of the build
+  # process.
 
 
   # ============================================================================================
@@ -195,6 +227,7 @@ test_script:
               python -m unittest discover -s tests -p testFpBinary*
           }
       }
+
  
 artifacts:
   - path: dist\*
