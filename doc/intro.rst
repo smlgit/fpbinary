@@ -46,6 +46,17 @@ fpbinary is tested on Windows 10 and binaries are produced on PyPi. Only python 
 
    pip install fpbinary
 
+macOS
+^^^^^^^
+
+fpbinary is currently tested on macOS 10.14 (Mojave) but binaries are produced on PyPi that *should* install on macOS 10.9 and newer. Install via:
+
+.. code-block:: bash
+
+   pip install fpbinary
+
+These binaries only support 64 bit systems. If you are running 32 bit or an older OS, the above command will still probably work as long as you have a C99 compliant compiler installed.
+
 Going Bush
 ^^^^^^^^^^
 

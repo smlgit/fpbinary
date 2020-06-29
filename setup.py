@@ -60,6 +60,7 @@ setup(name='fpbinary',
       classifiers=[
           'Operating System :: Microsoft :: Windows',
           'Operating System :: POSIX',
+          'Operating System :: MacOS :: MacOS X',
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3'],
 
