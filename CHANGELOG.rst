@@ -2,11 +2,12 @@
 Changelog
 =========
 
-`Unreleased <//github.com/smlgit/fpbinary/tree/HEAD>`_
+`v1.5.2 <//github.com/smlgit/fpbinary/releases/tag/v1.5.2>`_
 ----------------------------------------------------------------
 
 **Enhancements:**
 
+* Add support for macOS installation binaries. `#19 <//github.com/smlgit/fpbinary/issues/19>`_
 * Modify the Overflow and Rounding enums to be static classes. `#18 <//github.com/smlgit/fpbinary/issues/18>`_
 
 
