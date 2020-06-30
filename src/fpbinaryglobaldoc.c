@@ -66,9 +66,9 @@ FP_GLOBAL_Doc_STRVAR(
     "\n"
     "Interprets the bits of the fixed point binary object as a 2's complement "
     "signed\n"
-    "integer and returns an int. If self is an unsigned object, the MSB, as "
+    "integer and returns an int. If `self` is an unsigned object, the MSB, as "
     "defined by\n"
-    "the int_bits and frac_bits values, will be considered a sign bit.\n"
+    "the `int_bits` and `frac_bits` values, will be considered a sign bit.\n"
     "\n"
     "Parameters\n"
     "----------\n"
@@ -76,7 +76,8 @@ FP_GLOBAL_Doc_STRVAR(
     "\n"
     "Returns\n"
     "----------\n"
-    "int\n");
+    "int\n"
+    "    The object bits interpreted as a 2's complement signed integer.\n");
 
 FP_GLOBAL_Doc_STRVAR(copy_doc,
                      "__copy__(self)\n"
