@@ -27,8 +27,10 @@ for v in ${pyenv_versions[@]}; do
     echo "======================================================"
     echo $v
     echo "======================================================"
-    
-    pyenv local $v
+
+    eval "$(pyenv init -)"
+    pyenv shell $v
+
     virtualenv --clear venv$v
     source venv$v/bin/activate
 

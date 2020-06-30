@@ -27,7 +27,7 @@ set -e
 args=("$@")
 
 if [ ${#args[@]} -lt 1 ]; then
-    echo "You must specify either 'pip' or 'test' as the pypi install location."
+    echo "You must specify either 'pypi' or 'test' as the pypi install location."
     (exit 1);
 fi
 
@@ -63,7 +63,9 @@ for v in ${pyenv_versions[@]}; do
     echo $v
     echo "======================================================"
     
-    pyenv local $v
+    eval "$(pyenv init -)"
+    pyenv shell $v
+
     virtualenv --clear venv$v
     source venv$v/bin/activate
 	
