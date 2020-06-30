@@ -41,14 +41,6 @@ environment:
 
   matrix:
 
-  # ============================================================================================
-  # Linux builds.
-  #
-  # We use the pre-installed python virtual environments to do all our Linux building/testing
-  # in one job.
-  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-    LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8
-
 
   # ============================================================================================
   # Windows builds.
@@ -75,6 +67,15 @@ environment:
     CIBW_BUILD: cp27-macosx_x86_64 cp35-macosx_x86_64 cp36-macosx_x86_64 cp37-macosx_x86_64 cp38-macosx_x86_64
     CIBW_BUILD_VERBOSITY: 2
     PYPI_DELAY_CMD: "SLEEP 420"
+
+
+  # ============================================================================================
+  # Linux builds.
+  #
+  # We use the pre-installed python virtual environments to do all our Linux building/testing
+  # in one job.
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8
 
 
 # Need to make sure initial setup is done with latest python (especially for cibuildwheel)
