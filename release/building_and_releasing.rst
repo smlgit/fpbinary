@@ -108,6 +108,21 @@ release. This is done in the release.py script via the Github API. This needs an
 Access Token*. These are lightweight tokens that are used for authorization over the https REST API. They are generated
 on the *Profile Picture->Settings->Developer Settings->Personal Access Tokens* page.
 
+Security File
+-------------
+
+For the release/build scripts to get access to the various online services, a .json file must be placed in the release
+directory with the following structure:
+
+.. code-block:: python
+
+    {
+        "APPVEYOR": {"token": <appveyor-token>, "account": "smlgit"},
+        "TESTPYPI": {"token": <testpypi-token>},
+        "PYPI": {"token": <pypi-token>},
+        "GITHUB": {"token": <github-personal-access-token>}
+    }
+
 Releasing
 =========
 
