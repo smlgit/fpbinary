@@ -111,8 +111,8 @@ on the *Profile Picture->Settings->Developer Settings->Personal Access Tokens* p
 Security File
 -------------
 
-For the release/build scripts to get access to the various online services, a .json file must be placed in the release
-directory with the following structure:
+For the release/build scripts to get access to the various online services, a file named *security.json* file must be
+placed in the release directory with the following structure:
 
 .. code-block:: python
 
