@@ -26,16 +26,25 @@ Features
 Installation
 ------------
 
+The easiest way is to install using the pip utility. If you don't already have pip installed, first follow the instructions at `pip Installation <https://pip.pypa.io/en/stable/installing>`_ . Then follow the instructions for your operating system below.
+
+
 Linux
 ^^^^^
 
-Source distributions are available on PyPi and can be installed via pip:
+pip will install fpbinary on Linux using a source distribution. This does require a C99 compliant compiler on your system, which your distribution is likely to already have. If not, install something like gcc. Then, to install fpbinary:
 
 .. code-block:: bash
 
    pip install fpbinary
 
-This does require a C99 compliant compiler on your system, which your distribution is likely to already have. If not, install something like gcc.
+If you come across a missing Python.h error, you may need to install the python3-dev package:
+
+.. code-block:: bash
+
+   sudo apt-get update
+   sudo apt-get install python3-dev
+
 
 Windows
 ^^^^^^^
@@ -47,7 +56,7 @@ fpbinary is tested on Windows 10 and binaries are produced on PyPi. Only python 
    pip install fpbinary
 
 macOS
-^^^^^^^
+^^^^^
 
 fpbinary is currently tested on macOS 10.14 (Mojave) but binaries are produced on PyPi that *should* install on macOS 10.9 and newer. Install via:
 
