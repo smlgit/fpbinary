@@ -66,4 +66,12 @@ setup(name='fpbinary',
 
       url="https://github.com/smlgit/fpbinary",
       author_email='smlgit@protonmail.com',
+      keywords='fixed-point, binary, bit-accurate, dsp, fpga',
+      license='GPL-2.0 License',
+
+      project_urls={
+          'Source': 'https://github.com/smlgit/fpbinary',
+          'Documentation': 'https://fpbinary.readthedocs.io/en/latest/',
+      },
+
       ext_modules=[fpbinary_module])
