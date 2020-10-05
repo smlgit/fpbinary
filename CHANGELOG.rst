@@ -2,6 +2,14 @@
 Changelog
 =========
 
+`v1.5.3 <//github.com/smlgit/fpbinary/releases/tag/v1.5.3>`_
+----------------------------------------------------------------
+
+**Enhancements:**
+
+* Build macOS and Windows binaries for Python 3.9.0.
+
+
 `v1.5.2 <//github.com/smlgit/fpbinary/releases/tag/v1.5.2>`_
 ----------------------------------------------------------------
 
