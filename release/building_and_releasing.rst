@@ -148,7 +148,7 @@ A release comprises the following steps:
 
    .. code-block:: bash
 
-       python release/run_build.py <appveyor-build-name>
+       python release/release.py <appveyor-build-name>
 
    This should download the package files from Appveyor, upload them to pypi.org, run the `test_all_pypi.sh` script
    (which just tests that you can install the package in virtualenvs of each pyenv version on the local PC) and finally
