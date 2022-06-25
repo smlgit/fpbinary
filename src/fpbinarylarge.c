@@ -1681,17 +1681,6 @@ static PyNumberMethods fpbinarylarge_as_number = {
     .nb_nonzero = (inquiry)fpbinarylarge_nonzero,
 };
 
-static PySequenceMethods fpbinarylarge_as_sequence = {
-    .sq_length = (lenfunc)fpbinarylarge_sq_length,
-    .sq_item = (ssizeargfunc)fpbinarylarge_sq_item,
-
-#if PY_MAJOR_VERSION < 3
-
-    .sq_slice = (ssizessizeargfunc)fpbinarylarge_sq_slice,
-
-#endif
-};
-
 static PyMappingMethods fpbinarylarge_as_mapping = {
     .mp_length = fpbinarylarge_sq_length,
     .mp_subscript = (binaryfunc)fpbinarylarge_subscript,
@@ -1706,7 +1695,6 @@ PyTypeObject FpBinary_LargeType = {
     .tp_methods = fpbinarylarge_methods,
     .tp_getset = fpbinarylarge_getsetters,
     .tp_as_number = &fpbinarylarge_as_number,
-    .tp_as_sequence = &fpbinarylarge_as_sequence,
     .tp_as_mapping = &fpbinarylarge_as_mapping,
     .tp_new = (newfunc)fpbinarylarge_new,
     .tp_dealloc = (destructor)fpbinarylarge_dealloc,

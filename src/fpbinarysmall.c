@@ -1801,17 +1801,6 @@ static PyNumberMethods fpbinarysmall_as_number = {
     .nb_nonzero = (inquiry)fpbinarysmall_nonzero,
 };
 
-static PySequenceMethods fpbinarysmall_as_sequence = {
-    .sq_length = (lenfunc)fpbinarysmall_sq_length,
-    .sq_item = (ssizeargfunc)fpbinarysmall_sq_item,
-
-#if PY_MAJOR_VERSION < 3
-
-    .sq_slice = (ssizessizeargfunc)fpbinarysmall_sq_slice,
-
-#endif
-};
-
 static PyMappingMethods fpbinarysmall_as_mapping = {
     .mp_length = fpbinarysmall_sq_length,
     .mp_subscript = (binaryfunc)fpbinarysmall_subscript,
@@ -1826,7 +1815,6 @@ PyTypeObject FpBinary_SmallType = {
     .tp_methods = fpbinarysmall_methods,
     .tp_getset = fpbinarysmall_getsetters,
     .tp_as_number = &fpbinarysmall_as_number,
-    .tp_as_sequence = &fpbinarysmall_as_sequence,
     .tp_as_mapping = &fpbinarysmall_as_mapping,
     .tp_new = (newfunc)fpbinarysmall_new,
     .tp_dealloc = (destructor)fpbinarysmall_dealloc,

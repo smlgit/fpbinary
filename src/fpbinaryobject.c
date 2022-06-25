@@ -943,22 +943,15 @@ fpbinary_nonzero(PyObject *self)
 
 /*
  *
- * Sequence methods implementation
+ * Mapping methods implementation
  *
  */
 
 static Py_ssize_t
-fpbinary_sq_length(PyObject *self)
+fpbinary_mp_length(PyObject *self)
 {
-    return FP_SQ_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(self),
-                        sq_length)(PYOBJ_TO_BASE_FP_PYOBJ(self));
-}
-
-static PyObject *
-fpbinary_sq_item(PyObject *self, Py_ssize_t py_index)
-{
-    return FP_SQ_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(self),
-                        sq_item)(PYOBJ_TO_BASE_FP_PYOBJ(self), py_index);
+    return FP_MP_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(self),
+                        mp_length)(PYOBJ_TO_BASE_FP_PYOBJ(self));
 }
 
 /*
@@ -969,25 +962,6 @@ fpbinary_sq_item(PyObject *self, Py_ssize_t py_index)
  * This is useful for digital logic implementations of NCOs and trig lookup
  * tables.
  */
-#if PY_MAJOR_VERSION < 3
-
-static PyObject *
-fpbinary_sq_slice(PyObject *self, Py_ssize_t index1, Py_ssize_t index2)
-{
-    PyObject *sliced_base_obj =
-        FP_SQ_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(self),
-                     sq_slice)(PYOBJ_TO_BASE_FP_PYOBJ(self), index1, index2);
-    if (sliced_base_obj)
-    {
-        FpBinaryObject *result =
-            fpbinary_from_base_fp(PYOBJ_FP_BASE(sliced_base_obj));
-        return (PyObject *)result;
-    }
-
-    return NULL;
-}
-
-#endif
 
 static PyObject *
 fpbinary_subscript(PyObject *self, PyObject *item)
@@ -1241,19 +1215,8 @@ static PyNumberMethods fpbinary_as_number = {
     .nb_nonzero = (inquiry)fpbinary_nonzero,
 };
 
-static PySequenceMethods fpbinary_as_sequence = {
-    .sq_length = (lenfunc)fpbinary_sq_length,
-    .sq_item = (ssizeargfunc)fpbinary_sq_item,
-
-#if PY_MAJOR_VERSION < 3
-
-    .sq_slice = (ssizessizeargfunc)fpbinary_sq_slice,
-
-#endif
-};
-
 static PyMappingMethods fpbinary_as_mapping = {
-    .mp_length = fpbinary_sq_length, .mp_subscript = fpbinary_subscript,
+    .mp_length = fpbinary_mp_length, .mp_subscript = fpbinary_subscript,
 };
 
 PyTypeObject FpBinary_Type = {
@@ -1265,7 +1228,6 @@ PyTypeObject FpBinary_Type = {
     .tp_methods = fpbinary_methods,
     .tp_getset = fpbinary_getsetters,
     .tp_as_number = &fpbinary_as_number,
-    .tp_as_sequence = &fpbinary_as_sequence,
     .tp_as_mapping = &fpbinary_as_mapping,
     .tp_new = (newfunc)PyType_GenericNew,
     .tp_init = (initproc)fpbinary_init,

@@ -3,6 +3,7 @@
 # SML, some tests adapted from RW Penney's Simple Fixed Point module
 
 import sys, unittest, copy
+import numpy as np
 import tests.test_utils as test_utils
 from fpbinary import FpBinary, _FpBinarySmall, _FpBinaryLarge, OverflowEnum, RoundingEnum, FpBinaryOverflowException
 
@@ -2222,6 +2223,62 @@ class AbstractTestHider(object):
             #     ^ - start of bits
             fpNum = self.fp_binary_class(7, -2, signed=True, value=-8.0)
             self.assertTrue(bin(fpNum) == '0b11110')
+
+        def test_numpy_create(self):
+            # 1D list init
+            fp_list = [self.fp_binary_class(16, 16, signed=True, value=x / 100.0) for x in range(0, 10)]
+            fp_ar = np.array(fp_list, dtype=object)
+
+            for i, j in zip(fp_list, fp_ar):
+                self.assertTrue(i == j)
+
+            # 2D list init
+            fp_list = [
+                [self.fp_binary_class(16, 16, signed=True, value=x / 100.0) for x in range(-10, 10)],
+                [self.fp_binary_class(16, 16, signed=False, value=x / 100.0) for x in range(0, 20)]
+            ]
+
+            fp_ar = np.array(fp_list, dtype=object)
+
+            for row in range(0, len(fp_list)):
+                for i, j in zip(fp_list[row], fp_ar[row]):
+                    self.assertTrue(i == j)
+
+            # 1D assign
+            fp_list = [self.fp_binary_class(16, 16, signed=True, value=x / 100.0) for x in range(0, 10)]
+            fp_ar = np.zeros((len(fp_list), ), dtype=object)
+            fp_ar[:] = fp_list
+
+            for i, j in zip(fp_list, fp_ar):
+                self.assertTrue(i == j)
+
+        def test_numpy_basic_math(self):
+            base_fp_list = [self.fp_binary_class(16, 16, signed=True, value=1.0) for x in range(0, 10)]
+            operand_list = [self.fp_binary_class(16, 16, signed=True, value=x * 0.125) for x in range(0, 10)]
+            expected_add = [op1 + op2 for op1, op2 in zip(base_fp_list, operand_list)]
+            expected_sub = [op1 - op2 for op1, op2 in zip(base_fp_list, operand_list)]
+            expected_mult = [op1 * op2 for op1, op2 in zip(base_fp_list, operand_list)]
+
+            np_base_ar = np.array(base_fp_list, dtype=object)
+            np_operand_ar = np.array(operand_list, dtype=object)
+
+            np_add = np_base_ar + np_operand_ar
+            np_sub = np_base_ar - np_operand_ar
+            np_mult = np_base_ar * np_operand_ar
+
+            for i in range(0, len(expected_add)):
+                self.assertEqual(expected_add[i], np_add[i])
+                self.assertEqual(expected_add[i].format, np_add[i].format)
+
+                self.assertEqual(expected_sub[i], np_sub[i])
+                self.assertEqual(expected_sub[i].format, np_sub[i].format)
+
+                self.assertEqual(expected_mult[i], np_mult[i])
+                self.assertEqual(expected_mult[i].format, np_mult[i].format)
+
+
+
+
 
 
 class FpBinarySmallTests(AbstractTestHider.BaseClassesTestAbstract):
