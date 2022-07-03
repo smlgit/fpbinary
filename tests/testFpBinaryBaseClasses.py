@@ -2253,11 +2253,13 @@ class AbstractTestHider(object):
                 self.assertTrue(i == j)
 
         def test_numpy_basic_math(self):
-            base_fp_list = [self.fp_binary_class(16, 16, signed=True, value=1.0) for x in range(0, 10)]
-            operand_list = [self.fp_binary_class(16, 16, signed=True, value=x * 0.125) for x in range(0, 10)]
+            base_fp_list = [self.fp_binary_class(8, 8, signed=True, value=1.0) for _ in range(-5, 4)]
+            operand_list = [self.fp_binary_class(8, 8, signed=True, value=x * 0.125) for x in range(1, 10)]
             expected_add = [op1 + op2 for op1, op2 in zip(base_fp_list, operand_list)]
             expected_sub = [op1 - op2 for op1, op2 in zip(base_fp_list, operand_list)]
             expected_mult = [op1 * op2 for op1, op2 in zip(base_fp_list, operand_list)]
+            expected_div = [op1 / op2 for op1, op2 in zip(base_fp_list, operand_list)]
+            expected_abs = [abs(op1) for op1 in base_fp_list]
 
             np_base_ar = np.array(base_fp_list, dtype=object)
             np_operand_ar = np.array(operand_list, dtype=object)
@@ -2265,6 +2267,8 @@ class AbstractTestHider(object):
             np_add = np_base_ar + np_operand_ar
             np_sub = np_base_ar - np_operand_ar
             np_mult = np_base_ar * np_operand_ar
+            np_div = np_base_ar / np_operand_ar
+            np_abs = abs(np_base_ar)
 
             for i in range(0, len(expected_add)):
                 self.assertEqual(expected_add[i], np_add[i])
@@ -2276,8 +2280,11 @@ class AbstractTestHider(object):
                 self.assertEqual(expected_mult[i], np_mult[i])
                 self.assertEqual(expected_mult[i].format, np_mult[i].format)
 
+                self.assertEqual(expected_div[i], np_div[i])
+                self.assertEqual(expected_div[i].format, np_div[i].format)
 
-
+                self.assertEqual(expected_abs[i], np_abs[i])
+                self.assertEqual(expected_abs[i].format, np_abs[i].format)
 
 
 

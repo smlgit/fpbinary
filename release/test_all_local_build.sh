@@ -34,6 +34,9 @@ for v in ${pyenv_versions[@]}; do
     virtualenv --clear venv$v
     source venv$v/bin/activate
 
+    # Need numpy for tests
+    pip install numpy
+
     python setup.py install
     python -m unittest discover -s tests -p testFpBinary*
 
