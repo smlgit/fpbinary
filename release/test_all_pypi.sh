@@ -68,6 +68,10 @@ for v in ${pyenv_versions[@]}; do
 
     virtualenv --clear venv$v
     source venv$v/bin/activate
+
+    # Need numpy for tests
+    pip install numpy
+    pip install scipy
 	
     echo "======================================================"
     echo "Installing $package via pypi site $location"

@@ -4,6 +4,7 @@
 
 import sys, unittest, copy
 import numpy as np
+import scipy.signal as signal
 import tests.test_utils as test_utils
 from fpbinary import FpBinary, _FpBinarySmall, _FpBinaryLarge, OverflowEnum, RoundingEnum, FpBinaryOverflowException
 
@@ -2259,16 +2260,21 @@ class AbstractTestHider(object):
             expected_sub = [op1 - op2 for op1, op2 in zip(base_fp_list, operand_list)]
             expected_mult = [op1 * op2 for op1, op2 in zip(base_fp_list, operand_list)]
             expected_div = [op1 / op2 for op1, op2 in zip(base_fp_list, operand_list)]
-            expected_abs = [abs(op1) for op1 in base_fp_list]
+            expected_abs = [abs(op1) for op1 in operand_list]
+            min_max_list = [self.fp_binary_class(8, 8, signed=True, value=1.376),
+                            self.fp_binary_class(8, 8, signed=True, value=-10.25)]
+            expected_min = min_max_list[1]
+            expected_max = min_max_list[0]
 
-            np_base_ar = np.array(base_fp_list, dtype=object)
-            np_operand_ar = np.array(operand_list, dtype=object)
+            np_base_ar = np.array([copy.copy(x) for x in base_fp_list], dtype=object)
+            np_operand_ar = np.array([copy.copy(x) for x in operand_list], dtype=object)
+            np_min_max_ar = np.array([copy.copy(x) for x in min_max_list], dtype=object)
 
             np_add = np_base_ar + np_operand_ar
             np_sub = np_base_ar - np_operand_ar
             np_mult = np_base_ar * np_operand_ar
             np_div = np_base_ar / np_operand_ar
-            np_abs = abs(np_base_ar)
+            np_abs = abs(np_operand_ar)
 
             for i in range(0, len(expected_add)):
                 self.assertEqual(expected_add[i], np_add[i])
@@ -2286,6 +2292,8 @@ class AbstractTestHider(object):
                 self.assertEqual(expected_abs[i], np_abs[i])
                 self.assertEqual(expected_abs[i].format, np_abs[i].format)
 
+            self.assertEqual(expected_min, np.min(np_min_max_ar))
+            self.assertEqual(expected_max, np.max(np_min_max_ar))
 
 
 class FpBinarySmallTests(AbstractTestHider.BaseClassesTestAbstract):

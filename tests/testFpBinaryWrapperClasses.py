@@ -3,6 +3,8 @@
 # SML, some tests adapted from RW Penney's Simple Fixed Point module
 
 import sys, unittest, copy, pickle, os
+import numpy as np
+import scipy.signal as signal
 import tests.test_utils as test_utils
 from fpbinary import FpBinary, OverflowEnum, RoundingEnum, FpBinaryOverflowException
 
@@ -1371,6 +1373,117 @@ class AbstractTestHider(object):
             fpNum = self.fp_binary_class(35, 34, signed=True,
                                          bit_field=((1 << 33) << 34) + ((1 << 34) - 1))
             self.assertTrue(fpNum.str_ex() == '8589934592.9999999999417923390865325927734375')
+
+        def test_numpy_basic_math(self):
+            base_fp_list = [self.fp_binary_class(17, 16, signed=True, value=x) for x in range(-5, 4)]
+            operand_list = [self.fp_binary_class(16, 16, signed=True, value=x * 0.125) for x in range(1, 10)]
+            expected_add = [op1 + op2 for op1, op2 in zip(base_fp_list, operand_list)]
+            expected_sub = [op1 - op2 for op1, op2 in zip(base_fp_list, operand_list)]
+            expected_mult = [op1 * op2 for op1, op2 in zip(base_fp_list, operand_list)]
+            expected_div = [op1 / op2 for op1, op2 in zip(base_fp_list, operand_list)]
+            expected_abs = [abs(op1) for op1 in operand_list]
+            min_max_list = [self.fp_binary_class(8, 8, signed=True, value=1.376),
+                            self.fp_binary_class(8, 8, signed=True, value=-10.25)]
+            expected_min = min_max_list[1]
+            expected_max = min_max_list[0]
+            expected_mean = (min_max_list[0] + min_max_list[1]) / 2
+
+            np_base_ar = np.array([copy.copy(x) for x in base_fp_list], dtype=object)
+            np_operand_ar = np.array([copy.copy(x) for x in operand_list], dtype=object)
+            np_min_max_ar = np.array([copy.copy(x) for x in min_max_list], dtype=object)
+
+            np_add = np_base_ar + np_operand_ar
+            np_sub = np_base_ar - np_operand_ar
+            np_mult = np_base_ar * np_operand_ar
+            np_div = np_base_ar / np_operand_ar
+            np_abs = abs(np_operand_ar)
+
+            for i in range(0, len(expected_add)):
+                self.assertEqual(expected_add[i], np_add[i])
+                self.assertEqual(expected_add[i].format, np_add[i].format)
+
+                self.assertEqual(expected_sub[i], np_sub[i])
+                self.assertEqual(expected_sub[i].format, np_sub[i].format)
+
+                self.assertEqual(expected_mult[i], np_mult[i])
+                self.assertEqual(expected_mult[i].format, np_mult[i].format)
+
+                self.assertEqual(expected_div[i], np_div[i])
+                self.assertEqual(expected_div[i].format, np_div[i].format)
+
+                self.assertEqual(expected_abs[i], np_abs[i])
+                self.assertEqual(expected_abs[i].format, np_abs[i].format)
+
+            self.assertEqual(expected_min, np.min(np_min_max_ar))
+            self.assertEqual(expected_max, np.max(np_min_max_ar))
+            self.assertEqual(expected_mean, np.mean(np_min_max_ar))
+
+        def test_numpy_resize_vectorized(self):
+            operand_list = [self.fp_binary_class(64, 64, signed=True, value=x * 0.125) for x in range(-10, 10)]
+            np_resize_func = np.vectorize(self.fp_binary_class.resize, excluded=[1])
+
+            expected = [copy.copy(x).resize((12, 1)) for x in operand_list]
+
+            for i in range(0, len(expected)):
+                np_resized = np_resize_func(np.array(operand_list, dtype=object), (12,1))
+                self.assertEqual(expected[i], np_resized[i])
+                self.assertEqual(expected[i].format, np_resized[i].format)
+
+        def test_numpy_convolve(self):
+            coeffs_fp_list = [self.fp_binary_class(8, 8, signed=True, value=x) for x in range(-5, 4)]
+            input_fp_list = [self.fp_binary_class(8, 8, signed=True, value=x * 0.125) for x in range(1, 10)]
+
+            coeffs_float_list = [float(x) for x in coeffs_fp_list]
+            input_float_list = [float(x) for x in input_fp_list]
+
+            result_fp = np.convolve(np.array(coeffs_fp_list), np.array(input_fp_list))
+            result_float = np.convolve(coeffs_float_list, input_float_list)
+
+            for i in range(0, len(result_fp)):
+                self.assertEqual(float(result_fp[i]), result_float[i])
+
+        def test_numpy_lfilter(self):
+            b_fp_list = np.array([self.fp_binary_class(8, 8, signed=True, value=x) for x in range(-5, 4)])
+            a_fp_list = [self.fp_binary_class(8, 8, signed=True, value=1.0)]
+            input_fp_list = np.array([self.fp_binary_class(8, 8, signed=True, value=x * 0.125) for x in range(1, 10)])
+
+            b_float_list = [float(x) for x in b_fp_list]
+            a_float_list = [float(x) for x in a_fp_list]
+            input_float_list = [float(x) for x in input_fp_list]
+
+            result_fp = signal.lfilter(b_fp_list, a_fp_list, input_fp_list)
+            result_float = signal.lfilter(b_float_list, a_float_list, input_float_list)
+
+            for i in range(0, len(result_float)):
+                self.assertEqual(result_fp[i], result_float[i])
+                self.assertEqual(type(result_fp[i]), self.fp_binary_class)
+
+        def test_numpy_lfilter_ic(self):
+            b_fp_list = np.array([self.fp_binary_class(8, 8, signed=True, value=x) for x in range(-5, 4)])
+            a_fp_list = [self.fp_binary_class(8, 8, signed=True, value=1.0)]
+            input_fp_list = np.array([self.fp_binary_class(8, 8, signed=True, value=x * 0.125) for x in range(1, 10)])
+            initial_input_fp_list = np.array([self.fp_binary_class(8, 8, signed=True, value=-3.5),
+                                              self.fp_binary_class(8, 8, signed=True, value=0.0625)])
+            initial_y_fp_list = np.array([self.fp_binary_class(8, 8, signed=True, value=0.125)])
+
+            b_float_list = [float(x) for x in b_fp_list]
+            a_float_list = [float(x) for x in a_fp_list]
+            input_float_list = [float(x) for x in input_fp_list]
+            initial_input_float_list = [float(x) for x in initial_input_fp_list]
+            initial_y_float_list = [float(x) for x in initial_y_fp_list]
+
+            result_fp, zf_fp = signal.lfilter(b_fp_list, a_fp_list, input_fp_list,
+                                       zi=signal.lfiltic(b_fp_list, a_fp_list, initial_y_fp_list, initial_input_fp_list))
+            result_float, zf_float = signal.lfilter(b_float_list, a_float_list, input_float_list,
+                                          zi=signal.lfiltic(b_float_list, a_float_list, initial_y_float_list, initial_input_float_list))
+
+            for i in range(0, len(result_fp)):
+                self.assertEqual(result_fp[i], result_float[i])
+                self.assertEqual(type(result_fp[i]), self.fp_binary_class)
+
+            for i in range(0, len(zf_float)):
+                self.assertEqual(zf_fp[i], zf_float[i])
+                self.assertEqual(type(zf_fp[i]), self.fp_binary_class)
 
         def testPickle(self):
             fp_list = [

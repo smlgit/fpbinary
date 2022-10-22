@@ -36,6 +36,7 @@ for v in ${pyenv_versions[@]}; do
 
     # Need numpy for tests
     pip install numpy
+    pip install scipy
 
     python setup.py install
     python -m unittest discover -s tests -p testFpBinary*
