@@ -375,95 +375,6 @@ fpbinary_from_base_fp(fpbinary_base_t *base_obj)
     return self;
 }
 
-static bool
-fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
-                              long frac_bits, bool is_signed, double value,
-                              PyObject *bit_field, PyObject *format_instance)
-{
-    fpbinary_base_t *base_obj = NULL;
-
-    if (format_instance)
-    {
-        if (FpBinary_Check(format_instance))
-        {
-            format_instance = PYOBJ_TO_BASE_FP_PYOBJ(format_instance);
-        }
-
-        if (check_fp_type(format_instance))
-        {
-            PyObject *format_tuple = FP_BASE_METHOD(
-                format_instance, fp_getformat)(format_instance, NULL);
-            PyObject *int_bits_py = NULL, *frac_bits_py = NULL;
-
-            if (extract_fp_format_from_tuple(format_tuple, &int_bits_py,
-                                             &frac_bits_py))
-            {
-                int_bits = pylong_as_fp_int(int_bits_py);
-                frac_bits = pylong_as_fp_int(frac_bits_py);
-
-                Py_DECREF(int_bits_py);
-                Py_DECREF(frac_bits_py);
-            }
-
-            Py_DECREF(format_tuple);
-        }
-        else
-        {
-            PyErr_SetString(PyExc_TypeError,
-                            "format_inst must be a FpBinary instance.");
-            return false;
-        }
-    }
-
-    if (int_bits + frac_bits < 1)
-    {
-        PyErr_SetString(PyExc_ValueError, "The total number of bits in an "
-                                          "fpbinary instance must be greater "
-                                          "than 0.");
-        return false;
-    }
-
-    if (int_bits + frac_bits <= (long)FP_SMALL_MAX_BITS)
-    {
-        if (bit_field)
-        {
-            base_obj = (fpbinary_base_t *)FpBinarySmall_FromBitsPylong(
-                bit_field, int_bits, frac_bits, is_signed);
-        }
-        else
-        {
-            base_obj = (fpbinary_base_t *)FpBinarySmall_FromDouble(
-                value, int_bits, frac_bits, is_signed, OVERFLOW_SAT,
-                ROUNDING_NEAR_POS_INF);
-        }
-    }
-    else
-    {
-        if (bit_field)
-        {
-            base_obj = (fpbinary_base_t *)FpBinaryLarge_FromBitsPylong(
-                bit_field, int_bits, frac_bits, is_signed);
-        }
-        else
-        {
-            base_obj = (fpbinary_base_t *)FpBinaryLarge_FromDouble(
-                value, int_bits, frac_bits, is_signed, OVERFLOW_SAT,
-                ROUNDING_NEAR_POS_INF);
-        }
-    }
-
-    if (base_obj)
-    {
-        PyObject *old = (PyObject *)self->base_obj;
-        self->base_obj = base_obj;
-        Py_XDECREF(old);
-
-        return true;
-    }
-
-    return false;
-}
-
 PyDoc_STRVAR(
     fpbinaryobject_doc,
     "FpBinary(int_bits=1, frac_bits=0, signed=True, value=0.0, bit_field=None, "
@@ -577,6 +488,109 @@ PyDoc_STRVAR(
     "will have one extra integer bit than the input operand. Otherwise, the "
     "format will\n"
     "remain the same.\n");
+
+static bool
+fpbinary_populate_with_params(FpBinaryObject *self, long int_bits,
+                              long frac_bits, bool is_signed, double value,
+                              PyObject *bit_field, PyObject *format_instance)
+{
+    fpbinary_base_t *base_obj = NULL;
+
+    if (format_instance)
+    {
+        if (FpBinary_Check(format_instance))
+        {
+            format_instance = PYOBJ_TO_BASE_FP_PYOBJ(format_instance);
+        }
+
+        if (check_fp_type(format_instance))
+        {
+            PyObject *format_tuple = FP_BASE_METHOD(
+                format_instance, fp_getformat)(format_instance, NULL);
+            PyObject *int_bits_py = NULL, *frac_bits_py = NULL;
+
+            if (extract_fp_format_from_tuple(format_tuple, &int_bits_py,
+                                             &frac_bits_py))
+            {
+                int_bits = pylong_as_fp_int(int_bits_py);
+                frac_bits = pylong_as_fp_int(frac_bits_py);
+
+                Py_DECREF(int_bits_py);
+                Py_DECREF(frac_bits_py);
+            }
+
+            Py_DECREF(format_tuple);
+        }
+        else
+        {
+            PyErr_SetString(PyExc_TypeError,
+                            "format_inst must be a FpBinary instance.");
+            return false;
+        }
+    }
+
+    if (int_bits + frac_bits < 1)
+    {
+        PyErr_SetString(PyExc_ValueError, "The total number of bits in an "
+                                          "fpbinary instance must be greater "
+                                          "than 0.");
+        return false;
+    }
+
+    if (int_bits + frac_bits <= (long)FP_SMALL_MAX_BITS)
+    {
+        if (bit_field)
+        {
+            base_obj = (fpbinary_base_t *)FpBinarySmall_FromBitsPylong(
+                bit_field, int_bits, frac_bits, is_signed);
+        }
+        else
+        {
+            base_obj = (fpbinary_base_t *)FpBinarySmall_FromDouble(
+                value, int_bits, frac_bits, is_signed, OVERFLOW_SAT,
+                ROUNDING_NEAR_POS_INF);
+        }
+    }
+    else
+    {
+        if (bit_field)
+        {
+            base_obj = (fpbinary_base_t *)FpBinaryLarge_FromBitsPylong(
+                bit_field, int_bits, frac_bits, is_signed);
+        }
+        else
+        {
+            base_obj = (fpbinary_base_t *)FpBinaryLarge_FromDouble(
+                value, int_bits, frac_bits, is_signed, OVERFLOW_SAT,
+                ROUNDING_NEAR_POS_INF);
+        }
+    }
+
+    if (base_obj)
+    {
+        PyObject *old = (PyObject *)self->base_obj;
+        self->base_obj = base_obj;
+        Py_XDECREF(old);
+
+        return true;
+    }
+
+    return false;
+}
+
+FpBinaryObject *FpBinary_FromParams(long int_bits, long frac_bits,
+                                    bool is_signed, double value,
+                                    PyObject *bit_field,
+                                    PyObject *format_instance)
+{
+    FpBinaryObject *self = (FpBinaryObject *)FpBinary_Type.tp_alloc(&FpBinary_Type, 0);
+    if (self)
+    {
+        fpbinary_populate_with_params(self, int_bits, frac_bits, is_signed, value,
+                bit_field, format_instance);
+    }
+    return self;
+}
 
 static int
 fpbinary_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)

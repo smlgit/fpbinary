@@ -23,6 +23,14 @@ PyObject *py_five;
 PyObject *fp_small_type_id;
 PyObject *fp_large_type_id;
 
+/* Non-standard method/property names */
+PyObject *resize_method_name_str = NULL;
+PyObject *get_is_signed_method_name_str = NULL;
+PyObject *get_format_method_name_str = NULL;
+PyObject *complex_real_property_name_str = NULL;
+PyObject *complex_imag_property_name_str = NULL;
+PyObject *py_default_format_tuple = NULL;
+
 /*
  * Does a left shift SAFELY (shifting by more than the length of the
  * type is undefined).
@@ -603,6 +611,33 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     return final_string;
 }
 
+/*
+ * Convenience function to forward a function call on to a PyObject with arguments.
+ */
+PyObject *
+forward_call_with_args(PyObject *obj, PyObject *method_name, PyObject *args,
+                       PyObject *kwds)
+{
+    PyObject *callable = PyObject_GetAttr(obj, method_name);
+    if (callable)
+    {
+        if (!args)
+        {
+            PyObject *dummy_tup = PyTuple_New(0);
+            PyObject *result = PyObject_Call(callable, dummy_tup, kwds);
+
+            Py_DECREF(dummy_tup);
+            return result;
+        }
+        else
+        {
+            return PyObject_Call(callable, args, kwds);
+        }
+    }
+
+    return NULL;
+}
+
 bool
 FpBinary_IntCheck(PyObject *ob)
 {
@@ -692,4 +727,11 @@ FpBinaryCommon_InitModule(void)
     /* Tells us what type of base object was pickled */
     fp_small_type_id = PyLong_FromLong(1);
     fp_large_type_id = PyLong_FromLong(2);
+
+    resize_method_name_str = PyUnicode_FromString("resize");
+    get_is_signed_method_name_str = PyUnicode_FromString("is_signed");
+    get_format_method_name_str = PyUnicode_FromString("format");
+    complex_real_property_name_str = PyUnicode_FromString("real");
+    complex_imag_property_name_str = PyUnicode_FromString("imag");
+    py_default_format_tuple = PyTuple_Pack(2, py_one, py_zero);
 }

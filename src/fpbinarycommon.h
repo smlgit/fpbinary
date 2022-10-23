@@ -143,6 +143,12 @@ extern PyObject *py_minus_one;
 extern PyObject *fp_small_type_id;
 extern PyObject *fp_large_type_id;
 
+extern PyObject *resize_method_name_str;
+extern PyObject *get_format_method_name_str;
+extern PyObject *complex_real_property_name_str;
+extern PyObject *complex_imag_property_name_str;
+extern PyObject *py_default_format_tuple;
+
 FP_UINT_TYPE fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 
@@ -179,6 +185,9 @@ bool extract_fp_format_from_tuple(PyObject *format_tuple_param,
 bool check_new_method_input_types(PyObject *py_is_signed, PyObject *bit_field);
 PyObject *scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
                                    PyObject *frac_bits);
+PyObject *
+forward_call_with_args(PyObject *obj, PyObject *method_name, PyObject *args,
+                       PyObject *kwds);
 
 /*
  * Macro to check if the PyObject obj is of a type that FpBinary should be able

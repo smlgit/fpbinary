@@ -26,34 +26,6 @@
 #include "fpbinaryglobaldoc.h"
 #include <math.h>
 
-static PyObject *resize_method_name_str = NULL;
-static PyObject *get_format_method_name_str = NULL;
-static PyObject *py_default_format_tuple = NULL;
-
-static PyObject *
-forward_call_with_args(PyObject *obj, PyObject *method_name, PyObject *args,
-                       PyObject *kwds)
-{
-    PyObject *callable = PyObject_GetAttr(obj, method_name);
-    if (callable)
-    {
-        if (!args)
-        {
-            PyObject *dummy_tup = PyTuple_New(0);
-            PyObject *result = PyObject_Call(callable, dummy_tup, kwds);
-
-            Py_DECREF(dummy_tup);
-            return result;
-        }
-        else
-        {
-            return PyObject_Call(callable, args, kwds);
-        }
-    }
-
-    return NULL;
-}
-
 static bool
 extract_double(PyObject *op1, double *op1_double)
 {
@@ -962,14 +934,6 @@ fpbinaryswitchable_getmaxvalue(PyObject *self, void *closure)
 {
     return PyFloat_FromDouble(
         ((FpBinarySwitchableObject *)self)->dbl_mode_max_value);
-}
-
-void
-FpBinarySwitchable_InitModule(void)
-{
-    resize_method_name_str = PyUnicode_FromString("resize");
-    get_format_method_name_str = PyUnicode_FromString("format");
-    py_default_format_tuple = PyTuple_Pack(2, py_one, py_zero);
 }
 
 static PyMethodDef fpbinaryswitchable_methods[] = {

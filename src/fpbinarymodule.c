@@ -90,7 +90,6 @@ initfpbinary(void)
     Py_INCREF(&FpBinary_Type);
     PyModule_AddObject(m, "FpBinary", (PyObject *)&FpBinary_Type);
 
-    FpBinarySwitchable_InitModule();
     Py_INCREF(&FpBinarySwitchable_Type);
     PyModule_AddObject(m, "FpBinarySwitchable",
                        (PyObject *)&FpBinarySwitchable_Type);
