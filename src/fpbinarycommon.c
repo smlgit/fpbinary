@@ -79,7 +79,7 @@ fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts)
  * The reference in left is stolen and reassigned to the result of the
  * concatenation.
  */
-static void
+void
 unicode_concat(PyObject **left, PyObject *right)
 {
     PyObject *tmp = *left;
@@ -508,6 +508,7 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     PyObject *int_bits_is_negative, *frac_bits_is_negative;
     PyObject *int_string, *frac_string, *final_string;
     PyObject *frac_format_string, *frac_value_tuple;
+    PyObject *decimal_point_string = PyUnicode_FromString(".");
     PyObject *scaled_value_padded;
     PyObject *is_negative, *scaled_value_mag, *frac_mask1, *frac_mask;
     PyObject *frac_part, *int_part, *frac_scale, *frac_part_corrected;
@@ -590,7 +591,7 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
         final_string = int_string;
     }
 
-    unicode_concat(&final_string, PyUnicode_FromString("."));
+    unicode_concat(&final_string, decimal_point_string);
     unicode_concat(&final_string, frac_string);
 
     Py_DECREF(scaled_value_padded);
@@ -606,6 +607,7 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     Py_DECREF(frac_scale);
     Py_DECREF(frac_part_corrected);
     Py_DECREF(frac_format_string);
+    Py_DECREF(decimal_point_string);
     Py_DECREF(frac_value_tuple);
 
     return final_string;

@@ -152,6 +152,8 @@ extern PyObject *py_default_format_tuple;
 FP_UINT_TYPE fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 
+void unicode_concat(PyObject **left, PyObject *right);
+
 /* Required for compatibility between v2 and v3 */
 bool FpBinary_IntCheck(PyObject *ob);
 PyObject *FpBinary_EnsureIsPyLong(PyObject *ob);
