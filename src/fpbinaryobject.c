@@ -921,6 +921,8 @@ fpbinary_lshift(PyObject *self, PyObject *pyobj_lshift)
                 fpbinary_from_base_fp(PYOBJ_FP_BASE(shifted_base_obj));
             return FP_BASE_PYOBJ(result);
         }
+
+        Py_DECREF(shift_as_pylong);
     }
 
     FPBINARY_RETURN_NOT_IMPLEMENTED;
@@ -943,6 +945,8 @@ fpbinary_rshift(PyObject *self, PyObject *pyobj_rshift)
                 fpbinary_from_base_fp(PYOBJ_FP_BASE(shifted_base_obj));
             return FP_BASE_PYOBJ(result);
         }
+
+        Py_DECREF(shift_as_pylong);
     }
 
     FPBINARY_RETURN_NOT_IMPLEMENTED;
