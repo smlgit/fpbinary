@@ -13,6 +13,7 @@
 #include "fpbinaryobject.h"
 #include "fpbinarysmall.h"
 #include "fpbinaryswitchable.h"
+#include "fpbinarycomplexobject.h"
 #include "fpbinaryversion.h"
 
 #define FPBINARY_MOD_NAME "fpbinary"
@@ -93,6 +94,10 @@ initfpbinary(void)
     Py_INCREF(&FpBinarySwitchable_Type);
     PyModule_AddObject(m, "FpBinarySwitchable",
                        (PyObject *)&FpBinarySwitchable_Type);
+
+    Py_INCREF(&FpBinaryComplex_Type);
+    PyModule_AddObject(m, "FpBinaryComplex",
+                       (PyObject *)&FpBinaryComplex_Type);
 
     /* Create enum instances */
     Py_INCREF(&OverflowEnumType);

@@ -592,6 +592,32 @@ FpBinaryObject *FpBinary_FromParams(long int_bits, long frac_bits,
     return self;
 }
 
+/*
+ * Essentially attempts to cast value to an FpBinary instance.
+ */
+FpBinaryObject *FpBinary_FromValue(PyObject *value)
+{
+    PyObject *dummy_tup = NULL;
+    PyObject *kwds = NULL;
+    PyObject *result = NULL;
+
+    if (FpBinary_CheckExact(value))
+    {
+        return fpbinary_copy(value, NULL);
+    }
+
+    /* Constructor supports ints or floats directly now, so just use it. */
+    kwds = PyDict_New();
+    PyDict_SetItemString(kwds, "value", value);
+    dummy_tup = PyTuple_New(0);
+    result = PyObject_Call((PyObject *) FpBinary_Type, dummy_tup, kwds);
+
+    Py_DECREF(kwds);
+    Py_DECREF(dummy_tup);
+
+    return result;
+}
+
 static int
 fpbinary_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
 {

@@ -24,5 +24,6 @@ FpBinaryObject *FpBinary_FromParams(long int_bits, long frac_bits,
                                     bool is_signed, double value,
                                     PyObject *bit_field,
                                     PyObject *format_instance);
+FpBinaryObject *FpBinary_FromValue(PyObject *value);
 
 #endif
