@@ -44,12 +44,12 @@ cast_builtin_to_fp(PyObject *obj)
     /* Convert PyInt and PyFloat to 2's complement
      * scaled value PyLong - this will be our bits for the new type.
      */
-    if (FpBinary_IntCheck(obj) || PyLong_Check(obj))
+    if (check_supported_builtin_int(obj))
     {
         calc_pyint_to_fp_params(obj, &scaled_bits, &int_bits);
         frac_bits = 0;
     }
-    else if (PyFloat_Check(obj))
+    else if (check_supported_builtin_float(obj))
     {
         double scaled_value;
         calc_double_to_fp_params(PyFloat_AsDouble(obj), &scaled_value,
@@ -60,7 +60,7 @@ cast_builtin_to_fp(PyObject *obj)
     if (scaled_bits)
     {
         PyObject *result = NULL;
-        ;
+
         FP_UINT_TYPE total_bits = int_bits + frac_bits;
 
         if (total_bits <= FP_SMALL_MAX_BITS)

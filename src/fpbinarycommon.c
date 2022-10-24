@@ -24,12 +24,21 @@ PyObject *fp_small_type_id;
 PyObject *fp_large_type_id;
 
 /* Non-standard method/property names */
+PyObject *copy_method_name_str = NULL;
 PyObject *resize_method_name_str = NULL;
 PyObject *get_is_signed_method_name_str = NULL;
 PyObject *get_format_method_name_str = NULL;
+PyObject *str_ex_method_name_str = NULL;
 PyObject *complex_real_property_name_str = NULL;
 PyObject *complex_imag_property_name_str = NULL;
 PyObject *py_default_format_tuple = NULL;
+
+/* Useful, reusable strings.
+ * Careful using these with concat methods - check if a reference is stolen...
+ */
+PyObject *decimal_point_str = NULL;
+PyObject *add_sign_str = NULL;
+PyObject *j_str = NULL;
 
 /*
  * Does a left shift SAFELY (shifting by more than the length of the
@@ -128,17 +137,57 @@ fp_binary_new_params_parse(PyObject *args, PyObject *kwds, long *int_bits,
                            long *frac_bits, bool *is_signed, double *value,
                            PyObject **bit_field, PyObject **format_instance)
 {
-    static char *kwlist[] = {"int_bits",  "frac_bits",   "signed", "value",
+    static char *kwlist[] = {"int_bits",  "frac_bits", "signed", "value",
                              "bit_field", "format_inst", NULL};
 
+    PyObject *py_int_bits = NULL, *py_frac_bits = NULL;
     PyObject *py_is_signed = NULL;
     *bit_field = NULL;
     *format_instance = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|llOdOO", kwlist, int_bits,
-                                     frac_bits, &py_is_signed, value, bit_field,
-                                     format_instance))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOOdOO", kwlist, &py_int_bits,
+            &py_frac_bits, &py_is_signed, value, bit_field, format_instance))
         return false;
+
+    /* Ensure there is information for the format */
+    if (py_int_bits)
+    {
+        if (!check_supported_builtin_int(py_int_bits))
+        {
+            PyErr_SetString(PyExc_TypeError, "int_bits must be an integer.");
+            return false;
+        }
+
+        *int_bits = PyLong_AsLong(py_int_bits);
+    }
+
+    if (py_frac_bits)
+    {
+        if (!check_supported_builtin_int(py_frac_bits))
+        {
+            PyErr_SetString(PyExc_TypeError, "frac_bits must be an integer.");
+            return false;
+        }
+
+        *frac_bits = PyLong_AsLong(py_frac_bits);
+    }
+
+    if (!(*format_instance) && (!py_int_bits || !py_frac_bits))
+    {
+        double scaled_value;
+        FP_UINT_TYPE int_bits_uint, frac_bits_uint;
+        calc_double_to_fp_params(*value, &scaled_value, &int_bits_uint, &frac_bits_uint);
+
+        if (!py_int_bits)
+        {
+            *int_bits = (long) int_bits_uint;
+        }
+
+        if (!py_frac_bits)
+        {
+            *frac_bits = (long) frac_bits_uint;
+        }
+    }
 
     if (py_is_signed)
     {
@@ -346,6 +395,38 @@ calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
     }
 }
 
+/*
+ * Attempts to work out the smallest int and frac bit format for the passed numberic object.
+ * If the object type isn't supported (see check_supported_builtin) returns false.
+ */
+bool
+get_best_int_frac_bits(PyObject *obj, FP_UINT_TYPE *int_bits, FP_UINT_TYPE *frac_bits)
+{
+    if (check_supported_builtin_int(obj))
+    {
+        PyObject *scaled_bits;
+        calc_pyint_to_fp_params(obj, &scaled_bits, int_bits);
+        *frac_bits = 0;
+
+        if (scaled_bits)
+        {
+            Py_DECREF(scaled_bits);
+        }
+    }
+    else if (check_supported_builtin_float(obj))
+    {
+        double scaled_value;
+        calc_double_to_fp_params(PyFloat_AsDouble(obj), &scaled_value,
+                                 int_bits, frac_bits);
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
+}
+
 PyObject *
 fp_uint_as_pylong(FP_UINT_TYPE value)
 {
@@ -508,7 +589,6 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     PyObject *int_bits_is_negative, *frac_bits_is_negative;
     PyObject *int_string, *frac_string, *final_string;
     PyObject *frac_format_string, *frac_value_tuple;
-    PyObject *decimal_point_string = PyUnicode_FromString(".");
     PyObject *scaled_value_padded;
     PyObject *is_negative, *scaled_value_mag, *frac_mask1, *frac_mask;
     PyObject *frac_part, *int_part, *frac_scale, *frac_part_corrected;
@@ -591,7 +671,7 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
         final_string = int_string;
     }
 
-    unicode_concat(&final_string, decimal_point_string);
+    unicode_concat(&final_string, decimal_point_str);
     unicode_concat(&final_string, frac_string);
 
     Py_DECREF(scaled_value_padded);
@@ -607,7 +687,6 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
     Py_DECREF(frac_scale);
     Py_DECREF(frac_part_corrected);
     Py_DECREF(frac_format_string);
-    Py_DECREF(decimal_point_string);
     Py_DECREF(frac_value_tuple);
 
     return final_string;
@@ -730,10 +809,16 @@ FpBinaryCommon_InitModule(void)
     fp_small_type_id = PyLong_FromLong(1);
     fp_large_type_id = PyLong_FromLong(2);
 
+    copy_method_name_str = PyUnicode_FromString("copy");
     resize_method_name_str = PyUnicode_FromString("resize");
     get_is_signed_method_name_str = PyUnicode_FromString("is_signed");
     get_format_method_name_str = PyUnicode_FromString("format");
+    str_ex_method_name_str = PyUnicode_FromString("str_ex");
     complex_real_property_name_str = PyUnicode_FromString("real");
     complex_imag_property_name_str = PyUnicode_FromString("imag");
     py_default_format_tuple = PyTuple_Pack(2, py_one, py_zero);
+
+    decimal_point_str = PyUnicode_FromString(".");
+    add_sign_str = PyUnicode_FromString("+");
+    j_str = PyUnicode_FromString("j");
 }

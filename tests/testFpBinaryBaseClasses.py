@@ -34,7 +34,18 @@ class AbstractTestHider(object):
                             '{} and {} differ by more than {} ({}) {}'.format(
                                 first, second, tol, (first - second), msg))
 
-        def testCreateParams(self):
+        def testCreateWithOnlyValueParam(self):
+            # Should create a fixed point type with smallest required int and frac bits
+            fpNum = self.fp_binary_class(value=1.5)
+            self.assertEqual(fpNum.format, (2, 1))
+
+            fpNum = self.fp_binary_class(value=-8.0625)
+            self.assertEqual(fpNum.format, (5, 4))
+
+            fpNum = self.fp_binary_class(value=5)
+            self.assertEqual(fpNum.format, (4, 0))
+
+        def testCreateParamsWrong(self):
             # These parameter test cases should raise an exception
             params_test_cases = [
                 # int_bits is float

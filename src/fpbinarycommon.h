@@ -143,11 +143,21 @@ extern PyObject *py_minus_one;
 extern PyObject *fp_small_type_id;
 extern PyObject *fp_large_type_id;
 
+extern PyObject *copy_method_name_str;
 extern PyObject *resize_method_name_str;
 extern PyObject *get_format_method_name_str;
+extern PyObject *get_is_signed_method_name_str;
+extern PyObject *str_ex_method_name_str;
 extern PyObject *complex_real_property_name_str;
 extern PyObject *complex_imag_property_name_str;
 extern PyObject *py_default_format_tuple;
+
+/* Useful, reusable strings.
+ * Careful using these with concat methods - check if a reference is stolen...
+ */
+extern PyObject *decimal_point_str;
+extern PyObject *add_sign_str;
+extern PyObject *j_str;
 
 FP_UINT_TYPE fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
@@ -175,6 +185,8 @@ void calc_double_to_fp_params(double input_value, double *scaled_value,
                               FP_UINT_TYPE *int_bits, FP_UINT_TYPE *frac_bits);
 void calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
                              FP_UINT_TYPE *int_bits);
+bool
+get_best_int_frac_bits(PyObject *obj, FP_UINT_TYPE *int_bits, FP_UINT_TYPE *frac_bits);
 PyObject *fp_uint_as_pylong(FP_UINT_TYPE value);
 PyObject *fp_int_as_pylong(FP_INT_TYPE value);
 FP_UINT_TYPE pylong_as_fp_uint(PyObject *val);
@@ -195,6 +207,8 @@ forward_call_with_args(PyObject *obj, PyObject *method_name, PyObject *args,
  * Macro to check if the PyObject obj is of a type that FpBinary should be able
  * to do arithmetic operations with.
  */
-#define check_supported_builtin(obj) ((PyFloat_Check(obj) || PyLong_Check(obj) || FpBinary_IntCheck(obj)))
+#define check_supported_builtin_int(obj) (PyLong_Check(obj) || FpBinary_IntCheck(obj))
+#define check_supported_builtin_float(obj) (PyFloat_Check(obj))
+#define check_supported_builtin(obj) (check_supported_builtin_int(obj) || check_supported_builtin_float(obj))
 
 #endif /* FPBINARYCOMMON_H_ */
