@@ -593,6 +593,16 @@ FpBinaryObject *FpBinary_FromParams(long int_bits, long frac_bits,
 }
 
 /*
+ * See copy_doc
+ */
+static PyObject *
+fpbinary_copy(FpBinaryObject *self, PyObject *args)
+{
+    return (PyObject *)fpbinary_from_base_fp((fpbinary_base_t *)FP_BASE_METHOD(
+        self->base_obj, copy)((PyObject *)self->base_obj, args));
+}
+
+/*
  * Essentially attempts to cast value to an FpBinary instance.
  */
 FpBinaryObject *FpBinary_FromValue(PyObject *value)
@@ -603,19 +613,19 @@ FpBinaryObject *FpBinary_FromValue(PyObject *value)
 
     if (FpBinary_CheckExact(value))
     {
-        return fpbinary_copy(value, NULL);
+        return (FpBinaryObject *) fpbinary_copy((FpBinaryObject *)value, NULL);
     }
 
     /* Constructor supports ints or floats directly now, so just use it. */
     kwds = PyDict_New();
     PyDict_SetItemString(kwds, "value", value);
     dummy_tup = PyTuple_New(0);
-    result = PyObject_Call((PyObject *) FpBinary_Type, dummy_tup, kwds);
+    result = PyObject_Call((PyObject *) &FpBinary_Type, dummy_tup, kwds);
 
     Py_DECREF(kwds);
     Py_DECREF(dummy_tup);
 
-    return result;
+    return (FpBinaryObject *) result;
 }
 
 static int
@@ -747,16 +757,6 @@ fpbinary_bits_to_signed(FpBinaryObject *self, PyObject *args)
 {
     return FP_BASE_METHOD(self->base_obj,
                           bits_to_signed)((PyObject *)self->base_obj, args);
-}
-
-/*
- * See copy_doc
- */
-static PyObject *
-fpbinary_copy(FpBinaryObject *self, PyObject *args)
-{
-    return (PyObject *)fpbinary_from_base_fp((fpbinary_base_t *)FP_BASE_METHOD(
-        self->base_obj, copy)((PyObject *)self->base_obj, args));
 }
 
 /*

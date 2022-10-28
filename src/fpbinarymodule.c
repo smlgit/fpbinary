@@ -59,6 +59,9 @@ initfpbinary(void)
     if (PyType_Ready(&FpBinary_Type) < 0)
         INITERROR;
 
+    if (PyType_Ready(&FpBinaryComplex_Type) < 0)
+            INITERROR;
+
     if (PyType_Ready(&FpBinarySwitchable_Type) < 0)
         INITERROR;
 
