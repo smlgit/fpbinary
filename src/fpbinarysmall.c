@@ -663,6 +663,7 @@ fpbinarysmall_copy(FpBinarySmallObject *self, PyObject *args)
 {
     FpBinarySmallObject *new_obj =
         fpbinarysmall_create_mem(&FpBinary_SmallType);
+    printf("%lld %lld\n", self->int_bits, self->frac_bits);
     if (new_obj)
     {
         copy_fields(self, new_obj);

@@ -809,7 +809,7 @@ FpBinaryCommon_InitModule(void)
     fp_small_type_id = PyLong_FromLong(1);
     fp_large_type_id = PyLong_FromLong(2);
 
-    copy_method_name_str = PyUnicode_FromString("copy");
+    copy_method_name_str = PyUnicode_FromString("__copy__");
     resize_method_name_str = PyUnicode_FromString("resize");
     get_is_signed_method_name_str = PyUnicode_FromString("is_signed");
     get_format_method_name_str = PyUnicode_FromString("format");

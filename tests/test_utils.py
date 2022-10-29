@@ -1,5 +1,5 @@
 import sys, math, pickle, os, struct
-from fpbinary import FpBinary, FpBinarySwitchable
+from fpbinary import FpBinary, FpBinarySwitchable, FpBinaryComplex
 
 
 if sys.version_info[0] >= 3:
@@ -73,20 +73,38 @@ def set_float_bit_precision(value, int_bits, frac_bits, is_signed):
     return bit_field / 2.0**frac_bits
 
 
+def fp_binary_fields_equal(op1, op2):
+    """
+    Returns true if the FpBinary fields of op1 and op2 are equal (including value)
+    """
+    return (op1.format == op2.format and op1.is_signed == op2.is_signed and op1 == op2)
+
+def fp_binary_complex_fields_equal(op1, op2):
+    """
+    Returns true if the FpBinaryComplex fields of op1 and op2 are equal (including value)
+    """
+    return (op1.format == op2.format and op1.is_signed == op2.is_signed and op1 == op2)
+
 def fp_binary_instances_are_totally_equal(op1, op2):
     """
-    Supports FpBinary, FpBinarySwitchable and basic numeric objects.
+    The point of this is to check instances of FpBinary/Switchable/Complex are equal
+    in value and other properties. If python numeric objects are passed, only value is checked.
     Returns True if the properties of the two objects are the same.
     """
 
-    if isinstance(op1, FpBinary) and isinstance(op2, FpBinary):
-        return op1.format == op2.format and op1.is_signed == op2.is_signed
-    elif isinstance(op1, FpBinarySwitchable) and isinstance(op2, FpBinarySwitchable):
-        return (op1.fp_mode == op2.fp_mode and op1.min_value == op2.min_value and
-                op1.max_value == op2.max_value and
+    if isinstance(op1, FpBinary) or isinstance(op2, FpBinary):
+        return (isinstance(op1, FpBinary) and isinstance(op2, FpBinary) and op1.format == op2.format and
+                op1.is_signed == op2.is_signed and op1 == op2)
+    elif isinstance(op1, FpBinarySwitchable) or isinstance(op2, FpBinarySwitchable):
+        return (isinstance(op1, FpBinarySwitchable) and isinstance(op2, FpBinarySwitchable) and
+                op1.fp_mode == op2.fp_mode and op1.min_value == op2.min_value and op1.max_value == op2.max_value and
                 fp_binary_instances_are_totally_equal(op1.value, op2.value))
+    elif isinstance(op1, FpBinaryComplex) or isinstance(op2, FpBinaryComplex):
+        return (isinstance(op1, FpBinaryComplex) and isinstance(op2, FpBinaryComplex) and op1.format == op2.format and
+                op1.is_signed == op2.is_signed and op1 == op2)
 
-    return (op1 == op2)
+
+    return op1 == op2
 
 
 # ================================================================================

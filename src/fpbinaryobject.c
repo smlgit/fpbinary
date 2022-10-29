@@ -586,10 +586,14 @@ FpBinaryObject *FpBinary_FromParams(long int_bits, long frac_bits,
     FpBinaryObject *self = (FpBinaryObject *)FpBinary_Type.tp_alloc(&FpBinary_Type, 0);
     if (self)
     {
-        fpbinary_populate_with_params(self, int_bits, frac_bits, is_signed, value,
-                bit_field, format_instance);
+        if (fpbinary_populate_with_params(self, int_bits, frac_bits, is_signed, value,
+                bit_field, format_instance))
+        {
+            return self;
+        }
     }
-    return self;
+
+    return NULL;
 }
 
 /*
