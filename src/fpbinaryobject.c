@@ -39,7 +39,7 @@ static PyObject *
 cast_builtin_to_fp(PyObject *obj)
 {
     PyObject *scaled_bits = NULL;
-    FP_UINT_TYPE int_bits, frac_bits;
+    FP_INT_TYPE int_bits, frac_bits;
 
     /* Convert PyInt and PyFloat to 2's complement
      * scaled value PyLong - this will be our bits for the new type.
@@ -90,7 +90,7 @@ static PyObject *
 cast_to_fpsmall(PyObject *obj)
 {
     PyObject *scaled_bits = NULL;
-    FP_UINT_TYPE int_bits, frac_bits;
+    FP_INT_TYPE int_bits, frac_bits;
 
     if (FpBinarySmall_CheckExact(obj))
     {
@@ -102,7 +102,7 @@ cast_to_fpsmall(PyObject *obj)
         PyObject *bits = FpBinaryLarge_BitsAsPylong(obj);
         PyObject *result = NULL;
         bool is_signed = FpBinaryLarge_IsSigned(obj);
-        FpBinaryLarge_FormatAsUints(obj, &int_bits, &frac_bits);
+        FpBinaryLarge_FormatAsInts(obj, &int_bits, &frac_bits);
         result =
             FpBinarySmall_FromBitsPylong(bits, int_bits, frac_bits, is_signed);
 
@@ -148,7 +148,7 @@ static PyObject *
 cast_to_fplarge(PyObject *obj)
 {
     PyObject *scaled_bits = NULL;
-    FP_UINT_TYPE int_bits, frac_bits;
+    FP_INT_TYPE int_bits, frac_bits;
 
     if (FpBinaryLarge_CheckExact(obj))
     {
@@ -159,7 +159,7 @@ cast_to_fplarge(PyObject *obj)
     {
         PyObject *bits = FpBinarySmall_BitsAsPylong(obj);
         PyObject *result = NULL;
-        FpBinarySmall_FormatAsUints(obj, &int_bits, &frac_bits);
+        FpBinarySmall_FormatAsInts(obj, &int_bits, &frac_bits);
         result = FpBinaryLarge_FromBitsPylong(
             bits, int_bits, frac_bits, FP_BASE_METHOD(obj, is_signed)(obj));
 
@@ -632,6 +632,33 @@ FpBinaryObject *FpBinary_FromValue(PyObject *value)
     return (FpBinaryObject *) result;
 }
 
+/* Will manage references to op1, op2. Calling function need not do anything. */
+void FpBinary_SetTwoInstToSameFormat(PyObject **op1, PyObject **op2)
+{
+    FP_INT_TYPE op1_int_bits = FP_BASE_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(*op1), get_int_bits)(PYOBJ_TO_BASE_FP_PYOBJ(*op1));
+    FP_INT_TYPE op1_frac_bits = FP_BASE_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(*op1), get_frac_bits)(PYOBJ_TO_BASE_FP_PYOBJ(*op1));
+    FP_INT_TYPE op2_int_bits = FP_BASE_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(*op2), get_int_bits)(PYOBJ_TO_BASE_FP_PYOBJ(*op2));
+    FP_INT_TYPE op2_frac_bits = FP_BASE_METHOD(PYOBJ_TO_BASE_FP_PYOBJ(*op2), get_frac_bits)(PYOBJ_TO_BASE_FP_PYOBJ(*op2));
+    FP_INT_TYPE max_int_bits = (op1_int_bits > op2_int_bits) ? op1_int_bits : op2_int_bits;
+    FP_INT_TYPE max_frac_bits = (op1_frac_bits > op2_frac_bits) ? op1_frac_bits : op2_frac_bits;
+
+    if (op1_int_bits < max_int_bits || op1_frac_bits < max_frac_bits)
+    {
+        PyObject *new_instance = FpBinary_ResizeWithCInts(*op1, max_int_bits, max_frac_bits,
+                ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
+        Py_DECREF(*op1);
+        *op1 = new_instance;
+    }
+
+    if (op2_int_bits < max_int_bits || op2_frac_bits < max_frac_bits)
+    {
+        PyObject *new_instance = FpBinary_ResizeWithCInts(*op2, max_int_bits, max_frac_bits,
+                ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
+        Py_DECREF(*op2);
+        *op2 = new_instance;
+    }
+}
+
 static int
 fpbinary_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
 {
@@ -672,6 +699,7 @@ fpbinary_resize(FpBinaryObject *self, PyObject *args, PyObject *kwds)
      */
     PyObject *result = NULL;
     PyObject *format_inst;
+    PyObject *format_tuple;
     PyObject *new_int_bits_py, *new_frac_bits_py;
     long new_int_bits, new_frac_bits;
     fp_overflow_mode_t overflow_mode = OVERFLOW_WRAP;
@@ -725,10 +753,11 @@ fpbinary_resize(FpBinaryObject *self, PyObject *args, PyObject *kwds)
         Py_DECREF(tmp);
     }
 
+    format_tuple = Py_BuildValue("(Oii)", format_inst, overflow_mode, round_mode);
     result = FP_BASE_METHOD(self->base_obj, resize)(
-        (PyObject *)self->base_obj,
-        Py_BuildValue("(Oii)", format_inst, overflow_mode, round_mode), NULL);
+        (PyObject *)self->base_obj, format_tuple, NULL);
     Py_DECREF(format_inst);
+    Py_DECREF(format_tuple);
 
     /* Now check if we can reduce down to a small type */
     if (result)
@@ -826,6 +855,8 @@ fpbinary_multiply(PyObject *op1, PyObject *op2)
 
         Py_DECREF(cast_op1);
         Py_DECREF(cast_op2);
+
+
     }
     else
     {
@@ -1284,3 +1315,59 @@ PyTypeObject FpBinary_Type = {
     .tp_repr = fpbinary_str,
     .tp_richcompare = fpbinary_richcompare,
 };
+
+/*
+ * Functions for client objects to easily call FpBinary user-specified methods.
+ * These tend to use the Python-like call interfaces rather than using an insider's
+ * knowledge of the underlying structures of FpBinary, so should be safe to use
+ * on objects that quack like an FpBinary...
+ */
+
+/*
+ * Increments the reference to value.
+ */
+PyObject *FpBinary_ResizeWithCInts(PyObject *value, long int_bits, long frac_bits,
+        fp_round_mode_t round_mode, fp_overflow_mode_t overflow_mode)
+{
+    /* Build the keyword args for the resize call */
+    PyObject *result = NULL;
+    PyObject *format_tuple = Py_BuildValue("(ll)", int_bits, frac_bits);
+    PyObject *kwds = Py_BuildValue("{s:N:s:l:s:l}",
+            "format", format_tuple, "overflow_mode", overflow_mode,
+            "round_mode", round_mode);
+
+    result = forward_call_with_args(value, resize_method_name_str, NULL, kwds);
+
+    Py_DECREF(format_tuple);
+    Py_DECREF(kwds);
+
+    return result;
+}
+
+/*
+ * format_instance needs to have a "format" property."
+ * Increments the reference to value.
+ */
+PyObject *FpBinary_ResizeWithFormatInstance(PyObject *value, PyObject *format_instance,
+        fp_round_mode_t round_mode, fp_overflow_mode_t overflow_mode)
+{
+    /* Build the keyword args for the resize call */
+    PyObject *format_tuple = PyObject_GetAttr(format_instance, get_format_method_name_str);
+
+    if (format_tuple)
+    {
+        PyObject *result = NULL;
+        PyObject *kwds = Py_BuildValue("{s:N:s:l:s:l}",
+                "format", format_tuple, "overflow_mode", overflow_mode,
+                "round_mode", round_mode);
+
+        result = forward_call_with_args(value, resize_method_name_str, NULL, kwds);
+
+        Py_DECREF(format_tuple);
+        Py_DECREF(kwds);
+
+        return result;
+    }
+
+    return NULL;
+}

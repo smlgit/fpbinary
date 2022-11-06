@@ -663,7 +663,6 @@ fpbinarysmall_copy(FpBinarySmallObject *self, PyObject *args)
 {
     FpBinarySmallObject *new_obj =
         fpbinarysmall_create_mem(&FpBinary_SmallType);
-    printf("%lld %lld\n", self->int_bits, self->frac_bits);
     if (new_obj)
     {
         copy_fields(self, new_obj);
@@ -1550,6 +1549,20 @@ fpbinarysmall_is_signed(PyObject *self, void *closure)
 }
 
 /* Helper functions for use of top client object. */
+static FP_INT_TYPE
+fpbinarysmall_get_int_bits(PyObject *obj)
+{
+    FpBinarySmallObject *cast_obj = (FpBinarySmallObject *)obj;
+    return cast_obj->int_bits;
+}
+
+static FP_INT_TYPE
+fpbinarysmall_get_frac_bits(PyObject *obj)
+{
+    FpBinarySmallObject *cast_obj = (FpBinarySmallObject *)obj;
+    return cast_obj->frac_bits;
+}
+
 static FP_UINT_TYPE
 fpbinarysmall_get_total_bits(PyObject *obj)
 {
@@ -1558,8 +1571,8 @@ fpbinarysmall_get_total_bits(PyObject *obj)
 }
 
 void
-FpBinarySmall_FormatAsUints(PyObject *self, FP_UINT_TYPE *out_int_bits,
-                            FP_UINT_TYPE *out_frac_bits)
+FpBinarySmall_FormatAsInts(PyObject *self, FP_INT_TYPE *out_int_bits,
+                            FP_INT_TYPE *out_frac_bits)
 {
     *out_int_bits = ((FpBinarySmallObject *)self)->int_bits;
     *out_frac_bits = ((FpBinarySmallObject *)self)->frac_bits;
@@ -1825,6 +1838,8 @@ PyTypeObject FpBinary_SmallType = {
 };
 
 fpbinary_private_iface_t FpBinary_SmallPrvIface = {
+    .get_int_bits = fpbinarysmall_get_int_bits,
+    .get_frac_bits = fpbinarysmall_get_frac_bits,
     .get_total_bits = fpbinarysmall_get_total_bits,
     .is_signed = fpsmall_is_signed,
     .resize = (PyCFunctionWithKeywords)fpbinarysmall_resize,

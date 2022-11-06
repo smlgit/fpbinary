@@ -110,6 +110,8 @@ typedef enum {
  */
 typedef struct
 {
+    FP_INT_TYPE (*get_int_bits)(PyObject *);
+    FP_INT_TYPE (*get_frac_bits)(PyObject *);
     FP_UINT_TYPE (*get_total_bits)(PyObject *);
     bool (*is_signed)(PyObject *);
     PyObject *(*resize)(PyObject *self, PyObject *, PyObject *);
@@ -158,6 +160,8 @@ extern PyObject *py_default_format_tuple;
 extern PyObject *decimal_point_str;
 extern PyObject *add_sign_str;
 extern PyObject *j_str;
+PyObject *open_bracket_str;
+PyObject *close_bracket_str;
 
 FP_UINT_TYPE fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
@@ -182,11 +186,11 @@ bool fp_binary_subscript_get_item_start_stop(PyObject *item, Py_ssize_t *start,
                                              Py_ssize_t assumed_length);
 PyObject *calc_scaled_val_bits(PyObject *obj, FP_UINT_TYPE frac_bits);
 void calc_double_to_fp_params(double input_value, double *scaled_value,
-                              FP_UINT_TYPE *int_bits, FP_UINT_TYPE *frac_bits);
+                              FP_INT_TYPE *int_bits, FP_INT_TYPE *frac_bits);
 void calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
-                             FP_UINT_TYPE *int_bits);
+                             FP_INT_TYPE *int_bits);
 bool
-get_best_int_frac_bits(PyObject *obj, FP_UINT_TYPE *int_bits, FP_UINT_TYPE *frac_bits);
+get_best_int_frac_bits(PyObject *obj, FP_INT_TYPE *int_bits, FP_INT_TYPE *frac_bits);
 PyObject *fp_uint_as_pylong(FP_UINT_TYPE value);
 PyObject *fp_int_as_pylong(FP_INT_TYPE value);
 FP_UINT_TYPE pylong_as_fp_uint(PyObject *val);
@@ -196,6 +200,8 @@ void build_scaled_bits_from_pyfloat(PyObject *value, PyObject *frac_bits,
                                     PyObject **output_obj);
 bool extract_fp_format_from_tuple(PyObject *format_tuple_param,
                                   PyObject **int_bits, PyObject **frac_bits);
+bool extract_fp_format_ints_from_tuple(PyObject *format_tuple_param, FP_INT_TYPE *int_bits,
+        FP_INT_TYPE *frac_bits);
 bool check_new_method_input_types(PyObject *py_is_signed, PyObject *bit_field);
 PyObject *scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
                                    PyObject *frac_bits);

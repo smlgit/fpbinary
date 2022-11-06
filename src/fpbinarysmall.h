@@ -27,8 +27,8 @@ extern fpbinary_private_iface_t FpBinary_SmallPrvIface;
 
 /* Helper functions for use of top client object. */
 
-void FpBinarySmall_FormatAsUints(PyObject *self, FP_UINT_TYPE *out_int_bits,
-                                 FP_UINT_TYPE *out_frac_bits);
+void FpBinarySmall_FormatAsInts(PyObject *self, FP_INT_TYPE *out_int_bits,
+                                 FP_INT_TYPE *out_frac_bits);
 PyObject *FpBinarySmall_BitsAsPylong(PyObject *obj);
 PyObject *FpBinarySmall_FromDouble(double value, FP_INT_TYPE int_bits,
                                    FP_INT_TYPE frac_bits, bool is_signed,

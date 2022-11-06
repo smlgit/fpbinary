@@ -1449,6 +1449,26 @@ fpbinarylarge_is_signed(PyObject *self, void *closure)
 
 /* Helper functions for use of top client object. */
 
+static FP_INT_TYPE
+fpbinarylarge_get_int_bits(PyObject *obj)
+{
+    FpBinaryLargeObject *cast_obj = (FpBinaryLargeObject *)obj;
+    /* Assume the number of int and frac bits aren't insanely massive
+     * and just convert.
+     */
+    return (FP_INT_TYPE)(PyLong_AsLongLong(cast_obj->int_bits));
+}
+
+static FP_INT_TYPE
+fpbinarylarge_get_frac_bits(PyObject *obj)
+{
+    FpBinaryLargeObject *cast_obj = (FpBinaryLargeObject *)obj;
+    /* Assume the number of int and frac bits aren't insanely massive
+     * and just convert.
+     */
+    return (FP_INT_TYPE)(PyLong_AsLongLong(cast_obj->frac_bits));
+}
+
 static FP_UINT_TYPE
 fpbinarylarge_get_total_bits(PyObject *obj)
 {
@@ -1461,12 +1481,12 @@ fpbinarylarge_get_total_bits(PyObject *obj)
 }
 
 void
-FpBinaryLarge_FormatAsUints(PyObject *self, FP_UINT_TYPE *out_int_bits,
-                            FP_UINT_TYPE *out_frac_bits)
+FpBinaryLarge_FormatAsInts(PyObject *self, FP_INT_TYPE *out_int_bits,
+                            FP_INT_TYPE *out_frac_bits)
 {
-    *out_int_bits = (FP_UINT_TYPE)PyLong_AsUnsignedLongLong(
+    *out_int_bits = (FP_INT_TYPE)PyLong_AsUnsignedLongLong(
         ((FpBinaryLargeObject *)self)->int_bits);
-    *out_frac_bits = (FP_UINT_TYPE)PyLong_AsUnsignedLongLong(
+    *out_frac_bits = (FP_INT_TYPE)PyLong_AsUnsignedLongLong(
         ((FpBinaryLargeObject *)self)->frac_bits);
 }
 
@@ -1704,6 +1724,8 @@ PyTypeObject FpBinary_LargeType = {
 };
 
 fpbinary_private_iface_t FpBinary_LargePrvIface = {
+    .get_int_bits = fpbinarylarge_get_int_bits,
+    .get_frac_bits = fpbinarylarge_get_frac_bits,
     .get_total_bits = fpbinarylarge_get_total_bits,
     .is_signed = FpBinaryLarge_IsSigned,
     .resize = (PyCFunctionWithKeywords)fpbinarylarge_resize,

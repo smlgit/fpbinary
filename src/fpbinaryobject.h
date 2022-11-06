@@ -25,5 +25,17 @@ FpBinaryObject *FpBinary_FromParams(long int_bits, long frac_bits,
                                     PyObject *bit_field,
                                     PyObject *format_instance);
 FpBinaryObject *FpBinary_FromValue(PyObject *value);
+void FpBinary_SetTwoInstToSameFormat(PyObject **op1, PyObject **op2);
+
+/*
+ * Functions for client objects to easily call FpBinary user-specified methods.
+ * These tend to use the Python-like call interfaces rather than using an insider's
+ * knowledge of the underlying structures of FpBinary, so should be safe to use
+ * on objects that quack like an FpBinary...
+ */
+PyObject *FpBinary_ResizeWithCInts(PyObject *value, long int_bits, long frac_bits,
+        fp_round_mode_t round_mode, fp_overflow_mode_t overflow_mode);
+PyObject *FpBinary_ResizeWithFormatInstance(PyObject *value, PyObject *format_instance,
+        fp_round_mode_t round_mode, fp_overflow_mode_t overflow_mode);
 
 #endif

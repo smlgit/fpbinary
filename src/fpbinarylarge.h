@@ -27,8 +27,8 @@ void FpBinaryLarge_InitModule(void);
 
 /* Helper functions for use of top client object. */
 
-void FpBinaryLarge_FormatAsUints(PyObject *self, FP_UINT_TYPE *out_int_bits,
-                                 FP_UINT_TYPE *out_frac_bits);
+void FpBinaryLarge_FormatAsInts(PyObject *self, FP_INT_TYPE *out_int_bits,
+                                 FP_INT_TYPE *out_frac_bits);
 PyObject *FpBinaryLarge_BitsAsPylong(PyObject *obj);
 bool FpBinaryLarge_IsSigned(PyObject *obj);
 

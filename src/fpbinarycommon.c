@@ -39,6 +39,8 @@ PyObject *py_default_format_tuple = NULL;
 PyObject *decimal_point_str = NULL;
 PyObject *add_sign_str = NULL;
 PyObject *j_str = NULL;
+PyObject *open_bracket_str = NULL;
+PyObject *close_bracket_str = NULL;
 
 /*
  * Does a left shift SAFELY (shifting by more than the length of the
@@ -175,7 +177,7 @@ fp_binary_new_params_parse(PyObject *args, PyObject *kwds, long *int_bits,
     if (!(*format_instance) && (!py_int_bits || !py_frac_bits))
     {
         double scaled_value;
-        FP_UINT_TYPE int_bits_uint, frac_bits_uint;
+        FP_INT_TYPE int_bits_uint, frac_bits_uint;
         calc_double_to_fp_params(*value, &scaled_value, &int_bits_uint, &frac_bits_uint);
 
         if (!py_int_bits)
@@ -290,7 +292,7 @@ fp_binary_subscript_get_item_start_stop(PyObject *item, Py_ssize_t *start,
  */
 void
 calc_double_to_fp_params(double input_value, double *scaled_value,
-                         FP_UINT_TYPE *int_bits, FP_UINT_TYPE *frac_bits)
+                         FP_INT_TYPE *int_bits, FP_INT_TYPE *frac_bits)
 {
     int exp;
     double mantissa = frexp(input_value, &exp);
@@ -303,7 +305,7 @@ calc_double_to_fp_params(double input_value, double *scaled_value,
     }
     else
     {
-        FP_UINT_TYPE i;
+        FP_INT_TYPE i;
         double shifted_mant = mantissa;
 
         /* Multiply the mantissa by two and subtract the new integer part.
@@ -373,7 +375,7 @@ calc_double_to_fp_params(double input_value, double *scaled_value,
  */
 void
 calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
-                        FP_UINT_TYPE *int_bits)
+                        FP_INT_TYPE *int_bits)
 {
     *scaled_value = NULL;
     *int_bits = 0;
@@ -400,7 +402,7 @@ calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
  * If the object type isn't supported (see check_supported_builtin) returns false.
  */
 bool
-get_best_int_frac_bits(PyObject *obj, FP_UINT_TYPE *int_bits, FP_UINT_TYPE *frac_bits)
+get_best_int_frac_bits(PyObject *obj, FP_INT_TYPE *int_bits, FP_INT_TYPE *frac_bits)
 {
     if (check_supported_builtin_int(obj))
     {
@@ -532,6 +534,31 @@ extract_fp_format_from_tuple(PyObject *format_tuple_param, PyObject **int_bits,
     }
 
     return (*int_bits && *frac_bits);
+}
+
+/* Will attempt to convert the format_tuple_param to int_bits and frac_bits c long values.
+ *
+ * Returns false if the parameter could not be converted.
+ */
+bool
+extract_fp_format_ints_from_tuple(PyObject *format_tuple_param, FP_INT_TYPE *int_bits,
+        FP_INT_TYPE *frac_bits)
+{
+    PyObject *int_bits_py = NULL, *frac_bits_py = NULL;
+
+    if (extract_fp_format_from_tuple(format_tuple_param, &int_bits_py, &frac_bits_py))
+    {
+        /* Convert the py objects to the c type */
+        *int_bits = PyLong_AsLong(int_bits_py);
+        *frac_bits = PyLong_AsLong(frac_bits_py);
+
+        Py_DECREF(int_bits_py);
+        Py_DECREF(frac_bits_py);
+
+        return true;
+    }
+
+    return false;
 }
 
 /*
@@ -820,5 +847,7 @@ FpBinaryCommon_InitModule(void)
 
     decimal_point_str = PyUnicode_FromString(".");
     add_sign_str = PyUnicode_FromString("+");
+    open_bracket_str = PyUnicode_FromString("(");
+    close_bracket_str = PyUnicode_FromString(")");
     j_str = PyUnicode_FromString("j");
 }
