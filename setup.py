@@ -36,7 +36,7 @@ if alpha_str is not None:
 with open("README.rst", "r") as fh:
     long_description = fh.read()
 
-extra_compile_args = ["-O0", "-g"]
+extra_compile_args = []
 
 fpbinary_module = Extension('fpbinary',
                             define_macros=[('MAJOR_VERSION', version_tuple[0]),
