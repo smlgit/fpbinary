@@ -63,7 +63,7 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     CIBW_BUILD: cp35-win32 cp35-win_amd64
     CIBW_BUILD_VERBOSITY: 2
-    CIBW_VERSION: "1.12.0"
+    CIBW_VERSION: "==1.12.0"
     WIN_LATEST_PYTHON: "C:\\Python38-x64"
     PYPI_DELAY_CMD: "TIMEOUT 420"
 
@@ -81,7 +81,7 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: macos-mojave
     CIBW_BUILD: cp27-macosx_x86_64 cp35-macosx_x86_64
     CIBW_BUILD_VERBOSITY: 2
-    CIBW_VERSION: "1.12.0"
+    CIBW_VERSION: "==1.12.0"
     PYPI_DELAY_CMD: "SLEEP 420"
 
 
@@ -166,7 +166,7 @@ install:
               Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("cd {project} && pip install numpy && pip install --prefer-binary scipy && python -m unittest discover -s tests -p testFpBinary*")
           }
 
-          python -m pip install cibuildwheel==$env:CIBW_VERSION
+          python -m pip install cibuildwheel$env:CIBW_VERSION
       }
 
 
