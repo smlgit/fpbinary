@@ -36,7 +36,7 @@ FP_GLOBAL_Doc_STRVAR(
     "\n"
     "Returns\n"
     "----------\n"
-    "FpBinary\n"
+    "FpBinary/FpBinaryComplex\n"
     "    `self`\n");
 
 FP_GLOBAL_Doc_STRVAR(

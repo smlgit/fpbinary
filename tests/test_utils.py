@@ -83,7 +83,7 @@ def fp_binary_complex_fields_equal(op1, op2):
     """
     Returns true if the FpBinaryComplex fields of op1 and op2 are equal (including value)
     """
-    return (op1.format == op2.format and op1.is_signed == op2.is_signed and op1 == op2)
+    return (op1.format == op2.format and op1 == op2)
 
 def fp_binary_instances_are_totally_equal(op1, op2):
     """

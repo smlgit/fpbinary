@@ -87,37 +87,6 @@ static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
 
     return result;
 }
-//static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
-//{
-//    FpBinaryObject *real = NULL, *imag = NULL;
-//    FpBinaryComplexObject *result = NULL;
-//    PyObject *is_signed = NULL;
-//
-//    if (FpBinaryComplex_Check(obj))
-//    {
-//        Py_INCREF(obj);
-//        return (FpBinaryComplexObject *) obj;
-//    }
-//
-//    real = FpBinary_FromValue(obj);
-//
-//    if (!real)
-//    {
-//        return NULL;
-//    }
-//
-//    is_signed = PyObject_GetAttr((PyObject *) real, get_is_signed_method_name_str);
-//    imag = FpBinary_FromParams(1, 0, is_signed == Py_True, 0.0, NULL, (PyObject *) real);
-//
-//    if (imag)
-//    {
-//        result = fpbinarycomplex_from_params(real, imag);
-//    }
-//
-//    Py_DECREF(is_signed);
-//
-//    return result;
-//}
 
 /*
  * Checks that at least one of the operands is a FpBinaryComplexObject type.
@@ -153,12 +122,6 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
         Py_INCREF(*op1_real_out);
         Py_INCREF(*op1_imag_out);
     }
-    /*else if (PyObject_HasAttr(in_op1, complex_real_property_name_str) &&
-             PyObject_HasAttr(in_op1, complex_imag_property_name_str))
-    {
-        *op1_real_out = PyObject_GetAttr(in_op1, complex_real_property_name_str);
-        *op1_imag_out = PyObject_GetAttr(in_op1, complex_imag_property_name_str);
-    }*/
     else
     {
         FpBinaryComplexObject *comp = NULL;
@@ -171,10 +134,6 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
 
         *op1_real_out = comp->real;
         *op1_imag_out = comp->imag;
-
-
-        /**op1_real_out = in_op1;
-        *op1_imag_out = py_zero;*/
 
         Py_INCREF(*op1_real_out);
         Py_INCREF(*op1_imag_out);
@@ -190,12 +149,6 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
         Py_INCREF(*op2_real_out);
         Py_INCREF(*op2_imag_out);
     }
-    /*else if (PyObject_HasAttr(in_op2, complex_real_property_name_str) &&
-             PyObject_HasAttr(in_op2, complex_imag_property_name_str))
-    {
-        *op2_real_out = PyObject_GetAttr(in_op2, complex_real_property_name_str);
-        *op2_imag_out = PyObject_GetAttr(in_op2, complex_imag_property_name_str);
-    }*/
     else
     {
         FpBinaryComplexObject *comp = NULL;
@@ -208,9 +161,6 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
 
         *op2_real_out = comp->real;
         *op2_imag_out = comp->imag;
-
-        /**op2_real_out = in_op2;
-        *op2_imag_out = py_zero;*/
 
         Py_INCREF(*op2_real_out);
         Py_INCREF(*op2_imag_out);
@@ -229,10 +179,10 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
 
 PyDoc_STRVAR(
     fpbinarycomplex_doc,
-    "FpBinaryComplex(int_bits=1, frac_bits=0, signed=True, value=0.0, bit_field=None, "
-    "format_inst=None)\n"
+    "FpBinaryComplex(int_bits=1, frac_bits=0, value=0.0+0.0j, real_fp_binary=None, "
+    "imag_fp_binary=None, real_bit_field=None, imag_bit_field=None, format_inst=None)\n"
     "--\n\n"
-    "Represents a real number using fixed point math and structure.\n"
+    "Represents a complex number using fixed point math and structure.\n"
     "\n"
     "Parameters\n"
     "----------\n"
@@ -260,25 +210,38 @@ PyDoc_STRVAR(
     "    2.0**5 + 2.0**4 + 2.0**3.\n"
     "    (Note that integer powers start at 0).\n"
     "\n"
-    "signed : bool\n"
-    "    Specifies whether the data represented is signed (True) or unsigned.\n"
-    "    This effects min/max values and wrapping/saturation behaviour.\n"
-    "\n"
-    "value : float\n"
+    "value : float/complex\n"
     "    The value to initialise the fixed point object to. If int_bits and "
     "frac_bits\n"
     "    do not provide enough precision to represent value fully, rounding "
     "will be\n"
-    "    done using RoundingEnum.near_pos_inf and overflow will be handled "
-    "using\n"
+    "    done using RoundingEnum.near_pos_inf and overflow will be handled using\n"
     "    OverflowEnum.sat.\n"
     "\n"
-    "bit_field : int\n"
+    "real_fp_binary : FpBinary\n"
+    "    The real part of the FpBinaryComplex instance can be set to the value\n"
+    "    of an FpBinary instance. The format will also be used if it isn't specified\n"
+    "    explicitly.\n"
+    "\n"
+    "imag_fp_binary : FpBinary\n"
+    "    The imag part of the FpBinaryComplex instance can be set to the value\n"
+    "    of an FpBinary instance. The format will also be used if it isn't specified\n"
+    "    explicitly.\n"
+    "\n"
+    "real_bit_field : int\n"
     "    If the precision of the desired initialise value is too great for the "
     "native\n"
-    "    float type, bit_field can be set to a 2's complement representation "
+    "    float type, real_bit_field can be set to a 2's complement representation "
     "of the\n"
-    "    desired value * 2**frac_bits. Note that bit_field overrides the value "
+    "    desired real value * 2**frac_bits. Note that real_bit_field overrides the value "
+    "parameter.\n"
+    "\n"
+    "imag_bit_field : int\n"
+    "    If the precision of the desired initialise value is too great for the "
+    "native\n"
+    "    float type, real_bit_field can be set to a 2's complement representation "
+    "of the\n"
+    "    desired imaginary value * 2**frac_bits. Note that imag_bit_field overrides the value "
     "parameter.\n"
     "\n"
     "format_inst : FpBinary\n"
@@ -293,7 +256,7 @@ PyDoc_STRVAR(
     "If op2 is not a fixed point type, an attempt will be made to convert\n"
     "it to a fixed point object using as few bits as necessary.\n"
     "Overflow is guaranteed to NOT happen. "
-    "The resultant fixed point number has the following format::\n\n"
+    "The resultant real/imag fixed point numbers have the following format::\n\n"
     "    int_bits  = max(op1.int_bits, op2.int_bits) + 1 \n"
     "    frac_bits = max(op1.frac_bits, op2.frac_bits) \n"
     "\n"
@@ -301,45 +264,21 @@ PyDoc_STRVAR(
     "If op2 is not a fixed point type, an attempt will be made to convert\n"
     "it to a fixed point object using as few bits as necessary.\n"
     "Overflow is guaranteed to NOT happen. "
-    "The resultant fixed point number has the following format::\n\n"
-    "    int_bits  = op1.int_bits + op2.int_bits \n"
-    "    frac_bits = op1.frac_bits + op2.frac_bits \n"
+    "The resultant real/imag fixed point numbers have the following format::\n\n"
+    "    int_bits  = op1.int_bits + op2.int_bits + 1 \n"
+    "    frac_bits = op1.frac_bits + op2.frac_bits\n"
     "\n"
     "*Divide:*\n"
-    "If op2 is not a fixed point type, an attempt will be made to convert\n"
-    "it to a fixed point object using as few bits as necessary.\n"
-    "\n"
-    "The divide operation is carried out on the fixed point representations. "
-    "This\n"
-    "is essentially an integer divide on the values scaled by 2**frac_bits.\n"
-    "However, the numerator is scaled further so that the result has "
-    "self.int_bits +\n"
-    "value.frac bits fractional bits of precision. Once the divide is done,\n"
-    "the result is direct rounded TOWARD ZERO."
-    "\n"
-    "Enough int bits are in the result to ensure there is never an overflow.\n"
-    "In short, the resultant fixed point number has the following format::\n\n"
-    "    int_bits = op1.int_bits + op2.frac_bits + 1 if signed or\n"
-    "    int_bits = op1.int_bits + op2.frac_bits     if unsigned\n"
-    "    frac_bits = op1.frac_bits + op2.int_bits\n"
-    "\n"
-    "If the user wants to implement a different type of rounding or increase "
-    "the\n"
-    "precision of the result, they need to resize the operands first, do the "
-    "divide\n"
-    "and then resize to the desired length with the desired rounding mode.\n"
+    "Complex divide is implemented by multiplying by the conjugate of the denominator "
+    "and dividing by the denominator.real**2 + denominator.imag**2."
     "\n"
     "*Negate:*\n"
-    "Because a negate is a multiply by -1, the output has one extra integer "
-    "bit than\n"
+    "Because a negate is a multiply by -1, the output has one extra integer bit than\n"
     "the input operand.\n"
     "\n"
     "*Absolute value:*\n"
-    "If the input operand is negative, the operation requires a negate, so the "
-    "output\n"
-    "will have one extra integer bit than the input operand. Otherwise, the "
-    "format will\n"
-    "remain the same.\n");
+    "Estimates the absolute value by calculating the energy, converting to float,\n"
+    "squaring and converting back to FpBinaryComplex.\n");
 
 bool
 fp_binary_complex_new_params_parse(PyObject *args, PyObject *kwds, PyObject **int_bits,
@@ -454,24 +393,6 @@ fp_binary_complex_new_params_parse(PyObject *args, PyObject *kwds, PyObject **in
             return false;
         }
     }
-
-    /*if (py_is_signed)
-    {
-        if (!PyBool_Check(py_is_signed))
-        {
-            PyErr_SetString(PyExc_TypeError, "signed must be True or False.");
-            return false;
-        }
-
-        if (py_is_signed == Py_True)
-        {
-            *is_signed = true;
-        }
-        else
-        {
-            *is_signed = false;
-        }
-    }*/
 
     if (*format_instance)
     {
@@ -772,6 +693,7 @@ fpbinarycomplex_conjugate(PyObject *self)
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
     PyObject *real = forward_call_with_args(cast_self->real, copy_method_name_str, NULL, NULL);
     PyObject *imag = FP_NUM_METHOD(cast_self->imag, nb_negative)(cast_self->imag);
+    FpBinary_ResizeWithFormatInstance(real, imag, ROUNDING_DIRECT_NEG_INF, OVERFLOW_WRAP);
     return (PyObject *) fpbinarycomplex_from_params((FpBinaryObject *) real, (FpBinaryObject *) imag);
 }
 
@@ -1063,6 +985,35 @@ fpbinarycomplex_copy(FpBinaryComplexObject *self, PyObject *args)
     return (PyObject *) fpbinarycomplex_from_params((FpBinaryObject *) real, (FpBinaryObject *) imag);
 }
 
+static PyObject *
+fpbinarycomplex_getstate(PyObject *self)
+{
+    FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
+    PyObject *dict = PyDict_New();
+
+    if (dict)
+    {
+        PyDict_SetItemString(dict, "real", cast_self->real);
+        PyDict_SetItemString(dict, "imag", cast_self->imag);
+    }
+
+    return dict;
+}
+
+static PyObject *
+fpbinarycomplex_setstate(PyObject *self, PyObject *dict)
+{
+    FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
+
+    cast_self->real = PyDict_GetItemString(dict, "real");
+    cast_self->imag = PyDict_GetItemString(dict, "imag");
+
+    Py_INCREF(cast_self->real);
+    Py_INCREF(cast_self->imag);
+
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef fpbinarycomplex_methods[] = {
     {"resize", (PyCFunction)fpbinarycomplex_resize, METH_VARARGS | METH_KEYWORDS,
      resize_doc},
@@ -1070,12 +1021,15 @@ static PyMethodDef fpbinarycomplex_methods[] = {
     {"conjugate", (PyCFunction)fpbinarycomplex_conjugate, METH_NOARGS, NULL},
     {"__copy__", (PyCFunction)fpbinarycomplex_copy, METH_NOARGS, copy_doc},
 
+    /* Pickling functions */
+    {"__getstate__", (PyCFunction)fpbinarycomplex_getstate, METH_NOARGS, NULL},
+    {"__setstate__", (PyCFunction)fpbinarycomplex_setstate, METH_O, NULL},
+
     {NULL} /* Sentinel */
 };
 
 static PyGetSetDef fpbinarycomplex_getsetters[] = {
     {"format", (getter)fpbinarycomplex_getformat, NULL, format_doc, NULL},
-    /*{"is_signed", (getter)fpbinarycomplex_is_signed, NULL, is_signed_doc, NULL},*/
     {"real", (getter)fpbinarycomplex_real, NULL, NULL, NULL},
     {"imag", (getter)fpbinarycomplex_imag, NULL, NULL, NULL},
     {NULL} /* Sentinel */
@@ -1100,7 +1054,7 @@ static PyNumberMethods fpbinarycomplex_as_number = {
 
 PyTypeObject FpBinaryComplex_Type = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name = "fpbinary.FpBinaryComplex",
-    .tp_doc = NULL,
+    .tp_doc = fpbinarycomplex_doc,
     .tp_basicsize = sizeof(FpBinaryComplexObject),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_CHECKTYPES,
