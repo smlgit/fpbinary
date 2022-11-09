@@ -160,8 +160,8 @@ extern PyObject *py_default_format_tuple;
 extern PyObject *decimal_point_str;
 extern PyObject *add_sign_str;
 extern PyObject *j_str;
-PyObject *open_bracket_str;
-PyObject *close_bracket_str;
+extern PyObject *open_bracket_str;
+extern PyObject *close_bracket_str;
 
 FP_UINT_TYPE fp_uint_lshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
 FP_UINT_TYPE fp_uint_rshift(FP_UINT_TYPE value, FP_UINT_TYPE num_shifts);
