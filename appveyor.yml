@@ -49,14 +49,14 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     CIBW_BUILD: cp39-win32 cp39-win_amd64 cp38-win32 cp38-win_amd64
     CIBW_BUILD_VERBOSITY: 2
-    CIBW_VERSION: >2.11
+    CIBW_VERSION: ">2.11"
     WIN_LATEST_PYTHON: "C:\\Python38-x64"
     PYPI_DELAY_CMD: "TIMEOUT 420"
     
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     CIBW_BUILD: cp37-win32 cp37-win_amd64 cp36-win32 cp36-win_amd64
     CIBW_BUILD_VERBOSITY: 2
-    CIBW_VERSION: >2.11
+    CIBW_VERSION: ">2.11"
     WIN_LATEST_PYTHON: "C:\\Python38-x64"
     PYPI_DELAY_CMD: "TIMEOUT 420"
 
@@ -75,7 +75,7 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: macos-mojave
     CIBW_BUILD: cp39-macosx_x86_64 cp36-macosx_x86_64 cp37-macosx_x86_64 cp38-macosx_x86_64
     CIBW_BUILD_VERBOSITY: 2
-    CIBW_VERSION: >2.11
+    CIBW_VERSION: ">2.11"
     PYPI_DELAY_CMD: "SLEEP 420"
 
   - APPVEYOR_BUILD_WORKER_IMAGE: macos-mojave
