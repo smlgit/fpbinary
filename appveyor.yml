@@ -72,13 +72,13 @@ environment:
   #
   # We use cibuildwheel.
   #
-  - APPVEYOR_BUILD_WORKER_IMAGE: macos-mojave
+  - APPVEYOR_BUILD_WORKER_IMAGE: macos-catalina
     CIBW_BUILD: cp39-macosx_x86_64 cp36-macosx_x86_64 cp37-macosx_x86_64 cp38-macosx_x86_64
     CIBW_BUILD_VERBOSITY: 2
     CIBW_VERSION: ">2.11"
     PYPI_DELAY_CMD: "SLEEP 420"
 
-  - APPVEYOR_BUILD_WORKER_IMAGE: macos-mojave
+  - APPVEYOR_BUILD_WORKER_IMAGE: macos-catalina
     CIBW_BUILD: cp27-macosx_x86_64 cp35-macosx_x86_64
     CIBW_BUILD_VERBOSITY: 2
     CIBW_VERSION: "==1.12.0"
