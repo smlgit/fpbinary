@@ -433,7 +433,7 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
         {
             return -1;
         }
-        printf("%s   %i\n", __FILE__, __LINE__);
+        printf("1\n");
 
         if (int_bits_py)
         {
