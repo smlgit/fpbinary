@@ -448,8 +448,7 @@ class FpBinaryComplexTest(unittest.TestCase):
 
         # Small size
         format_fp = FpBinaryComplex(int(test_utils.get_small_type_size() / 2),
-                                    int(test_utils.get_small_type_size() / 2),
-                                    value=1.0+1.0j)
+                                    int(test_utils.get_small_type_size() / 2))
 
         # self.assertEqual(FpBinaryComplex(value=complex(1, -7), format_inst=format_fp) << 2, complex(4, -28))
         # self.assertEqual(FpBinaryComplex(value=complex(1,-71 * 64) , format_inst=format_fp) >> 1, complex(0.5, -71 * 32))
