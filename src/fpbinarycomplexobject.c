@@ -433,7 +433,6 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
         {
             return -1;
         }
-        printf("1\n");
 
         if (int_bits_py)
         {
