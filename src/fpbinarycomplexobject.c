@@ -426,6 +426,7 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
 
     if (self)
     {
+        printf("%s   %i\n", __FILE__, __LINE__);
         if (!fp_binary_complex_new_params_parse(args, kwds, &int_bits_py, &frac_bits_py,
                                         &is_signed, &value, &real_fp_binary,
                                         &imag_fp_binary, &real_bit_field,
@@ -433,6 +434,7 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
         {
             return -1;
         }
+        printf("%s   %i\n", __FILE__, __LINE__);
 
         if (int_bits_py)
         {
@@ -443,6 +445,7 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
         {
             frac_bits = PyLong_AsLong(frac_bits_py);
         }
+        printf("%s   %i\n", __FILE__, __LINE__);
 
         /* Explicit set of FpBinary object takes precedence */
         if (real_fp_binary)
@@ -523,6 +526,7 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
             Py_INCREF(self->imag);
             Py_DECREF(cast_complex);
         }
+        printf("%s   %i\n", __FILE__, __LINE__);
 
         if (self->real && self->imag)
         {
