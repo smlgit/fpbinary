@@ -169,7 +169,7 @@ install:
           }
           else
           {
-              Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("cd {project} && pip install numpy && pip install --prefer-binary scipy && python -m unittest discover -s tests -p testFpBinary*")
+              Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("cd {project} && pip install numpy && pip install --prefer-binary scipy && python -m unittest discover -v -s tests -p testFpBinary*")
           }
 
           python -m pip install cibuildwheel$env:CIBW_VERSION
