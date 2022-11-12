@@ -31,12 +31,14 @@
 #include "fpbinaryglobaldoc.h"
 #include <math.h>
 
-#define FP_BINARY_SMALL_FORMAT_SUPPORTED(int_bits, frac_bits) (((FP_UINT_TYPE)(int_bits + frac_bits)) <= FP_UINT_NUM_BITS)
+#define FP_BINARY_SMALL_FORMAT_SUPPORTED(int_bits, frac_bits)                  \
+    (((FP_UINT_TYPE)(int_bits + frac_bits)) <= FP_UINT_NUM_BITS)
 
 static int
 check_new_bit_len_ok(FpBinarySmallObject *new_obj)
 {
-    if (!FP_BINARY_SMALL_FORMAT_SUPPORTED(new_obj->int_bits, new_obj->frac_bits))
+    if (!FP_BINARY_SMALL_FORMAT_SUPPORTED(new_obj->int_bits,
+                                          new_obj->frac_bits))
     {
         PyErr_SetString(PyExc_OverflowError,
                         "New FpBinary object has too many bits for this CPU.");
@@ -1572,7 +1574,7 @@ fpbinarysmall_get_total_bits(PyObject *obj)
 
 void
 FpBinarySmall_FormatAsInts(PyObject *self, FP_INT_TYPE *out_int_bits,
-                            FP_INT_TYPE *out_frac_bits)
+                           FP_INT_TYPE *out_frac_bits)
 {
     *out_int_bits = ((FpBinarySmallObject *)self)->int_bits;
     *out_frac_bits = ((FpBinarySmallObject *)self)->frac_bits;
@@ -1675,7 +1677,8 @@ FpBinarySmall_FromBitsPylong(PyObject *scaled_value, FP_INT_TYPE int_bits,
  * instance (presumably via a FpBinaryLarge instance) using the bitfield
  * method of creation. The Dict format is:
  *
- * {'ib': int_bits_pylong, 'fb': frac_bits_pylong, 'sv': bitfield_pylong, 'sgn': is_signed_pybool}
+ * {'ib': int_bits_pylong, 'fb': frac_bits_pylong, 'sv': bitfield_pylong, 'sgn':
+ * is_signed_pybool}
  */
 PyObject *
 FpBinarySmall_FromPickleDict(PyObject *dict)
@@ -1709,10 +1712,10 @@ FpBinarySmall_FromPickleDict(PyObject *dict)
         if (FP_BINARY_SMALL_FORMAT_SUPPORTED(int_bits_native, frac_bits_native))
         {
             result = (PyObject *)fpbinarysmall_create_mem(&FpBinary_SmallType);
-            set_object_fields(
-                (FpBinarySmallObject *)result, pylong_as_fp_uint(scaled_value),
-                int_bits_native, frac_bits_native,
-                (is_signed == Py_True) ? true : false);
+            set_object_fields((FpBinarySmallObject *)result,
+                              pylong_as_fp_uint(scaled_value), int_bits_native,
+                              frac_bits_native,
+                              (is_signed == Py_True) ? true : false);
         }
         else
         {

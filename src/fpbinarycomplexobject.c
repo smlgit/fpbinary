@@ -9,8 +9,8 @@
  *****************************************************************************/
 
 #include "fpbinarycomplexobject.h"
-#include "fpbinaryobject.h"
 #include "fpbinaryglobaldoc.h"
+#include "fpbinaryobject.h"
 #include <math.h>
 
 /*
@@ -25,14 +25,15 @@ fpbinarycomplex_from_params(FpBinaryObject *real, FpBinaryObject *imag)
 
     if (self)
     {
-        self->real = (PyObject *) real;
-        self->imag = (PyObject *) imag;
+        self->real = (PyObject *)real;
+        self->imag = (PyObject *)imag;
     }
 
     return self;
 }
 
-static FpBinaryComplexObject* cast_c_complex_to_complex(Py_complex c_complex)
+static FpBinaryComplexObject *
+cast_c_complex_to_complex(Py_complex c_complex)
 {
     /* Calculate the required int and frac bits */
     double scaled_value;
@@ -41,34 +42,45 @@ static FpBinaryComplexObject* cast_c_complex_to_complex(Py_complex c_complex)
     FP_INT_TYPE final_int_bits_uint, final_frac_bits_uint;
     FpBinaryObject *real_fp_binary, *imag_fp_binary;
 
-    calc_double_to_fp_params(c_complex.real, &scaled_value, &real_int_bits_uint, &real_frac_bits_uint);
-    calc_double_to_fp_params(c_complex.imag, &scaled_value, &imag_int_bits_uint, &imag_frac_bits_uint);
-    final_int_bits_uint = (real_int_bits_uint > imag_int_bits_uint) ? real_int_bits_uint : imag_int_bits_uint;
-    final_frac_bits_uint = (real_frac_bits_uint > imag_frac_bits_uint) ? real_frac_bits_uint : imag_frac_bits_uint;
+    calc_double_to_fp_params(c_complex.real, &scaled_value, &real_int_bits_uint,
+                             &real_frac_bits_uint);
+    calc_double_to_fp_params(c_complex.imag, &scaled_value, &imag_int_bits_uint,
+                             &imag_frac_bits_uint);
+    final_int_bits_uint = (real_int_bits_uint > imag_int_bits_uint)
+                              ? real_int_bits_uint
+                              : imag_int_bits_uint;
+    final_frac_bits_uint = (real_frac_bits_uint > imag_frac_bits_uint)
+                               ? real_frac_bits_uint
+                               : imag_frac_bits_uint;
 
-    real_fp_binary = FpBinary_FromParams(final_int_bits_uint, final_frac_bits_uint, true,
-            c_complex.real, NULL, NULL);
-    imag_fp_binary = FpBinary_FromParams(final_int_bits_uint, final_frac_bits_uint, true,
-                c_complex.imag, NULL, NULL);
+    real_fp_binary =
+        FpBinary_FromParams(final_int_bits_uint, final_frac_bits_uint, true,
+                            c_complex.real, NULL, NULL);
+    imag_fp_binary =
+        FpBinary_FromParams(final_int_bits_uint, final_frac_bits_uint, true,
+                            c_complex.imag, NULL, NULL);
     return fpbinarycomplex_from_params(real_fp_binary, imag_fp_binary);
 }
 
-static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
+static FpBinaryComplexObject *
+cast_to_complex(PyObject *obj)
 {
     FpBinaryComplexObject *result = NULL;
 
     if (FpBinaryComplex_CheckExact(obj))
     {
-        result = (FpBinaryComplexObject *) obj;
+        result = (FpBinaryComplexObject *)obj;
         Py_INCREF(obj);
     }
     else if (PyObject_HasAttr(obj, complex_real_property_name_str) &&
              PyObject_HasAttr(obj, complex_imag_property_name_str))
     {
-        PyObject *real_out = PyObject_GetAttr(obj, complex_real_property_name_str);
-        PyObject *imag_out = PyObject_GetAttr(obj, complex_imag_property_name_str);
+        PyObject *real_out =
+            PyObject_GetAttr(obj, complex_real_property_name_str);
+        PyObject *imag_out =
+            PyObject_GetAttr(obj, complex_imag_property_name_str);
         result = fpbinarycomplex_from_params(FpBinary_FromValue(real_out),
-                FpBinary_FromValue(imag_out));
+                                             FpBinary_FromValue(imag_out));
         if (result)
         {
             FpBinary_SetTwoInstToSameFormat(&result->real, &result->imag);
@@ -78,7 +90,8 @@ static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
     }
     else
     {
-        result = fpbinarycomplex_from_params(FpBinary_FromValue(obj), FpBinary_FromValue(py_zero));
+        result = fpbinarycomplex_from_params(FpBinary_FromValue(obj),
+                                             FpBinary_FromValue(py_zero));
         if (result)
         {
             FpBinary_SetTwoInstToSameFormat(&result->real, &result->imag);
@@ -90,25 +103,30 @@ static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
 
 /*
  * Checks that at least one of the operands is a FpBinaryComplexObject type.
- * Also sets the real and imag op objects to be applied to the desired FpBinary operation.
- * If the other operand is not an instance of FpBinaryComplexObject, it will be assumed it
- * is a supported builtin type and will be used as the real of the other operand. The imaginary
+ * Also sets the real and imag op objects to be applied to the desired FpBinary
+ * operation.
+ * If the other operand is not an instance of FpBinaryComplexObject, it will be
+ * assumed it
+ * is a supported builtin type and will be used as the real of the other
+ * operand. The imaginary
  * will be set to the integer zero.
  *
- * Returns pointer to one of the PyObjects that is an instance of FpBinary for the purposes
+ * Returns pointer to one of the PyObjects that is an instance of FpBinary for
+ * the purposes
  * of calling the correct function.
  *
  * NOTE: If an object is returned, the references in op1_out/op2_out MUST
  * be decremented by the calling function.
  */
-static PyObject*
+static PyObject *
 prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
-        PyObject **op1_real_out, PyObject **op1_imag_out, PyObject **op2_real_out,
-        PyObject **op2_imag_out)
+                        PyObject **op1_real_out, PyObject **op1_imag_out,
+                        PyObject **op2_real_out, PyObject **op2_imag_out)
 {
     PyObject *result = NULL;
 
-    if (!FpBinaryComplex_CheckExact(in_op1) && !FpBinaryComplex_CheckExact(in_op2))
+    if (!FpBinaryComplex_CheckExact(in_op1) &&
+        !FpBinaryComplex_CheckExact(in_op2))
     {
         return NULL;
     }
@@ -176,11 +194,12 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
  * ============================================================================
  */
 
-
 PyDoc_STRVAR(
     fpbinarycomplex_doc,
-    "FpBinaryComplex(int_bits=1, frac_bits=0, value=0.0+0.0j, real_fp_binary=None, "
-    "imag_fp_binary=None, real_bit_field=None, imag_bit_field=None, format_inst=None)\n"
+    "FpBinaryComplex(int_bits=1, frac_bits=0, value=0.0+0.0j, "
+    "real_fp_binary=None, "
+    "imag_fp_binary=None, real_bit_field=None, imag_bit_field=None, "
+    "format_inst=None)\n"
     "--\n\n"
     "Represents a complex number using fixed point math and structure.\n"
     "\n"
@@ -215,33 +234,42 @@ PyDoc_STRVAR(
     "frac_bits\n"
     "    do not provide enough precision to represent value fully, rounding "
     "will be\n"
-    "    done using RoundingEnum.near_pos_inf and overflow will be handled using\n"
+    "    done using RoundingEnum.near_pos_inf and overflow will be handled "
+    "using\n"
     "    OverflowEnum.sat.\n"
     "\n"
     "real_fp_binary : FpBinary\n"
-    "    The real part of the FpBinaryComplex instance can be set to the value\n"
-    "    of an FpBinary instance. The format will also be used if it isn't specified\n"
+    "    The real part of the FpBinaryComplex instance can be set to the "
+    "value\n"
+    "    of an FpBinary instance. The format will also be used if it isn't "
+    "specified\n"
     "    explicitly.\n"
     "\n"
     "imag_fp_binary : FpBinary\n"
-    "    The imag part of the FpBinaryComplex instance can be set to the value\n"
-    "    of an FpBinary instance. The format will also be used if it isn't specified\n"
+    "    The imag part of the FpBinaryComplex instance can be set to the "
+    "value\n"
+    "    of an FpBinary instance. The format will also be used if it isn't "
+    "specified\n"
     "    explicitly.\n"
     "\n"
     "real_bit_field : int\n"
     "    If the precision of the desired initialise value is too great for the "
     "native\n"
-    "    float type, real_bit_field can be set to a 2's complement representation "
+    "    float type, real_bit_field can be set to a 2's complement "
+    "representation "
     "of the\n"
-    "    desired real value * 2**frac_bits. Note that real_bit_field overrides the value "
+    "    desired real value * 2**frac_bits. Note that real_bit_field overrides "
+    "the value "
     "parameter.\n"
     "\n"
     "imag_bit_field : int\n"
     "    If the precision of the desired initialise value is too great for the "
     "native\n"
-    "    float type, real_bit_field can be set to a 2's complement representation "
+    "    float type, real_bit_field can be set to a 2's complement "
+    "representation "
     "of the\n"
-    "    desired imaginary value * 2**frac_bits. Note that imag_bit_field overrides the value "
+    "    desired imaginary value * 2**frac_bits. Note that imag_bit_field "
+    "overrides the value "
     "parameter.\n"
     "\n"
     "format_inst : FpBinary\n"
@@ -256,7 +284,8 @@ PyDoc_STRVAR(
     "If op2 is not a fixed point type, an attempt will be made to convert\n"
     "it to a fixed point object using as few bits as necessary.\n"
     "Overflow is guaranteed to NOT happen. "
-    "The resultant real/imag fixed point numbers have the following format::\n\n"
+    "The resultant real/imag fixed point numbers have the following "
+    "format::\n\n"
     "    int_bits  = max(op1.int_bits, op2.int_bits) + 1 \n"
     "    frac_bits = max(op1.frac_bits, op2.frac_bits) \n"
     "\n"
@@ -264,31 +293,37 @@ PyDoc_STRVAR(
     "If op2 is not a fixed point type, an attempt will be made to convert\n"
     "it to a fixed point object using as few bits as necessary.\n"
     "Overflow is guaranteed to NOT happen. "
-    "The resultant real/imag fixed point numbers have the following format::\n\n"
+    "The resultant real/imag fixed point numbers have the following "
+    "format::\n\n"
     "    int_bits  = op1.int_bits + op2.int_bits + 1 \n"
     "    frac_bits = op1.frac_bits + op2.frac_bits\n"
     "\n"
     "*Divide:*\n"
-    "Complex divide is implemented by multiplying by the conjugate of the denominator "
+    "Complex divide is implemented by multiplying by the conjugate of the "
+    "denominator "
     "and dividing by the denominator.real**2 + denominator.imag**2."
     "\n"
     "*Negate:*\n"
-    "Because a negate is a multiply by -1, the output has one extra integer bit than\n"
+    "Because a negate is a multiply by -1, the output has one extra integer "
+    "bit than\n"
     "the input operand.\n"
     "\n"
     "*Absolute value:*\n"
-    "Estimates the absolute value by calculating the energy, converting to float,\n"
+    "Estimates the absolute value by calculating the energy, converting to "
+    "float,\n"
     "squaring and converting back to FpBinaryComplex.\n");
 
 bool
-fp_binary_complex_new_params_parse(PyObject *args, PyObject *kwds, PyObject **int_bits,
-        PyObject **frac_bits, bool *is_signed, Py_complex *value,
-                           PyObject **real_fp_binary, PyObject **imag_fp_binary,
-                           PyObject **real_bit_field, PyObject **imag_bit_field,
-                           PyObject **format_instance)
+fp_binary_complex_new_params_parse(
+    PyObject *args, PyObject *kwds, PyObject **int_bits, PyObject **frac_bits,
+    bool *is_signed, Py_complex *value, PyObject **real_fp_binary,
+    PyObject **imag_fp_binary, PyObject **real_bit_field,
+    PyObject **imag_bit_field, PyObject **format_instance)
 {
-    static char *kwlist[] = {"int_bits",  "frac_bits", "value",
-            "real_fp_binary", "imag_fp_binary", "real_bit_field", "imag_bit_field", "format_inst", NULL};
+    static char *kwlist[] = {
+        "int_bits",       "frac_bits",      "value",
+        "real_fp_binary", "imag_fp_binary", "real_bit_field",
+        "imag_bit_field", "format_inst",    NULL};
 
     *is_signed = true;
     *real_bit_field = NULL, *imag_bit_field = NULL;
@@ -305,7 +340,8 @@ fp_binary_complex_new_params_parse(PyObject *args, PyObject *kwds, PyObject **in
         /* Must specify zero or both, not just one */
         if (!*int_bits || !*frac_bits)
         {
-            PyErr_SetString(PyExc_TypeError, "Both int_bits and frac_bits must be specified.");
+            PyErr_SetString(PyExc_TypeError,
+                            "Both int_bits and frac_bits must be specified.");
             return false;
         }
 
@@ -325,13 +361,15 @@ fp_binary_complex_new_params_parse(PyObject *args, PyObject *kwds, PyObject **in
     /* Fixed point binary instances - must specify zero or both */
     if (*real_fp_binary || *imag_fp_binary)
     {
-        PyObject *real_is_signed = NULL,  *imag_is_signed = NULL;
+        PyObject *real_is_signed = NULL, *imag_is_signed = NULL;
         bool signed_state_same;
 
         /* Must specify zero or both, not just one */
         if (!(*real_fp_binary) || !(*imag_fp_binary))
         {
-            PyErr_SetString(PyExc_TypeError, "Both real_fp_binary and imag_fp_binary must be specified.");
+            PyErr_SetString(
+                PyExc_TypeError,
+                "Both real_fp_binary and imag_fp_binary must be specified.");
             return false;
         }
 
@@ -349,16 +387,19 @@ fp_binary_complex_new_params_parse(PyObject *args, PyObject *kwds, PyObject **in
             return false;
         }
 
-        real_is_signed = PyObject_GetAttr((PyObject *) *real_fp_binary, get_is_signed_method_name_str);
-        imag_is_signed = PyObject_GetAttr((PyObject *) *imag_fp_binary, get_is_signed_method_name_str);
+        real_is_signed = PyObject_GetAttr((PyObject *)*real_fp_binary,
+                                          get_is_signed_method_name_str);
+        imag_is_signed = PyObject_GetAttr((PyObject *)*imag_fp_binary,
+                                          get_is_signed_method_name_str);
         signed_state_same = (real_is_signed == imag_is_signed);
         Py_DECREF(real_is_signed);
         Py_DECREF(imag_is_signed);
 
         if (!signed_state_same)
         {
-            PyErr_SetString(PyExc_ValueError,
-                            "real_fp_binary and imag_fp_binary must have the same signed state.");
+            PyErr_SetString(PyExc_ValueError, "real_fp_binary and "
+                                              "imag_fp_binary must have the "
+                                              "same signed state.");
             return false;
         }
     }
@@ -368,14 +409,19 @@ fp_binary_complex_new_params_parse(PyObject *args, PyObject *kwds, PyObject **in
         /* Must specify zero or both, not just one */
         if (!*real_bit_field || !*imag_bit_field)
         {
-            PyErr_SetString(PyExc_TypeError, "Both real_bit_field and imag_bit_field must be specified.");
+            PyErr_SetString(
+                PyExc_TypeError,
+                "Both real_bit_field and imag_bit_field must be specified.");
             return false;
         }
 
-        /* Must also specify int_bits/frac_bits or format_instance for use with bit fields */
+        /* Must also specify int_bits/frac_bits or format_instance for use with
+         * bit fields */
         if (!*int_bits && !*format_instance)
         {
-            PyErr_SetString(PyExc_TypeError, "int_bits/frac_bits or format_instance must be specified when using bit fields.");
+            PyErr_SetString(PyExc_TypeError,
+                            "int_bits/frac_bits or format_instance must be "
+                            "specified when using bit fields.");
             return false;
         }
 
@@ -396,17 +442,23 @@ fp_binary_complex_new_params_parse(PyObject *args, PyObject *kwds, PyObject **in
 
     if (*format_instance)
     {
-        /* If the format instance is a complex fp binary, use the real for formatting */
-        if (!FpBinaryComplex_Check(*format_instance) && !FpBinary_Check(*format_instance))
+        /* If the format instance is a complex fp binary, use the real for
+         * formatting */
+        if (!FpBinaryComplex_Check(*format_instance) &&
+            !FpBinary_Check(*format_instance))
         {
-            PyErr_SetString(PyExc_TypeError, "format_inst must be a FpBinary or FpBinaryComplex instance.");
+            PyErr_SetString(
+                PyExc_TypeError,
+                "format_inst must be a FpBinary or FpBinaryComplex instance.");
             return false;
         }
 
         if (FpBinaryComplex_Check(*format_instance))
         {
-            /* Change to FpBinary type so FpBinary functions can be used down the line. */
-            *format_instance = ((FpBinaryComplexObject *) (*format_instance))->real;
+            /* Change to FpBinary type so FpBinary functions can be used down
+             * the line. */
+            *format_instance =
+                ((FpBinaryComplexObject *)(*format_instance))->real;
         }
     }
 
@@ -421,15 +473,16 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
     PyObject *int_bits_py = NULL, *frac_bits_py = NULL;
     Py_complex value = {.real = 0.0, .imag = 0.0};
     PyObject *real_fp_binary = NULL, *imag_fp_binary = NULL;
-    PyObject *real_bit_field = NULL, *imag_bit_field= NULL, *format_instance = NULL;
+    PyObject *real_bit_field = NULL, *imag_bit_field = NULL,
+             *format_instance = NULL;
     FpBinaryComplexObject *self = (FpBinaryComplexObject *)self_pyobj;
 
     if (self)
     {
-        if (!fp_binary_complex_new_params_parse(args, kwds, &int_bits_py, &frac_bits_py,
-                                        &is_signed, &value, &real_fp_binary,
-                                        &imag_fp_binary, &real_bit_field,
-                                        &imag_bit_field, &format_instance))
+        if (!fp_binary_complex_new_params_parse(
+                args, kwds, &int_bits_py, &frac_bits_py, &is_signed, &value,
+                &real_fp_binary, &imag_fp_binary, &real_bit_field,
+                &imag_bit_field, &format_instance))
         {
             return -1;
         }
@@ -447,18 +500,23 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
         /* Explicit set of FpBinary object takes precedence */
         if (real_fp_binary)
         {
-            self->real = forward_call_with_args(real_fp_binary, copy_method_name_str, NULL, NULL);
-            self->imag = forward_call_with_args(imag_fp_binary, copy_method_name_str, NULL, NULL);
+            self->real = forward_call_with_args(
+                real_fp_binary, copy_method_name_str, NULL, NULL);
+            self->imag = forward_call_with_args(
+                imag_fp_binary, copy_method_name_str, NULL, NULL);
 
-            /* Format determined first by format_instance, then by int/frac_bits, then via the
+            /* Format determined first by format_instance, then by
+             * int/frac_bits, then via the
              * highest values from the value instances.
              */
             if (format_instance)
             {
                 FpBinary_ResizeWithFormatInstance(self->real, format_instance,
-                        ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
+                                                  ROUNDING_NEAR_POS_INF,
+                                                  OVERFLOW_SAT);
                 FpBinary_ResizeWithFormatInstance(self->imag, format_instance,
-                                        ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
+                                                  ROUNDING_NEAR_POS_INF,
+                                                  OVERFLOW_SAT);
 
                 /* Resize function increments reference - dec back */
                 Py_DECREF(self->real);
@@ -467,9 +525,9 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
             else if (int_bits_py)
             {
                 FpBinary_ResizeWithCInts(self->real, int_bits, frac_bits,
-                                        ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
+                                         ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
                 FpBinary_ResizeWithCInts(self->imag, int_bits, frac_bits,
-                        ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
+                                         ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
 
                 /* Resize function increments reference - dec back */
                 Py_DECREF(self->real);
@@ -477,21 +535,36 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
             }
             else
             {
-                /* Find largest format values from the two fp_binary value instances */
+                /* Find largest format values from the two fp_binary value
+                 * instances */
                 FP_INT_TYPE real_int_bits_uint, real_frac_bits_uint;
                 FP_INT_TYPE imag_int_bits_uint, imag_frac_bits_uint;
-                PyObject *real_format_tuple = PyObject_GetAttr(self->real, get_format_method_name_str);
-                PyObject *imag_format_tuple = PyObject_GetAttr(self->imag, get_format_method_name_str);
+                PyObject *real_format_tuple =
+                    PyObject_GetAttr(self->real, get_format_method_name_str);
+                PyObject *imag_format_tuple =
+                    PyObject_GetAttr(self->imag, get_format_method_name_str);
 
-                if (extract_fp_format_ints_from_tuple(real_format_tuple, &real_int_bits_uint, &real_frac_bits_uint) &&
-                        extract_fp_format_ints_from_tuple(imag_format_tuple, &imag_int_bits_uint, &imag_frac_bits_uint))
+                if (extract_fp_format_ints_from_tuple(real_format_tuple,
+                                                      &real_int_bits_uint,
+                                                      &real_frac_bits_uint) &&
+                    extract_fp_format_ints_from_tuple(imag_format_tuple,
+                                                      &imag_int_bits_uint,
+                                                      &imag_frac_bits_uint))
                 {
-                    FP_INT_TYPE best_int_bits = (real_int_bits_uint > imag_int_bits_uint) ? real_int_bits_uint : imag_int_bits_uint;
-                    FP_INT_TYPE best_frac_bits = (real_frac_bits_uint > imag_frac_bits_uint) ? real_frac_bits_uint : imag_frac_bits_uint;
-                    FpBinary_ResizeWithCInts(self->real, best_int_bits, best_frac_bits,
-                                            ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
-                    FpBinary_ResizeWithCInts(self->imag, best_int_bits, best_frac_bits,
-                            ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
+                    FP_INT_TYPE best_int_bits =
+                        (real_int_bits_uint > imag_int_bits_uint)
+                            ? real_int_bits_uint
+                            : imag_int_bits_uint;
+                    FP_INT_TYPE best_frac_bits =
+                        (real_frac_bits_uint > imag_frac_bits_uint)
+                            ? real_frac_bits_uint
+                            : imag_frac_bits_uint;
+                    FpBinary_ResizeWithCInts(
+                        self->real, best_int_bits, best_frac_bits,
+                        ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
+                    FpBinary_ResizeWithCInts(
+                        self->imag, best_int_bits, best_frac_bits,
+                        ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
 
                     /* Resize function increments reference - dec back */
                     Py_DECREF(self->real);
@@ -505,18 +578,22 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
         }
         else if (int_bits_py || format_instance)
         {
-            /* If a format is explicitly set, we can use the FpBinary constructor directly on
+            /* If a format is explicitly set, we can use the FpBinary
+             * constructor directly on
              * the real and imag value or bit_field params
              */
-            self->real = (PyObject *) FpBinary_FromParams(int_bits, frac_bits, is_signed,
-                    value.real, real_bit_field, format_instance);
-            self->imag = (PyObject *) FpBinary_FromParams(int_bits, frac_bits, is_signed,
-                                value.imag, imag_bit_field, format_instance);
+            self->real = (PyObject *)FpBinary_FromParams(
+                int_bits, frac_bits, is_signed, value.real, real_bit_field,
+                format_instance);
+            self->imag = (PyObject *)FpBinary_FromParams(
+                int_bits, frac_bits, is_signed, value.imag, imag_bit_field,
+                format_instance);
         }
         else
         {
             /* If still haven't been able to ascertain value, try and cast */
-            FpBinaryComplexObject *cast_complex = cast_c_complex_to_complex(value);
+            FpBinaryComplexObject *cast_complex =
+                cast_c_complex_to_complex(value);
             self->real = cast_complex->real;
             self->imag = cast_complex->imag;
             Py_INCREF(self->real);
@@ -538,27 +615,29 @@ fpbinarycomplex_init(PyObject *self_pyobj, PyObject *args, PyObject *kwds)
  */
 static PyObject *
 fpbinarycomplex_resize(FpBinaryComplexObject *self, PyObject *args,
-                          PyObject *kwds)
+                       PyObject *kwds)
 {
     PyObject *call_result_real, *call_result_imag = NULL;
 
-    call_result_real = forward_call_with_args(self->real,
-                                         resize_method_name_str, args, kwds);
+    call_result_real =
+        forward_call_with_args(self->real, resize_method_name_str, args, kwds);
     if (!call_result_real)
     {
         return NULL;
     }
 
-    call_result_imag = forward_call_with_args(self->imag,
-                                             resize_method_name_str, args, kwds);
+    call_result_imag =
+        forward_call_with_args(self->imag, resize_method_name_str, args, kwds);
 
     if (!call_result_imag)
     {
         return NULL;
     }
 
-    /* Don't use the resize return references (these are the inc refs to the underlying
-     * FpBinary objects). We need to inc the upper FpBinaryComplex object (for returning
+    /* Don't use the resize return references (these are the inc refs to the
+     * underlying
+     * FpBinary objects). We need to inc the upper FpBinaryComplex object (for
+     * returning
      * from the resize function). */
     if (call_result_real)
     {
@@ -588,17 +667,21 @@ static PyObject *
 fpbinarycomplex_add(PyObject *op1, PyObject *op2)
 {
     FpBinaryComplexObject *result = NULL;
-    PyObject *cast_op1_real = NULL, *cast_op1_imag = NULL, *cast_op2_real = NULL, *cast_op2_imag = NULL;
+    PyObject *cast_op1_real = NULL, *cast_op1_imag = NULL,
+             *cast_op2_real = NULL, *cast_op2_imag = NULL;
 
-    PyObject *function_op = prepare_binary_real_ops(op1, op2, &cast_op1_real,
-            &cast_op1_imag, &cast_op2_real, &cast_op2_imag);
+    PyObject *function_op =
+        prepare_binary_real_ops(op1, op2, &cast_op1_real, &cast_op1_imag,
+                                &cast_op2_real, &cast_op2_imag);
 
     if (function_op)
     {
         FpBinaryObject *real_result = NULL, *imag_result = NULL;
 
-        real_result = (FpBinaryObject *) FP_NUM_METHOD(function_op, nb_add)(cast_op1_real, cast_op2_real);
-        imag_result = (FpBinaryObject *) FP_NUM_METHOD(function_op, nb_add)(cast_op1_imag, cast_op2_imag);
+        real_result = (FpBinaryObject *)FP_NUM_METHOD(function_op, nb_add)(
+            cast_op1_real, cast_op2_real);
+        imag_result = (FpBinaryObject *)FP_NUM_METHOD(function_op, nb_add)(
+            cast_op1_imag, cast_op2_imag);
 
         result = fpbinarycomplex_from_params(real_result, imag_result);
 
@@ -619,17 +702,21 @@ static PyObject *
 fpbinarycomplex_subtract(PyObject *op1, PyObject *op2)
 {
     FpBinaryComplexObject *result = NULL;
-    PyObject *cast_op1_real = NULL, *cast_op1_imag = NULL, *cast_op2_real = NULL, *cast_op2_imag = NULL;
+    PyObject *cast_op1_real = NULL, *cast_op1_imag = NULL,
+             *cast_op2_real = NULL, *cast_op2_imag = NULL;
 
-    PyObject *function_op = prepare_binary_real_ops(op1, op2, &cast_op1_real,
-            &cast_op1_imag, &cast_op2_real, &cast_op2_imag);
+    PyObject *function_op =
+        prepare_binary_real_ops(op1, op2, &cast_op1_real, &cast_op1_imag,
+                                &cast_op2_real, &cast_op2_imag);
 
     if (function_op)
     {
         FpBinaryObject *real_result = NULL, *imag_result = NULL;
 
-        real_result = (FpBinaryObject *) FP_NUM_METHOD(function_op, nb_subtract)(cast_op1_real, cast_op2_real);
-        imag_result = (FpBinaryObject *) FP_NUM_METHOD(function_op, nb_subtract)(cast_op1_imag, cast_op2_imag);
+        real_result = (FpBinaryObject *)FP_NUM_METHOD(function_op, nb_subtract)(
+            cast_op1_real, cast_op2_real);
+        imag_result = (FpBinaryObject *)FP_NUM_METHOD(function_op, nb_subtract)(
+            cast_op1_imag, cast_op2_imag);
 
         result = fpbinarycomplex_from_params(real_result, imag_result);
 
@@ -650,23 +737,31 @@ static PyObject *
 fpbinarycomplex_multiply(PyObject *op1, PyObject *op2)
 {
     FpBinaryComplexObject *result = NULL;
-    PyObject *cast_op1_real = NULL, *cast_op1_imag = NULL, *cast_op2_real = NULL, *cast_op2_imag = NULL;
+    PyObject *cast_op1_real = NULL, *cast_op1_imag = NULL,
+             *cast_op2_real = NULL, *cast_op2_imag = NULL;
 
-    PyObject *function_op = prepare_binary_real_ops(op1, op2, &cast_op1_real,
-            &cast_op1_imag, &cast_op2_real, &cast_op2_imag);
+    PyObject *function_op =
+        prepare_binary_real_ops(op1, op2, &cast_op1_real, &cast_op1_imag,
+                                &cast_op2_real, &cast_op2_imag);
 
     if (function_op)
     {
         PyObject *ac = NULL, *ad = NULL, *bc = NULL, *bd = NULL;
         FpBinaryObject *real_result = NULL, *imag_result = NULL;
 
-        ac = FP_NUM_METHOD(function_op, nb_multiply)(cast_op1_real, cast_op2_real);
-        ad = FP_NUM_METHOD(function_op, nb_multiply)(cast_op1_real, cast_op2_imag);
-        bc = FP_NUM_METHOD(function_op, nb_multiply)(cast_op1_imag, cast_op2_real);
-        bd = FP_NUM_METHOD(function_op, nb_multiply)(cast_op1_imag, cast_op2_imag);
+        ac = FP_NUM_METHOD(function_op, nb_multiply)(cast_op1_real,
+                                                     cast_op2_real);
+        ad = FP_NUM_METHOD(function_op, nb_multiply)(cast_op1_real,
+                                                     cast_op2_imag);
+        bc = FP_NUM_METHOD(function_op, nb_multiply)(cast_op1_imag,
+                                                     cast_op2_real);
+        bd = FP_NUM_METHOD(function_op, nb_multiply)(cast_op1_imag,
+                                                     cast_op2_imag);
 
-        real_result = (FpBinaryObject *) FP_NUM_METHOD(function_op, nb_subtract)(ac, bd);
-        imag_result = (FpBinaryObject *) FP_NUM_METHOD(function_op, nb_add)(ad, bc);
+        real_result =
+            (FpBinaryObject *)FP_NUM_METHOD(function_op, nb_subtract)(ac, bd);
+        imag_result =
+            (FpBinaryObject *)FP_NUM_METHOD(function_op, nb_add)(ad, bc);
 
         result = fpbinarycomplex_from_params(real_result, imag_result);
 
@@ -691,19 +786,26 @@ static PyObject *
 fpbinarycomplex_conjugate(PyObject *self)
 {
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
-    PyObject *real = forward_call_with_args(cast_self->real, copy_method_name_str, NULL, NULL);
-    PyObject *imag = FP_NUM_METHOD(cast_self->imag, nb_negative)(cast_self->imag);
-    FpBinary_ResizeWithFormatInstance(real, imag, ROUNDING_DIRECT_NEG_INF, OVERFLOW_WRAP);
-    return (PyObject *) fpbinarycomplex_from_params((FpBinaryObject *) real, (FpBinaryObject *) imag);
+    PyObject *real = forward_call_with_args(cast_self->real,
+                                            copy_method_name_str, NULL, NULL);
+    PyObject *imag =
+        FP_NUM_METHOD(cast_self->imag, nb_negative)(cast_self->imag);
+    FpBinary_ResizeWithFormatInstance(real, imag, ROUNDING_DIRECT_NEG_INF,
+                                      OVERFLOW_WRAP);
+    return (PyObject *)fpbinarycomplex_from_params((FpBinaryObject *)real,
+                                                   (FpBinaryObject *)imag);
 }
 
 static PyObject *
 fpbinarycomplex_energy(PyObject *self)
 {
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
-    PyObject *real_square = FP_NUM_METHOD(cast_self->real, nb_multiply)(cast_self->real, cast_self->real);
-    PyObject *imag_square = FP_NUM_METHOD(cast_self->imag, nb_multiply)(cast_self->imag, cast_self->imag);
-    PyObject *result = FP_NUM_METHOD(real_square, nb_add)(real_square, imag_square);
+    PyObject *real_square = FP_NUM_METHOD(cast_self->real, nb_multiply)(
+        cast_self->real, cast_self->real);
+    PyObject *imag_square = FP_NUM_METHOD(cast_self->imag, nb_multiply)(
+        cast_self->imag, cast_self->imag);
+    PyObject *result =
+        FP_NUM_METHOD(real_square, nb_add)(real_square, imag_square);
     Py_DECREF(real_square);
     Py_DECREF(imag_square);
 
@@ -730,13 +832,18 @@ fpbinarycomplex_divide(PyObject *op1, PyObject *op2)
         FPBINARY_RETURN_NOT_IMPLEMENTED;
     }
 
-    conjugate = (FpBinaryComplexObject *) fpbinarycomplex_conjugate((PyObject *) cast_op2);
-    mult_result = (FpBinaryComplexObject *) FP_NUM_METHOD(cast_op1, nb_multiply)((PyObject *) cast_op1, (PyObject *) conjugate);
-    energy = fpbinarycomplex_energy((PyObject *) cast_op2);
+    conjugate = (FpBinaryComplexObject *)fpbinarycomplex_conjugate(
+        (PyObject *)cast_op2);
+    mult_result = (FpBinaryComplexObject *)FP_NUM_METHOD(cast_op1, nb_multiply)(
+        (PyObject *)cast_op1, (PyObject *)conjugate);
+    energy = fpbinarycomplex_energy((PyObject *)cast_op2);
 
-    result_real = FP_NUM_METHOD(mult_result->real, nb_true_divide)(mult_result->real, energy);
-    result_imag = FP_NUM_METHOD(mult_result->imag, nb_true_divide)(mult_result->imag, energy);
-    result = fpbinarycomplex_from_params((FpBinaryObject *) result_real, (FpBinaryObject *) result_imag);
+    result_real = FP_NUM_METHOD(mult_result->real,
+                                nb_true_divide)(mult_result->real, energy);
+    result_imag = FP_NUM_METHOD(mult_result->imag,
+                                nb_true_divide)(mult_result->imag, energy);
+    result = fpbinarycomplex_from_params((FpBinaryObject *)result_real,
+                                         (FpBinaryObject *)result_imag);
 
     Py_DECREF(cast_op1);
     Py_DECREF(cast_op2);
@@ -753,26 +860,33 @@ fpbinarycomplex_negative(PyObject *self)
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
 
     return (PyObject *)fpbinarycomplex_from_params(
-            (FpBinaryObject *) FP_NUM_METHOD(cast_self->real, nb_negative)(cast_self->real),
-            (FpBinaryObject *) FP_NUM_METHOD(cast_self->imag, nb_negative)(cast_self->imag));
+        (FpBinaryObject *)FP_NUM_METHOD(cast_self->real,
+                                        nb_negative)(cast_self->real),
+        (FpBinaryObject *)FP_NUM_METHOD(cast_self->imag,
+                                        nb_negative)(cast_self->imag));
 }
 
 static PyObject *
 fpbinarycomplex_abs(PyObject *self)
 {
     /* As divides are a bit tricky with fixed point numbers, we are currently
-     * calculating the absolute value of a complex number by calculating the energy
-     * and then converting to a float and square rooting, then converting back to
-     * fixed point with the same format as the energy result. This should give us
+     * calculating the absolute value of a complex number by calculating the
+     * energy
+     * and then converting to a float and square rooting, then converting back
+     * to
+     * fixed point with the same format as the energy result. This should give
+     * us
      * a good estimate of a hardware implementation.
      */
     PyObject *energy = fpbinarycomplex_energy(self);
     PyObject *energy_pyfloat = FP_NUM_METHOD(energy, nb_float)(energy);
     double energy_double = PyFloat_AsDouble(energy_pyfloat);
     double abs_double = sqrt(energy_double);
-    PyObject *is_signed = PyObject_GetAttr(energy, get_is_signed_method_name_str);
+    PyObject *is_signed =
+        PyObject_GetAttr(energy, get_is_signed_method_name_str);
     bool is_signed_bool = (is_signed == Py_True);
-    PyObject *result = (PyObject *) FpBinary_FromParams(1, 0, is_signed_bool, abs_double, NULL, energy);
+    PyObject *result = (PyObject *)FpBinary_FromParams(
+        1, 0, is_signed_bool, abs_double, NULL, energy);
 
     Py_DECREF(energy);
     Py_DECREF(energy_pyfloat);
@@ -790,17 +904,17 @@ fpbinarycomplex_lshift(PyObject *self, PyObject *pyobj_lshift)
     if (shift_as_pylong)
     {
         FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
-        PyObject *shifted_real =
-            FP_NUM_METHOD(cast_self->real, nb_lshift)(cast_self->real, shift_as_pylong);
-        PyObject *shifted_imag =
-                    FP_NUM_METHOD(cast_self->imag, nb_lshift)(cast_self->imag, shift_as_pylong);
+        PyObject *shifted_real = FP_NUM_METHOD(cast_self->real, nb_lshift)(
+            cast_self->real, shift_as_pylong);
+        PyObject *shifted_imag = FP_NUM_METHOD(cast_self->imag, nb_lshift)(
+            cast_self->imag, shift_as_pylong);
 
         Py_DECREF(shift_as_pylong);
 
         if (shifted_real && shifted_imag)
         {
-            return (PyObject *) fpbinarycomplex_from_params((FpBinaryObject *) shifted_real,
-                    (FpBinaryObject *) shifted_imag);
+            return (PyObject *)fpbinarycomplex_from_params(
+                (FpBinaryObject *)shifted_real, (FpBinaryObject *)shifted_imag);
         }
     }
 
@@ -816,17 +930,17 @@ fpbinarycomplex_rshift(PyObject *self, PyObject *pyobj_lshift)
     if (shift_as_pylong)
     {
         FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
-        PyObject *shifted_real =
-            FP_NUM_METHOD(cast_self->real, nb_rshift)(cast_self->real, shift_as_pylong);
-        PyObject *shifted_imag =
-                    FP_NUM_METHOD(cast_self->imag, nb_rshift)(cast_self->imag, shift_as_pylong);
+        PyObject *shifted_real = FP_NUM_METHOD(cast_self->real, nb_rshift)(
+            cast_self->real, shift_as_pylong);
+        PyObject *shifted_imag = FP_NUM_METHOD(cast_self->imag, nb_rshift)(
+            cast_self->imag, shift_as_pylong);
 
         Py_DECREF(shift_as_pylong);
 
         if (shifted_real && shifted_imag)
         {
-            return (PyObject *) fpbinarycomplex_from_params((FpBinaryObject *) shifted_real,
-                    (FpBinaryObject *) shifted_imag);
+            return (PyObject *)fpbinarycomplex_from_params(
+                (FpBinaryObject *)shifted_real, (FpBinaryObject *)shifted_imag);
         }
     }
 
@@ -837,8 +951,10 @@ static int
 fpbinarycomplex_nonzero(PyObject *self)
 {
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
-    int real_nonzero = FP_NUM_METHOD(cast_self->real, nb_nonzero)(cast_self->real);
-    int imag_nonzero = FP_NUM_METHOD(cast_self->imag, nb_nonzero)(cast_self->imag);
+    int real_nonzero =
+        FP_NUM_METHOD(cast_self->real, nb_nonzero)(cast_self->real);
+    int imag_nonzero =
+        FP_NUM_METHOD(cast_self->imag, nb_nonzero)(cast_self->imag);
     return ((real_nonzero == 1) || (imag_nonzero == 1)) ? 1 : 0;
 }
 
@@ -849,7 +965,8 @@ fpbinarycomplex_str(PyObject *obj)
     PyObject *result = PyUnicode_FromString("(");
     PyObject *real_str = FP_METHOD(cast_self->real, tp_str)(cast_self->real);
     PyObject *imag_str = FP_METHOD(cast_self->imag, tp_str)(cast_self->imag);
-    PyObject *imag_negative = FP_METHOD(cast_self->imag, tp_richcompare)(cast_self->imag, py_zero, Py_LT);
+    PyObject *imag_negative = FP_METHOD(cast_self->imag, tp_richcompare)(
+        cast_self->imag, py_zero, Py_LT);
 
     unicode_concat(&result, real_str);
 
@@ -877,9 +994,12 @@ fpbinarycomplex_str_ex(PyObject *self)
 {
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
     PyObject *result = PyUnicode_FromString("(");
-    PyObject *real_str = forward_call_with_args(cast_self->real, str_ex_method_name_str, NULL, NULL);
-    PyObject *imag_str = forward_call_with_args(cast_self->imag, str_ex_method_name_str, NULL, NULL);
-    PyObject *imag_negative = FP_METHOD(cast_self->imag, tp_richcompare)(cast_self->imag, py_zero, Py_LT);
+    PyObject *real_str = forward_call_with_args(
+        cast_self->real, str_ex_method_name_str, NULL, NULL);
+    PyObject *imag_str = forward_call_with_args(
+        cast_self->imag, str_ex_method_name_str, NULL, NULL);
+    PyObject *imag_negative = FP_METHOD(cast_self->imag, tp_richcompare)(
+        cast_self->imag, py_zero, Py_LT);
 
     unicode_concat(&result, real_str);
 
@@ -902,21 +1022,24 @@ static PyObject *
 fpbinarycomplex_richcompare(PyObject *obj1, PyObject *obj2, int operator)
 {
     PyObject *result_real = NULL, *result_imag = NULL;
-    PyObject *cast_op1_real = NULL, *cast_op1_imag = NULL, *cast_op2_real = NULL, *cast_op2_imag = NULL;
-    PyObject *function_op = prepare_binary_real_ops(obj1, obj2, &cast_op1_real,
-            &cast_op1_imag, &cast_op2_real, &cast_op2_imag);
+    PyObject *cast_op1_real = NULL, *cast_op1_imag = NULL,
+             *cast_op2_real = NULL, *cast_op2_imag = NULL;
+    PyObject *function_op =
+        prepare_binary_real_ops(obj1, obj2, &cast_op1_real, &cast_op1_imag,
+                                &cast_op2_real, &cast_op2_imag);
     bool result_bool;
 
-    if (!function_op || (operator != Py_EQ && operator != Py_NE))
+    if (!function_op || (operator!= Py_EQ && operator!= Py_NE))
     {
         FPBINARY_RETURN_NOT_IMPLEMENTED;
     }
 
-    result_real =
-            FP_METHOD(cast_op1_real, tp_richcompare)(cast_op1_real, cast_op2_real, operator);
-    result_imag =
-            FP_METHOD(cast_op1_imag, tp_richcompare)(cast_op1_imag, cast_op2_imag, operator);
-    result_bool = ((PyObject_IsTrue(result_real) == 1) && (PyObject_IsTrue(result_imag) == 1));
+    result_real = FP_METHOD(cast_op1_real, tp_richcompare)(
+        cast_op1_real, cast_op2_real, operator);
+    result_imag = FP_METHOD(cast_op1_imag, tp_richcompare)(
+        cast_op1_imag, cast_op2_imag, operator);
+    result_bool = ((PyObject_IsTrue(result_real) == 1) &&
+                   (PyObject_IsTrue(result_imag) == 1));
 
     Py_DECREF(cast_op1_real);
     Py_DECREF(cast_op1_imag);
@@ -966,7 +1089,7 @@ fpbinarycomplex_real(PyObject *self, void *closure)
 {
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
     Py_INCREF(cast_self->real);
-    return (PyObject *) cast_self->real;
+    return (PyObject *)cast_self->real;
 }
 
 static PyObject *
@@ -974,15 +1097,18 @@ fpbinarycomplex_imag(PyObject *self, void *closure)
 {
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
     Py_INCREF(cast_self->imag);
-    return (PyObject *) cast_self->imag;
+    return (PyObject *)cast_self->imag;
 }
 
 static PyObject *
 fpbinarycomplex_copy(FpBinaryComplexObject *self, PyObject *args)
 {
-    PyObject *real = forward_call_with_args(self->real, copy_method_name_str, NULL, NULL);
-    PyObject *imag = forward_call_with_args(self->imag, copy_method_name_str, NULL, NULL);
-    return (PyObject *) fpbinarycomplex_from_params((FpBinaryObject *) real, (FpBinaryObject *) imag);
+    PyObject *real =
+        forward_call_with_args(self->real, copy_method_name_str, NULL, NULL);
+    PyObject *imag =
+        forward_call_with_args(self->imag, copy_method_name_str, NULL, NULL);
+    return (PyObject *)fpbinarycomplex_from_params((FpBinaryObject *)real,
+                                                   (FpBinaryObject *)imag);
 }
 
 static PyObject *
@@ -1015,8 +1141,8 @@ fpbinarycomplex_setstate(PyObject *self, PyObject *dict)
 }
 
 static PyMethodDef fpbinarycomplex_methods[] = {
-    {"resize", (PyCFunction)fpbinarycomplex_resize, METH_VARARGS | METH_KEYWORDS,
-     resize_doc},
+    {"resize", (PyCFunction)fpbinarycomplex_resize,
+     METH_VARARGS | METH_KEYWORDS, resize_doc},
     {"str_ex", (PyCFunction)fpbinarycomplex_str_ex, METH_NOARGS, str_ex_doc},
     {"conjugate", (PyCFunction)fpbinarycomplex_conjugate, METH_NOARGS, NULL},
     {"__copy__", (PyCFunction)fpbinarycomplex_copy, METH_NOARGS, copy_doc},

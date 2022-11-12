@@ -139,7 +139,7 @@ fp_binary_new_params_parse(PyObject *args, PyObject *kwds, long *int_bits,
                            long *frac_bits, bool *is_signed, double *value,
                            PyObject **bit_field, PyObject **format_instance)
 {
-    static char *kwlist[] = {"int_bits",  "frac_bits", "signed", "value",
+    static char *kwlist[] = {"int_bits",  "frac_bits",   "signed", "value",
                              "bit_field", "format_inst", NULL};
 
     PyObject *py_int_bits = NULL, *py_frac_bits = NULL;
@@ -147,8 +147,9 @@ fp_binary_new_params_parse(PyObject *args, PyObject *kwds, long *int_bits,
     *bit_field = NULL;
     *format_instance = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOOdOO", kwlist, &py_int_bits,
-            &py_frac_bits, &py_is_signed, value, bit_field, format_instance))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOOdOO", kwlist,
+                                     &py_int_bits, &py_frac_bits, &py_is_signed,
+                                     value, bit_field, format_instance))
         return false;
 
     /* Ensure there is information for the format */
@@ -178,16 +179,17 @@ fp_binary_new_params_parse(PyObject *args, PyObject *kwds, long *int_bits,
     {
         double scaled_value;
         FP_INT_TYPE int_bits_uint, frac_bits_uint;
-        calc_double_to_fp_params(*value, &scaled_value, &int_bits_uint, &frac_bits_uint);
+        calc_double_to_fp_params(*value, &scaled_value, &int_bits_uint,
+                                 &frac_bits_uint);
 
         if (!py_int_bits)
         {
-            *int_bits = (long) int_bits_uint;
+            *int_bits = (long)int_bits_uint;
         }
 
         if (!py_frac_bits)
         {
-            *frac_bits = (long) frac_bits_uint;
+            *frac_bits = (long)frac_bits_uint;
         }
     }
 
@@ -398,11 +400,14 @@ calc_pyint_to_fp_params(PyObject *input_value, PyObject **scaled_value,
 }
 
 /*
- * Attempts to work out the smallest int and frac bit format for the passed numberic object.
- * If the object type isn't supported (see check_supported_builtin) returns false.
+ * Attempts to work out the smallest int and frac bit format for the passed
+ * numberic object.
+ * If the object type isn't supported (see check_supported_builtin) returns
+ * false.
  */
 bool
-get_best_int_frac_bits(PyObject *obj, FP_INT_TYPE *int_bits, FP_INT_TYPE *frac_bits)
+get_best_int_frac_bits(PyObject *obj, FP_INT_TYPE *int_bits,
+                       FP_INT_TYPE *frac_bits)
 {
     if (check_supported_builtin_int(obj))
     {
@@ -418,8 +423,8 @@ get_best_int_frac_bits(PyObject *obj, FP_INT_TYPE *int_bits, FP_INT_TYPE *frac_b
     else if (check_supported_builtin_float(obj))
     {
         double scaled_value;
-        calc_double_to_fp_params(PyFloat_AsDouble(obj), &scaled_value,
-                                 int_bits, frac_bits);
+        calc_double_to_fp_params(PyFloat_AsDouble(obj), &scaled_value, int_bits,
+                                 frac_bits);
     }
     else
     {
@@ -509,7 +514,8 @@ extract_fp_format_from_tuple(PyObject *format_tuple_param, PyObject **int_bits,
         new_int_bits_borrowed = PyTuple_GetItem(format_tuple_param, 0);
         if (new_int_bits_borrowed)
         {
-            if (FpBinary_IntCheck(new_int_bits_borrowed) || PyLong_Check(new_int_bits_borrowed))
+            if (FpBinary_IntCheck(new_int_bits_borrowed) ||
+                PyLong_Check(new_int_bits_borrowed))
             {
                 /* Need to convert to long. */
                 *int_bits = FpBinary_EnsureIsPyLong(new_int_bits_borrowed);
@@ -519,7 +525,8 @@ extract_fp_format_from_tuple(PyObject *format_tuple_param, PyObject **int_bits,
         new_frac_bits_borrowed = PyTuple_GetItem(format_tuple_param, 1);
         if (new_frac_bits_borrowed)
         {
-            if (FpBinary_IntCheck(new_frac_bits_borrowed) || PyLong_Check(new_frac_bits_borrowed))
+            if (FpBinary_IntCheck(new_frac_bits_borrowed) ||
+                PyLong_Check(new_frac_bits_borrowed))
             {
                 /* Need to convert to long. */
                 *frac_bits = FpBinary_EnsureIsPyLong(new_frac_bits_borrowed);
@@ -536,17 +543,19 @@ extract_fp_format_from_tuple(PyObject *format_tuple_param, PyObject **int_bits,
     return (*int_bits && *frac_bits);
 }
 
-/* Will attempt to convert the format_tuple_param to int_bits and frac_bits c long values.
+/* Will attempt to convert the format_tuple_param to int_bits and frac_bits c
+ * long values.
  *
  * Returns false if the parameter could not be converted.
  */
 bool
-extract_fp_format_ints_from_tuple(PyObject *format_tuple_param, FP_INT_TYPE *int_bits,
-        FP_INT_TYPE *frac_bits)
+extract_fp_format_ints_from_tuple(PyObject *format_tuple_param,
+                                  FP_INT_TYPE *int_bits, FP_INT_TYPE *frac_bits)
 {
     PyObject *int_bits_py = NULL, *frac_bits_py = NULL;
 
-    if (extract_fp_format_from_tuple(format_tuple_param, &int_bits_py, &frac_bits_py))
+    if (extract_fp_format_from_tuple(format_tuple_param, &int_bits_py,
+                                     &frac_bits_py))
     {
         /* Convert the py objects to the c type */
         *int_bits = PyLong_AsLong(int_bits_py);
@@ -720,7 +729,8 @@ scaled_long_to_float_str(PyObject *scaled_value, PyObject *int_bits,
 }
 
 /*
- * Convenience function to forward a function call on to a PyObject with arguments.
+ * Convenience function to forward a function call on to a PyObject with
+ * arguments.
  */
 PyObject *
 forward_call_with_args(PyObject *obj, PyObject *method_name, PyObject *args,
@@ -793,7 +803,8 @@ FpBinary_EnsureIsPyLong(PyObject *ob)
 
 /*
  * Will take the input and:
- *     - if it is NOT a PyInt AND platform supports distinction between Int and Long,
+ *     - if it is NOT a PyInt AND platform supports distinction between Int and
+ * Long,
  *       will convert to a PyInt
  *     - if it IS a PyLong, will increment the ref count and return it
  *

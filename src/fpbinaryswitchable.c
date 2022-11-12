@@ -219,9 +219,12 @@ PyDoc_STRVAR(
     fpbinaryswitchable_doc,
     "FpBinarySwitchable(fp_mode, fp_value=None, float_value=0.0)\n"
     "--\n\n"
-    "Represents a fixed point OR floating point value depending on the `fp_mode` constructor parameter.\n"
-    "Also enables tracking of minimum and maximum values during the lifetime of the object via the `value` property.\n"
-    "This class can be used in math and resize operations and act like an FpBinary instance when `fp_mode` is \n"
+    "Represents a fixed point OR floating point value depending on the "
+    "`fp_mode` constructor parameter.\n"
+    "Also enables tracking of minimum and maximum values during the lifetime "
+    "of the object via the `value` property.\n"
+    "This class can be used in math and resize operations and act like an "
+    "FpBinary instance when `fp_mode` is \n"
     "True and act sensibly (normally do nothing) when `fp_mode` is False.\n"
     "\n"
     "Parameters\n"
@@ -229,7 +232,8 @@ PyDoc_STRVAR(
     "fp_mode : bool\n"
     "    If True, the underlying data/operations are fixed point.\n"
     "    If False, a native double type will be used.\n"
-    "    If True, the `fp_value` parameter must be set to an FpBinary instance.\n"
+    "    If True, the `fp_value` parameter must be set to an FpBinary "
+    "instance.\n"
     "    This instance will define the fixed point data and initial value.\n"
     "\n"
     "fp_value : FpBinary, optional if `fp_mode` is False.\n"
@@ -797,8 +801,9 @@ fpbinaryswitchable_get_fp_mode(PyObject *self, void *closure)
 }
 
 PyDoc_STRVAR(fpbinaryswitchable_format_doc,
-        "tuple : Read-only (int_bits, frac_bits) tuple representing the fixed point format. \n"
-        "If `fp_mode` is False, (1, 0) is returned.\n");
+             "tuple : Read-only (int_bits, frac_bits) tuple representing the "
+             "fixed point format. \n"
+             "If `fp_mode` is False, (1, 0) is returned.\n");
 static PyObject *
 fpbinaryswitchable_getformat(PyObject *self, void *closure)
 {
@@ -815,11 +820,15 @@ fpbinaryswitchable_getformat(PyObject *self, void *closure)
     return py_default_format_tuple;
 }
 
-PyDoc_STRVAR(value_doc,
-        "float-castable : If `fp_mode` is True, may set to a FpBinary or FpBinarySwitchable type. \n"
-        "If `fp_mode` is False may set any object that is castable to a float. \n"
-        "This property can be used to set the underlying value of a monitoring variable \n"
-        "for the purposes of profiling the min and max values at a given point in execution. \n");
+PyDoc_STRVAR(
+    value_doc,
+    "float-castable : If `fp_mode` is True, may set to a FpBinary or "
+    "FpBinarySwitchable type. \n"
+    "If `fp_mode` is False may set any object that is castable to a float. \n"
+    "This property can be used to set the underlying value of a monitoring "
+    "variable \n"
+    "for the purposes of profiling the min and max values at a given point in "
+    "execution. \n");
 static PyObject *
 fpbinaryswitchable_getvalue(PyObject *self, void *closure)
 {
@@ -915,10 +924,11 @@ fpbinaryswitchable_setvalue(PyObject *self, PyObject *value, void *closure)
     return 0;
 }
 
-PyDoc_STRVAR(
-    minvalue_doc,
-    "float : Will return the lowest value the `value` property has been set to. \n"
-    "This only applies when `fp_mode` is False. If `fp_mode` is True, this property will return 0.0 .\n");
+PyDoc_STRVAR(minvalue_doc,
+             "float : Will return the lowest value the `value` property has "
+             "been set to. \n"
+             "This only applies when `fp_mode` is False. If `fp_mode` is True, "
+             "this property will return 0.0 .\n");
 static PyObject *
 fpbinaryswitchable_getminvalue(PyObject *self, void *closure)
 {
@@ -927,8 +937,10 @@ fpbinaryswitchable_getminvalue(PyObject *self, void *closure)
 }
 
 PyDoc_STRVAR(maxvalue_doc,
-        "float : Will return the highest value the `value` property has been set to. \n"
-        "This only applies when `fp_mode` is False. If `fp_mode` is True, this property will return 0.0 .\n");
+             "float : Will return the highest value the `value` property has "
+             "been set to. \n"
+             "This only applies when `fp_mode` is False. If `fp_mode` is True, "
+             "this property will return 0.0 .\n");
 static PyObject *
 fpbinaryswitchable_getmaxvalue(PyObject *self, void *closure)
 {
@@ -951,7 +963,8 @@ static PyMethodDef fpbinaryswitchable_methods[] = {
 static PyGetSetDef fpbinaryswitchable_getsetters[] = {
     {"fp_mode", (getter)fpbinaryswitchable_get_fp_mode, NULL, fp_mode_doc,
      NULL},
-    {"format", (getter)fpbinaryswitchable_getformat, NULL, fpbinaryswitchable_format_doc, NULL},
+    {"format", (getter)fpbinaryswitchable_getformat, NULL,
+     fpbinaryswitchable_format_doc, NULL},
     {"value", (getter)fpbinaryswitchable_getvalue,
      (setter)fpbinaryswitchable_setvalue, value_doc, NULL},
     {"min_value", (getter)fpbinaryswitchable_getminvalue, NULL, minvalue_doc,

@@ -1482,7 +1482,7 @@ fpbinarylarge_get_total_bits(PyObject *obj)
 
 void
 FpBinaryLarge_FormatAsInts(PyObject *self, FP_INT_TYPE *out_int_bits,
-                            FP_INT_TYPE *out_frac_bits)
+                           FP_INT_TYPE *out_frac_bits)
 {
     *out_int_bits = (FP_INT_TYPE)PyLong_AsUnsignedLongLong(
         ((FpBinaryLargeObject *)self)->int_bits);

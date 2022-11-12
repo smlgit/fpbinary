@@ -57,7 +57,8 @@ FP_GLOBAL_Doc_STRVAR(
     "Returns\n"
     "----------\n"
     "str or unicode\n"
-    "    Non-scientific notation string representation of the instance value.\n");
+    "    Non-scientific notation string representation of the instance "
+    "value.\n");
 
 FP_GLOBAL_Doc_STRVAR(
     bits_to_signed_doc,
@@ -90,8 +91,9 @@ FP_GLOBAL_Doc_STRVAR(copy_doc,
                      "----------\n"
                      "result : type(self)\n");
 
-FP_GLOBAL_Doc_STRVAR(format_doc,
-        "tuple : Read-only (int_bits, frac_bits) tuple representing the fixed point format.\n");
+FP_GLOBAL_Doc_STRVAR(format_doc, "tuple : Read-only (int_bits, frac_bits) "
+                                 "tuple representing the fixed point "
+                                 "format.\n");
 
 FP_GLOBAL_Doc_STRVAR(
     is_signed_doc,
