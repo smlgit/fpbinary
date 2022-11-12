@@ -76,6 +76,7 @@ static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
         {
             FpBinary_SetTwoInstToSameFormat(&result->real, &result->imag);
             printf("%s  %i\n", __FILE__, __LINE__);
+            printf("%p   %p\n", result->real, result->imag);
         }
         printf("%s  %i\n", __FILE__, __LINE__);
 
