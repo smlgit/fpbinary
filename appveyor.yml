@@ -172,11 +172,11 @@ install:
               $install_version = python setup.py --version
               Set-Item -Path Env:CIBW_REPAIR_WHEEL_COMMAND -Value ("rm -rf upload_dir && mkdir upload_dir && cp {wheel} upload_dir && cp {wheel} {dest_dir}")
               Set-Item -Path Env:CIBW_BEFORE_TEST -Value ("pip install --upgrade twine && twine upload --repository testpypi -u __token__ -p " + $env:testpypi_pw + " upload_dir/* && " + $env:PYPI_DELAY_CMD)
-              Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("pip uninstall -y fpbinary && pip install -I --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary==" + $install_version + " && cd {project} && pip install numpy && pip install --only-binary:all: scipy && python -m unittest discover -s tests -p testFpBinary*")
+              Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("pip uninstall -y fpbinary && pip install -I --pre --index-url https://test.pypi.org/simple/ --no-deps fpbinary==" + $install_version + " && cd {project} && pip install numpy && pip install --only-binary=:all: scipy && python -m unittest discover -s tests -p testFpBinary*")
           }
           else
           {
-              Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("cd {project} && pip install numpy && pip install --only-binary:all: scipy && python -m unittest discover -s tests -p testFpBinary*")
+              Set-Item -Path Env:CIBW_TEST_COMMAND -Value ("cd {project} && pip install numpy && pip install --only-binary=:all: scipy && python -m unittest discover -s tests -p testFpBinary*")
           }
 
           python -m pip install cibuildwheel$env:CIBW_VERSION
@@ -251,7 +251,7 @@ test_script:
               . $HOME/$e/bin/activate.ps1
 
               pip install numpy
-              pip install --only-binary:all: scipy
+              pip install --only-binary=:all: scipy
 
               if (Test-Path env:install_from_pypi)
               {
