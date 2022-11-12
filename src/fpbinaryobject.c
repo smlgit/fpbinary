@@ -648,6 +648,7 @@ void FpBinary_SetTwoInstToSameFormat(PyObject **op1, PyObject **op2)
                 ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
         Py_DECREF(*op1);
         *op1 = new_instance;
+        printf("%s  %i   %p\n", __FILE__, __LINE__, *op1);
     }
 
     if (op2_int_bits < max_int_bits || op2_frac_bits < max_frac_bits)
@@ -656,6 +657,7 @@ void FpBinary_SetTwoInstToSameFormat(PyObject **op1, PyObject **op2)
                 ROUNDING_NEAR_POS_INF, OVERFLOW_SAT);
         Py_DECREF(*op2);
         *op2 = new_instance;
+        printf("%s  %i   %p\n", __FILE__, __LINE__, *op2);
     }
 }
 
