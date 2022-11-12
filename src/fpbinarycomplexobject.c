@@ -178,12 +178,16 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
             return NULL;
         }
 
+        printf("%s  %i\n", __FILE__, __LINE__);
         *op2_real_out = comp->real;
         *op2_imag_out = comp->imag;
 
+        printf("%s  %i\n", __FILE__, __LINE__);
         Py_INCREF(*op2_real_out);
         Py_INCREF(*op2_imag_out);
+        printf("%s  %i\n", __FILE__, __LINE__);
         Py_DECREF(comp);
+        printf("%s  %i\n", __FILE__, __LINE__);
     }
     printf("%s  %i\n", __FILE__, __LINE__);
 
