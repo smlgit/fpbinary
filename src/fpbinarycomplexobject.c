@@ -75,6 +75,7 @@ static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
         if (result)
         {
             FpBinary_SetTwoInstToSameFormat(&result->real, &result->imag);
+            printf("%s  %i\n", __FILE__, __LINE__);
         }
         printf("%s  %i\n", __FILE__, __LINE__);
 
@@ -173,6 +174,7 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
 
         if (!comp)
         {
+            printf("%s  %i\n", __FILE__, __LINE__);
             return NULL;
         }
 
