@@ -108,10 +108,12 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
 {
     PyObject *result = NULL;
 
+    printf("%s  %i\n", __FILE__, __LINE__);
     if (!FpBinaryComplex_CheckExact(in_op1) && !FpBinaryComplex_CheckExact(in_op2))
     {
         return NULL;
     }
+    printf("%s  %i\n", __FILE__, __LINE__);
 
     if (FpBinaryComplex_CheckExact(in_op1))
     {
@@ -139,6 +141,7 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
         Py_INCREF(*op1_imag_out);
         Py_DECREF(comp);
     }
+    printf("%s  %i\n", __FILE__, __LINE__);
 
     if (FpBinaryComplex_CheckExact(in_op2))
     {
@@ -166,6 +169,7 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
         Py_INCREF(*op2_imag_out);
         Py_DECREF(comp);
     }
+    printf("%s  %i\n", __FILE__, __LINE__);
 
     return result;
 }
