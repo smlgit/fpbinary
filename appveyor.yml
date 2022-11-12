@@ -46,26 +46,33 @@ environment:
   # Windows builds.
   # We use cibuildwheel.
   #
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    CIBW_BUILD: cp39-win32 cp39-win_amd64 cp38-win32 cp38-win_amd64
-#    CIBW_BUILD_VERBOSITY: 2
-#    CIBW_VERSION: ">2.11"
-#    WIN_LATEST_PYTHON: "C:\\Python38-x64"
-#    PYPI_DELAY_CMD: "TIMEOUT 420"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    CIBW_BUILD: cp37-win32 cp37-win_amd64 cp36-win32 cp36-win_amd64
-#    CIBW_BUILD_VERBOSITY: 2
-#    CIBW_VERSION: ">2.11"
-#    WIN_LATEST_PYTHON: "C:\\Python38-x64"
-#    PYPI_DELAY_CMD: "TIMEOUT 420"
-#
-#  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-#    CIBW_BUILD: cp35-win32 cp35-win_amd64
-#    CIBW_BUILD_VERBOSITY: 2
-#    CIBW_VERSION: "==1.12.0"
-#    WIN_LATEST_PYTHON: "C:\\Python38-x64"
-#    PYPI_DELAY_CMD: "TIMEOUT 420"
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    CIBW_BUILD: cp311-win32 cp311-win_amd64 cp310-win32 cp310-win_amd64
+    CIBW_BUILD_VERBOSITY: 2
+    CIBW_VERSION: ">2.11"
+    WIN_LATEST_PYTHON: "C:\\Python38-x64"
+    PYPI_DELAY_CMD: "TIMEOUT 420"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    CIBW_BUILD: cp39-win32 cp39-win_amd64 cp38-win32 cp38-win_amd64
+    CIBW_BUILD_VERBOSITY: 2
+    CIBW_VERSION: ">2.11"
+    WIN_LATEST_PYTHON: "C:\\Python38-x64"
+    PYPI_DELAY_CMD: "TIMEOUT 420"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    CIBW_BUILD: cp37-win32 cp37-win_amd64 cp36-win32 cp36-win_amd64
+    CIBW_BUILD_VERBOSITY: 2
+    CIBW_VERSION: ">2.11"
+    WIN_LATEST_PYTHON: "C:\\Python38-x64"
+    PYPI_DELAY_CMD: "TIMEOUT 420"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    CIBW_BUILD: cp35-win32 cp35-win_amd64
+    CIBW_BUILD_VERBOSITY: 2
+    CIBW_VERSION: "==1.12.0"
+    WIN_LATEST_PYTHON: "C:\\Python38-x64"
+    PYPI_DELAY_CMD: "TIMEOUT 420"
 
   # ============================================================================================
   # MacOS builds.
@@ -73,7 +80,13 @@ environment:
   # We use cibuildwheel.
   #
   - APPVEYOR_BUILD_WORKER_IMAGE: macos-catalina
-    CIBW_BUILD: cp39-macosx_x86_64 cp36-macosx_x86_64 cp37-macosx_x86_64 cp38-macosx_x86_64
+    CIBW_BUILD: cp311-macosx_x86_64 cp310-macosx_x86_64
+    CIBW_BUILD_VERBOSITY: 2
+    CIBW_VERSION: ">2.11"
+    PYPI_DELAY_CMD: "SLEEP 420"
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: macos-catalina
+    CIBW_BUILD: cp39-macosx_x86_64 cp38-macosx_x86_64 cp37-macosx_x86_64 cp36-macosx_x86_64
     CIBW_BUILD_VERBOSITY: 2
     CIBW_VERSION: ">2.11"
     PYPI_DELAY_CMD: "SLEEP 420"
@@ -91,11 +104,11 @@ environment:
   # We use the pre-installed python virtual environments to do all our Linux building/testing
   # in one job.
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-    LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8,venv3.9
+    LINUX_VENVS: venv2.7,venv3.5,venv3.6,venv3.7,venv3.8,venv3.9,venv3.10,venv3.11
 
 
 # Need to make sure initial setup is done with latest python (especially for cibuildwheel)
-stack: python 3.8
+stack: python 3.9
 
 
 install:
