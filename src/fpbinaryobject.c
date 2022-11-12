@@ -1334,12 +1334,12 @@ PyObject *FpBinary_ResizeWithCInts(PyObject *value, long int_bits, long frac_bit
     /* Build the keyword args for the resize call */
     PyObject *result = NULL;
     PyObject *format_tuple = Py_BuildValue("(ll)", int_bits, frac_bits);
-    PyObject *kwds = Py_BuildValue("{s:N:s:l:s:l}",
+    PyObject *kwds = Py_BuildValue("{s:N:s:k:s:k}",
             "format", format_tuple, "overflow_mode", overflow_mode,
             "round_mode", round_mode);
 
-    printf("val: %p  int: %ld  frac: %ld  round: %ul  overflow: %ul\n",
-            value, int_bits, frac_bits, round_mode, overflow_mode);
+//    printf("val: %p  int: %ld  frac: %ld  round: %ul  overflow: %ul\n",
+//            value, int_bits, frac_bits, round_mode, overflow_mode);
     result = forward_call_with_args(value, resize_method_name_str, NULL, kwds);
 
     Py_DECREF(format_tuple);
