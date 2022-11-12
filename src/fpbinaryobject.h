@@ -34,8 +34,8 @@ void FpBinary_SetTwoInstToSameFormat(PyObject **op1, PyObject **op2);
  * on objects that quack like an FpBinary...
  */
 PyObject *FpBinary_ResizeWithCInts(PyObject *value, long int_bits, long frac_bits,
-        fp_round_mode_t round_mode, fp_overflow_mode_t overflow_mode);
+        long round_mode, long overflow_mode);
 PyObject *FpBinary_ResizeWithFormatInstance(PyObject *value, PyObject *format_instance,
-        fp_round_mode_t round_mode, fp_overflow_mode_t overflow_mode);
+        long round_mode, long overflow_mode);
 
 #endif

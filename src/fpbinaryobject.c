@@ -1327,7 +1327,7 @@ PyTypeObject FpBinary_Type = {
  * Increments the reference to value.
  */
 PyObject *FpBinary_ResizeWithCInts(PyObject *value, long int_bits, long frac_bits,
-        fp_round_mode_t round_mode, fp_overflow_mode_t overflow_mode)
+        long round_mode, long overflow_mode)
 {
     /* Build the keyword args for the resize call */
     PyObject *result = NULL;
@@ -1349,7 +1349,7 @@ PyObject *FpBinary_ResizeWithCInts(PyObject *value, long int_bits, long frac_bit
  * Increments the reference to value.
  */
 PyObject *FpBinary_ResizeWithFormatInstance(PyObject *value, PyObject *format_instance,
-        fp_round_mode_t round_mode, fp_overflow_mode_t overflow_mode)
+        long round_mode, long overflow_mode)
 {
     /* Build the keyword args for the resize call */
     PyObject *format_tuple = PyObject_GetAttr(format_instance, get_format_method_name_str);
