@@ -907,6 +907,7 @@ fpbinarycomplex_richcompare(PyObject *obj1, PyObject *obj2, int operator)
             &cast_op1_imag, &cast_op2_real, &cast_op2_imag);
     bool result_bool;
 
+    printf("%p %p %p %p %p\n", function_op, cast_op1_real, cast_op1_imag, cast_op2_real, cast_op2_imag);
     if (!function_op || (operator != Py_EQ && operator != Py_NE))
     {
         FPBINARY_RETURN_NOT_IMPLEMENTED;
