@@ -56,6 +56,7 @@ static FpBinaryComplexObject* cast_c_complex_to_complex(Py_complex c_complex)
 static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
 {
     FpBinaryComplexObject *result = NULL;
+    printf("%s  %i\n", __FILE__, __LINE__);
 
     if (FpBinaryComplex_CheckExact(obj))
     {
@@ -67,23 +68,32 @@ static FpBinaryComplexObject* cast_to_complex(PyObject *obj)
     {
         PyObject *real_out = PyObject_GetAttr(obj, complex_real_property_name_str);
         PyObject *imag_out = PyObject_GetAttr(obj, complex_imag_property_name_str);
+        printf("%s  %i\n", __FILE__, __LINE__);
+
         result = fpbinarycomplex_from_params(FpBinary_FromValue(real_out),
                 FpBinary_FromValue(imag_out));
         if (result)
         {
             FpBinary_SetTwoInstToSameFormat(&result->real, &result->imag);
         }
+        printf("%s  %i\n", __FILE__, __LINE__);
+
         Py_DECREF(real_out);
         Py_DECREF(imag_out);
     }
     else
     {
+        printf("%s  %i\n", __FILE__, __LINE__);
+
         result = fpbinarycomplex_from_params(FpBinary_FromValue(obj), FpBinary_FromValue(py_zero));
         if (result)
         {
             FpBinary_SetTwoInstToSameFormat(&result->real, &result->imag);
         }
+        printf("%s  %i\n", __FILE__, __LINE__);
+
     }
+    printf("%s  %i\n", __FILE__, __LINE__);
 
     return result;
 }
@@ -156,7 +166,11 @@ prepare_binary_real_ops(PyObject *in_op1, PyObject *in_op2,
     {
         FpBinaryComplexObject *comp = NULL;
 
+        printf("%s  %i\n", __FILE__, __LINE__);
+
         comp = cast_to_complex(in_op2);
+        printf("%s  %i\n", __FILE__, __LINE__);
+
         if (!comp)
         {
             return NULL;
