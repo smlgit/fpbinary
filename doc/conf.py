@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'fpbinary'
-copyright = '2020, smlgit'
+copyright = '2022, smlgit'
 author = 'smlgit'
 
 master_doc = 'index'

@@ -2,6 +2,20 @@
 Changelog
 =========
 
+`v1.5.4 <//github.com/smlgit/fpbinary/releases/tag/v1.5.4>`_
+----------------------------------------------------------------
+
+**Enhancements:**
+
+* Build macOS and Windows binaries for Python 3.10 and 3.11.
+
+  * Note that Win32 binaries for 3.10 and later will not be supported.
+
+**Bug fixes:**
+
+* Add support for Numpy. `#9 <//github.com/smlgit/fpbinary/issues/9>`_
+
+
 `v1.5.3 <//github.com/smlgit/fpbinary/releases/tag/v1.5.3>`_
 ----------------------------------------------------------------
 

@@ -12,6 +12,7 @@ Features
 
 
 * Arbitrary precision representation of real numbers (including a ``str_ex()`` method for string display of high precision numbers)
+* Complex number object
 * Definable integer and fractional bit formats
 * Fixed point basic math operations
 * Bitwise/index/slice operations
@@ -88,12 +89,13 @@ or:
 Use
 ---
 
-fpbinary provides two main objects - ``FpBinary`` and ``FpBinarySwitchable``. The best way to learn how they work is to read the help documentation:
+fpbinary provides three main objects - ``FpBinary``, ``FpBinaryComplex`` and ``FpBinarySwitchable``. The best way to learn how they work is to read the help documentation:
 
 .. code-block:: python
 
    from fpbinary import FpBinary, FpBinarySwitchable
    help(FpBinary)
+   help(FpBinaryComplex)
    help(FpBinarySwitchable)
 
 This documentation is also avaliable at `Read the Docs <https://fpbinary.readthedocs.io/en/latest/>`_. There are also some useful `demos <https://github.com/smlgit/fpbinary/tree/master/demos>`_.
@@ -169,7 +171,7 @@ fpbinary was designed from the point of view of a frustrated FPGA designer. Spee
 Architecture
 ^^^^^^^^^^^^
 
-The two main objects are ``FpBinary`` and ``FpBinarySwitchable``.
+The main objects are ``FpBinary``, ``FpBinaryComplex`` and ``FpBinarySwitchable``.
 
 ``FpBinary``
 ~~~~~~~~~~~~~~~~
@@ -183,6 +185,13 @@ Is a wrapper that is composed of an instance of one of two "base" types:
 The purpose of ``FpBinary`` is to work out whether the faster object can be used for a representation or operation result and select between the two base types accordingly. It also must make sure the operands of binary/ternary operations are cast to the base type before forwarding them on.
 
 This architecture does make the code and maintenance more complicated and it is questionable whether it is worth having the small object at all. Basic profiling does suggest that ``FpBinary`` is faster than ``_FpBinaryLarge`` on its own (for numbers < 64 bits), but the difference isn't that big (and is mostly in the creation of objects rather than the math ops).
+
+``FpBinaryComplex``
+~~~~~~~~~~~~~~~~~~~~~
+
+This object holds two FpBinary objects, one for the real part and one for the imaginary part of a fixed point complex number.
+
+Only signed numbers are supported.
 
 ``FpBinarySwitchable``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -210,5 +219,4 @@ Enhancements
 * [ ] Possibly jettison the base class architecure and use ``_FpBinaryLarge`` as the main object.
 * [ ] Add global contexts that allows the user to define "hardware" specifications so inputs and outputs to math operations can be resized automatically (i.e. without the need for explicit resizing code).
 * [ ] Add more advanced operations like log, exp, sin/cos/tan. I have stopped short of doing these thus far because a user may rather simulate the actual hardware implementation (e.g. a lookup table would likely be used for sin). Having said that, a convienient fpbinary method should give the same result.
-* [ ] Add complex number versions of the two main classes.
 * [ ] Allow ``FpBinary`` and ``FpBinarySwitchable`` to be subclassable. Would require some basic changes to (mostly) ``FpBinarySwitchable`` to use the abstract methods from the Python Numeric/Sequence interfaces rather than direct accessing via the type memory. Might reduce speed slightly.
