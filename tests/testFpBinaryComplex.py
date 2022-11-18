@@ -173,6 +173,19 @@ class FpBinaryComplexTest(unittest.TestCase):
         else:
             self.fail()
 
+    def testComplexCasts(self):
+        # Small type
+        for i in range(-40, 40):
+            x = i / 8.0 - i * 1.0j / 8.0
+            self.assertEqual(x, complex(FpBinaryComplex(4, 16, value=x)))
+
+        # Large type
+        # Float comparison should be ok as long as the value is small enough
+        for i in range(-40, 40):
+            x = i / 8.0 - i * 1.0j / 8.0
+            self.assertEqual(x, complex(FpBinaryComplex(test_utils.get_small_type_size(), 16,
+                                                        value=x)))
+
     def testImmutable(self):
         """Arithmetic operations on object should not alter orignal value"""
         scale_real = 0.297
@@ -663,6 +676,12 @@ class FpBinaryComplexTest(unittest.TestCase):
             self.assertEqual(expected_abs[i], np_abs[i])
             self.assertEqual(expected_abs[i].format, np_abs[i].format)
 
+    def test_numpy_astype_complex(self):
+        complex_array = np.array([(1 >> 12) * -i*1.0 + (1 >> 5) * i*1.0j for i in range(16)])
+        fp_complex_array = np.array([FpBinaryComplex(16, 16, value=x) for x in complex_array], dtype=object)
+        converted_array = fp_complex_array.astype(complex)
+        self.assertTrue((converted_array == complex_array).all())
+        self.assertEqual(type(complex_array[0]), type(converted_array[0]))
 
     def test_numpy_resize_vectorized(self):
         operand_list = [FpBinaryComplex(64, 64, value=complex(x[0], x[1]))

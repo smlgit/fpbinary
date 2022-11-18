@@ -949,6 +949,17 @@ fpbinary_float(PyObject *self)
 }
 
 static PyObject *
+fpbinary_complex(PyObject *self)
+{
+    PyObject *py_real = fpbinary_float(self);
+    double double_real = PyFloat_AsDouble(py_real);
+    PyObject *result = PyComplex_FromDoubles(double_real, 0.0);
+
+    Py_DECREF(py_real);
+    return result;
+}
+
+static PyObject *
 fpbinary_abs(PyObject *self)
 {
     FpBinaryObject *result = NULL;
@@ -1275,8 +1286,8 @@ static PyMethodDef fpbinary_methods[] = {
     {"bits_to_signed", (PyCFunction)fpbinary_bits_to_signed, METH_NOARGS,
      bits_to_signed_doc},
     {"__copy__", (PyCFunction)fpbinary_copy, METH_NOARGS, copy_doc},
-
     {"__getitem__", (PyCFunction)fpbinary_getitem, METH_O, NULL},
+    {"__complex__", (PyCFunction)fpbinary_complex, METH_NOARGS, NULL},
 
     /* Pickling functions */
     {"__getstate__", (PyCFunction)fpbinary_getstate, METH_NOARGS, NULL},

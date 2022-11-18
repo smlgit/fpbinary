@@ -867,6 +867,23 @@ fpbinarycomplex_negative(PyObject *self)
 }
 
 static PyObject *
+fpbinarycomplex_complex(PyObject *self)
+{
+    FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
+    PyObject *py_real =
+        FP_NUM_METHOD(cast_self->real, nb_float)(cast_self->real);
+    PyObject *py_imag =
+        FP_NUM_METHOD(cast_self->imag, nb_float)(cast_self->imag);
+    double double_real = PyFloat_AsDouble(py_real);
+    double double_imag = PyFloat_AsDouble(py_imag);
+    PyObject *result = PyComplex_FromDoubles(double_real, double_imag);
+
+    Py_DECREF(py_real);
+    Py_DECREF(py_imag);
+    return result;
+}
+
+static PyObject *
 fpbinarycomplex_abs(PyObject *self)
 {
     /* As divides are a bit tricky with fixed point numbers, we are currently
@@ -1146,6 +1163,7 @@ static PyMethodDef fpbinarycomplex_methods[] = {
     {"str_ex", (PyCFunction)fpbinarycomplex_str_ex, METH_NOARGS, str_ex_doc},
     {"conjugate", (PyCFunction)fpbinarycomplex_conjugate, METH_NOARGS, NULL},
     {"__copy__", (PyCFunction)fpbinarycomplex_copy, METH_NOARGS, copy_doc},
+    {"__complex__", (PyCFunction)fpbinarycomplex_complex, METH_NOARGS, NULL},
 
     /* Pickling functions */
     {"__getstate__", (PyCFunction)fpbinarycomplex_getstate, METH_NOARGS, NULL},

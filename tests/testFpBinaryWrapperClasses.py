@@ -147,6 +147,18 @@ class AbstractTestHider(object):
                 self.assertEqual(long(x), long(self.fp_binary_class(test_utils.get_small_type_size(), 16,
                                                                   signed=True, value=x)))
 
+        def testComplexCasts(self):
+            # Small type
+            for i in range(-40, 40):
+                x = i / 8.0
+                self.assertEqual(complex(x), complex(self.fp_binary_class(4, 16, signed=True, value=x)))
+
+            # Large type
+            # Float comparison should be ok as long as the value is small enough
+            for i in range(-40, 40):
+                x = i / 8.0
+                self.assertEqual(complex(x), complex(self.fp_binary_class(test_utils.get_small_type_size(), 16,
+                                                                 signed=True, value=x)))
         def testNegating(self):
             # Small type
             for i in range(-32, 32):
@@ -1417,6 +1429,22 @@ class AbstractTestHider(object):
             self.assertEqual(expected_min, np.min(np_min_max_ar))
             self.assertEqual(expected_max, np.max(np_min_max_ar))
             self.assertEqual(expected_mean, np.mean(np_min_max_ar))
+
+        def test_numpy_astype_float(self):
+            float_array = np.array([(1 >> 12) * i * 1.0 for i in range(-8, 8)])
+            fp_array = np.array([self.fp_binary_class(16, 16, signed=True, value=x) for x in float_array],
+                                dtype=object)
+            converted_array = fp_array.astype(float)
+            self.assertTrue((converted_array == float_array).all())
+            self.assertEqual(type(float_array[0]), type(converted_array[0]))
+
+        def test_numpy_astype_complex(self):
+            complex_array = np.array([(1 >> 12) * i * 1.0 - 0.0j for i in range(-8, 8)], dtype=complex)
+            fp_complex_array = np.array([self.fp_binary_class(16, 16, value=x.real) for x in complex_array],
+                                        dtype=object)
+            converted_array = fp_complex_array.astype(complex)
+            self.assertTrue((converted_array == complex_array).all())
+            self.assertEqual(type(complex_array[0]), type(converted_array[0]))
 
         def test_numpy_resize_vectorized(self):
             operand_list = [self.fp_binary_class(64, 64, signed=True, value=x * 0.125) for x in range(-10, 10)]
