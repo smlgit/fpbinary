@@ -918,8 +918,7 @@ fpbinary_power(PyObject *o1, PyObject *o2, PyObject *o3)
 {
     if (FpBinary_Check(o1))
     {
-        PyObject *py_equals_2 =
-            FP_METHOD(o2, tp_richcompare)(o2, py_two, Py_EQ);
+        PyObject *py_equals_2 = PyObject_RichCompare(o2, py_two, Py_EQ);
         if (PyObject_IsTrue(py_equals_2) == 1)
         {
             return FP_NUM_METHOD(o1, nb_multiply)(o1, o1);

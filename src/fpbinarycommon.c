@@ -107,7 +107,7 @@ FpBinary_TpCompare(PyObject *op1, PyObject *op2)
 {
 #if PY_MAJOR_VERSION >= 3
     int result = -1;
-    PyObject *gt = FP_METHOD(op1, tp_richcompare)(op1, op2, Py_GT);
+    PyObject *gt = PyObject_RichCompare(op1, op2, Py_GT);
 
     if (gt == Py_True)
     {
@@ -115,7 +115,7 @@ FpBinary_TpCompare(PyObject *op1, PyObject *op2)
     }
     else
     {
-        PyObject *eq = FP_METHOD(op1, tp_richcompare)(op1, op2, Py_EQ);
+        PyObject *eq = PyObject_RichCompare(op1, op2, Py_EQ);
 
         if (eq == Py_True)
         {

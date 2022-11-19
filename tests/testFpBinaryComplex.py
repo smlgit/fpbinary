@@ -456,15 +456,15 @@ class FpBinaryComplexTest(unittest.TestCase):
 
     def testPower(self):
         # When the first operand is FpBinary, only support squaring.
-        self.assertEqual(FpBinaryComplex(value=4.5 - 0.666j) ** 2,
-                         FpBinaryComplex(value=4.5 - 0.666j) * FpBinaryComplex(value=4.5 - 0.666j))
-        self.assertEqual(FpBinaryComplex(value=-4.5 + 0.666j) ** 2.0,
-                         FpBinaryComplex(value=-4.5 + 0.666j) * FpBinaryComplex(value=-4.5 + 0.666j))
+        self.assertEqual(FpBinaryComplex(value=4.5 - 0.65j) ** long(2),
+                         FpBinaryComplex(value=4.5 - 0.65j) * FpBinaryComplex(value=4.5 - 0.65j))
+        self.assertEqual(FpBinaryComplex(value=-4.5 + 0.65j) ** 2.0,
+                         FpBinaryComplex(value=-4.5 + 0.65j) * FpBinaryComplex(value=-4.5 + 0.65j))
         self.assertEqual(
-            FpBinaryComplex(value=-4.5 + 0.666j) ** FpBinaryComplex(value=2.0 + 0.0j),
-            FpBinaryComplex(value=-4.5 + 0.666j) * FpBinaryComplex(value=-4.5 + 0.666j))
+            FpBinaryComplex(value=-4.5 + 0.65j) ** FpBinaryComplex(value=2.0 + 0.0j),
+            FpBinaryComplex(value=-4.5 + 0.65j) * FpBinaryComplex(value=-4.5 + 0.65j))
         try:
-            FpBinaryComplex(value=-4.5 + 0.666j) ** 2.125
+            FpBinaryComplex(value=-4.5 + 0.65j) ** 2.125
         except TypeError:
             pass
         except Exception as e:
