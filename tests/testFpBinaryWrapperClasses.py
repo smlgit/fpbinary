@@ -440,6 +440,13 @@ class AbstractTestHider(object):
                     op2 = self.fp_binary_class(op1_frac_bits, op2_frac_bits, signed=True, value=op2_val)
                     self.assertEqual(op1 / op2, 2.0)
 
+        def testComplexProperties(self):
+            fp_num = self.fp_binary_class(13, 89, signed=True, value=9.875)
+            self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(fp_num, fp_num.real))
+            self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                self.fp_binary_class(value=0.0, format_inst=fp_num), fp_num.imag))
+            self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(fp_num, fp_num.conjugate()))
+
         def testPower(self):
             # When the first operand is FpBinary, only support squaring.
             self.assertEqual(self.fp_binary_class(value=4.5, signed=True) ** 2,

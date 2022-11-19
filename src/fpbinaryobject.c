@@ -883,6 +883,12 @@ fpbinary_multiply(PyObject *op1, PyObject *op2)
 }
 
 static PyObject *
+fpbinary_conjugate(PyObject *self)
+{
+    return fpbinary_copy((FpBinaryObject *)self, NULL);
+}
+
+static PyObject *
 fpbinary_divide(PyObject *op1, PyObject *op2)
 {
     FpBinaryObject *result = NULL;
@@ -1313,6 +1319,19 @@ fpbinary_is_signed(PyObject *self, void *closure)
         Py_RETURN_FALSE;
 }
 
+static PyObject *
+fpbinary_real(PyObject *self, void *closure)
+{
+    Py_INCREF(self);
+    return self;
+}
+
+static PyObject *
+fpbinary_imag(PyObject *self, void *closure)
+{
+    return (PyObject *)FpBinary_FromParams(1, 0, true, 0.0, NULL, self);
+}
+
 static PyMethodDef fpbinary_methods[] = {
     {"resize", (PyCFunction)fpbinary_resize, METH_VARARGS | METH_KEYWORDS,
      resize_doc},
@@ -1322,6 +1341,7 @@ static PyMethodDef fpbinary_methods[] = {
     {"__copy__", (PyCFunction)fpbinary_copy, METH_NOARGS, copy_doc},
     {"__getitem__", (PyCFunction)fpbinary_getitem, METH_O, NULL},
     {"__complex__", (PyCFunction)fpbinary_complex, METH_NOARGS, NULL},
+    {"conjugate", (PyCFunction)fpbinary_conjugate, METH_NOARGS, NULL},
 
     /* Pickling functions */
     {"__getstate__", (PyCFunction)fpbinary_getstate, METH_NOARGS, NULL},
@@ -1333,6 +1353,9 @@ static PyMethodDef fpbinary_methods[] = {
 static PyGetSetDef fpbinary_getsetters[] = {
     {"format", (getter)fpbinary_getformat, NULL, format_doc, NULL},
     {"is_signed", (getter)fpbinary_is_signed, NULL, is_signed_doc, NULL},
+    {"real", (getter)fpbinary_real, NULL, NULL, NULL},
+    {"imag", (getter)fpbinary_imag, NULL, NULL, NULL},
+
     {NULL} /* Sentinel */
 };
 

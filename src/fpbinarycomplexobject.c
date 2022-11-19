@@ -1125,16 +1125,6 @@ fpbinarycomplex_getformat(PyObject *self, void *closure)
     return PyObject_GetAttr(cast_self->real, get_format_method_name_str);
 }
 
-/*
- * See is_signed_doc
- */
-/*static PyObject *
-fpbinarycomplex_is_signed(PyObject *self, void *closure)
-{
-    FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
-    return PyObject_GetAttr(cast_self->real, get_is_signed_method_name_str);
-}*/
-
 static PyObject *
 fpbinarycomplex_real(PyObject *self, void *closure)
 {
