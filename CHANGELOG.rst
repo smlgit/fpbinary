@@ -2,6 +2,15 @@
 Changelog
 =========
 
+`v1.5.5 <//github.com/smlgit/fpbinary/releases/tag/v1.5.5>`_
+----------------------------------------------------------------
+
+**Enhancements:**
+
+* Add support for squaring fixed point numbers. `#21 <//github.com/smlgit/fpbinary/issues/21>`_
+* Add support casting FpBinaryComplex to native complex type. `#20 <//github.com/smlgit/fpbinary/issues/20>`_
+
+
 `v1.5.4 <//github.com/smlgit/fpbinary/releases/tag/v1.5.4>`_
 ----------------------------------------------------------------
 
