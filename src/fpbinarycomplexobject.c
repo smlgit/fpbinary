@@ -303,6 +303,9 @@ PyDoc_STRVAR(
     "denominator "
     "and dividing by the denominator.real**2 + denominator.imag**2."
     "\n"
+    "*pow():*\n"
+    "Only raising an FpBinaryComplex object to the power of 2 is supported.\n"
+    "\n"
     "*Negate:*\n"
     "Because a negate is a multiply by -1, the output has one extra integer "
     "bit than\n"
@@ -855,18 +858,6 @@ fpbinarycomplex_divide(PyObject *op1, PyObject *op2)
 }
 
 static PyObject *
-fpbinarycomplex_negative(PyObject *self)
-{
-    FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
-
-    return (PyObject *)fpbinarycomplex_from_params(
-        (FpBinaryObject *)FP_NUM_METHOD(cast_self->real,
-                                        nb_negative)(cast_self->real),
-        (FpBinaryObject *)FP_NUM_METHOD(cast_self->imag,
-                                        nb_negative)(cast_self->imag));
-}
-
-static PyObject *
 fpbinarycomplex_complex(PyObject *self)
 {
     FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
@@ -881,6 +872,49 @@ fpbinarycomplex_complex(PyObject *self)
     Py_DECREF(py_real);
     Py_DECREF(py_imag);
     return result;
+}
+
+/*
+ * When the first operand is FpBinaryComplex, currently only support squaring.
+ */
+static PyObject *
+fpbinarycomplex_power(PyObject *o1, PyObject *o2, PyObject *o3)
+{
+    if (FpBinaryComplex_Check(o1))
+    {
+        PyObject *py_equals_2 =
+            FP_METHOD(o2, tp_richcompare)(o2, py_two, Py_EQ);
+        if (PyObject_IsTrue(py_equals_2) == 1)
+        {
+            return FP_NUM_METHOD(o1, nb_multiply)(o1, o1);
+        }
+        else
+        {
+            FPBINARY_RETURN_NOT_IMPLEMENTED;
+        }
+    }
+    else if (FpBinaryComplex_Check(o2))
+    {
+        PyObject *py_exp_complex = fpbinarycomplex_complex(o2);
+        PyObject *result = PyNumber_Power(o1, py_exp_complex, o3);
+
+        Py_DECREF(py_exp_complex);
+        return result;
+    }
+
+    FPBINARY_RETURN_NOT_IMPLEMENTED;
+}
+
+static PyObject *
+fpbinarycomplex_negative(PyObject *self)
+{
+    FpBinaryComplexObject *cast_self = (FpBinaryComplexObject *)self;
+
+    return (PyObject *)fpbinarycomplex_from_params(
+        (FpBinaryObject *)FP_NUM_METHOD(cast_self->real,
+                                        nb_negative)(cast_self->real),
+        (FpBinaryObject *)FP_NUM_METHOD(cast_self->imag,
+                                        nb_negative)(cast_self->imag));
 }
 
 static PyObject *
@@ -1184,6 +1218,7 @@ static PyNumberMethods fpbinarycomplex_as_number = {
     .nb_subtract = (binaryfunc)fpbinarycomplex_subtract,
     .nb_multiply = (binaryfunc)fpbinarycomplex_multiply,
     .nb_true_divide = (binaryfunc)fpbinarycomplex_divide,
+    .nb_power = (ternaryfunc)fpbinarycomplex_power,
 
 #if PY_MAJOR_VERSION < 3
     .nb_divide = (binaryfunc)fpbinarycomplex_divide,

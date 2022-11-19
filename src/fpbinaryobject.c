@@ -477,6 +477,9 @@ PyDoc_STRVAR(
     "divide\n"
     "and then resize to the desired length with the desired rounding mode.\n"
     "\n"
+    "*pow():*\n"
+    "Only raising an FpBinary object to the power of 2 is supported.\n"
+    "\n"
     "*Negate:*\n"
     "Because a negate is a multiply by -1, the output has one extra integer "
     "bit than\n"
@@ -901,6 +904,37 @@ fpbinary_divide(PyObject *op1, PyObject *op2)
     return (PyObject *)result;
 }
 
+/*
+ * When the first operand is FpBinary, currently only support squaring.
+ */
+static PyObject *
+fpbinary_power(PyObject *o1, PyObject *o2, PyObject *o3)
+{
+    if (FpBinary_Check(o1))
+    {
+        PyObject *py_equals_2 =
+            FP_METHOD(o2, tp_richcompare)(o2, py_two, Py_EQ);
+        if (PyObject_IsTrue(py_equals_2) == 1)
+        {
+            return FP_NUM_METHOD(o1, nb_multiply)(o1, o1);
+        }
+        else
+        {
+            FPBINARY_RETURN_NOT_IMPLEMENTED;
+        }
+    }
+    else if (FpBinary_Check(o2))
+    {
+        PyObject *exp = FP_NUM_METHOD(o2, nb_float)(o2);
+        PyObject *result = PyNumber_Power(o1, exp, o3);
+
+        Py_DECREF(exp);
+        return result;
+    }
+
+    FPBINARY_RETURN_NOT_IMPLEMENTED;
+}
+
 static PyObject *
 fpbinary_negative(PyObject *self)
 {
@@ -1307,6 +1341,7 @@ static PyNumberMethods fpbinary_as_number = {
     .nb_subtract = (binaryfunc)fpbinary_subtract,
     .nb_multiply = (binaryfunc)fpbinary_multiply,
     .nb_true_divide = (binaryfunc)fpbinary_divide,
+    .nb_power = (ternaryfunc)fpbinary_power,
     .nb_negative = (unaryfunc)fpbinary_negative,
     .nb_int = (unaryfunc)fpbinary_int,
     .nb_index = (unaryfunc)fpbinary_index,

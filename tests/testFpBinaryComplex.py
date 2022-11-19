@@ -454,6 +454,39 @@ class FpBinaryComplexTest(unittest.TestCase):
 
             real1 += increment
 
+    def testPower(self):
+        # When the first operand is FpBinary, only support squaring.
+        self.assertEqual(FpBinaryComplex(value=4.5 - 0.666j) ** 2,
+                         FpBinaryComplex(value=4.5 - 0.666j) * FpBinaryComplex(value=4.5 - 0.666j))
+        self.assertEqual(FpBinaryComplex(value=-4.5 + 0.666j) ** 2.0,
+                         FpBinaryComplex(value=-4.5 + 0.666j) * FpBinaryComplex(value=-4.5 + 0.666j))
+        self.assertEqual(
+            FpBinaryComplex(value=-4.5 + 0.666j) ** FpBinaryComplex(value=2.0 + 0.0j),
+            FpBinaryComplex(value=-4.5 + 0.666j) * FpBinaryComplex(value=-4.5 + 0.666j))
+        try:
+            FpBinaryComplex(value=-4.5 + 0.666j) ** 2.125
+        except TypeError:
+            pass
+        except Exception as e:
+            self.fail(e)
+
+        # When the first operand is a native type, should work as normal if the imaginary part is zero
+        self.assertEqual(0.11111 ** FpBinaryComplex(16, 16, value=0.0625),
+                         0.11111 ** 0.0625)
+        self.assertEqual(0.11111 ** FpBinaryComplex(16, 16, value=-0.0625 + 0.0j),
+                         0.11111 ** -0.0625)
+        try:
+            0.11111 ** FpBinaryComplex(16, 16, value=-0.0625 + 0.125j)
+        except TypeError:
+            pass
+        except Exception as e:
+            self.fail(e)
+
+        # Interoperation with FpBinary
+        self.assertEqual(FpBinary(value=4.875, signed=True) ** FpBinaryComplex(16, 16, value=2.0),
+                         FpBinary(value=4.875, signed=True) * FpBinary(value=4.875, signed=True))
+        self.assertEqual(FpBinaryComplex(value=4.875 - 0.0006j) ** FpBinary(3, 2, value=2.0, signed=True),
+                         FpBinaryComplex(value=4.875 - 0.0006j) * FpBinaryComplex(value=4.875 - 0.0006j))
 
 
     def testBitShifts(self):

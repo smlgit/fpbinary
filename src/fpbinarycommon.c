@@ -15,6 +15,7 @@
 
 PyObject *py_zero;
 PyObject *py_one;
+PyObject *py_two;
 PyObject *py_minus_one;
 PyObject *py_ten;
 PyObject *py_five;
@@ -839,6 +840,7 @@ FpBinaryCommon_InitModule(void)
 {
     py_zero = PyLong_FromLong(0);
     py_one = PyLong_FromLong(1);
+    py_two = PyLong_FromLong(2);
     py_minus_one = PyLong_FromLong(-1);
     py_five = PyLong_FromLong(5);
     py_ten = PyLong_FromLong(10);

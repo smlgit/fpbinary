@@ -440,6 +440,28 @@ class AbstractTestHider(object):
                     op2 = self.fp_binary_class(op1_frac_bits, op2_frac_bits, signed=True, value=op2_val)
                     self.assertEqual(op1 / op2, 2.0)
 
+        def testPower(self):
+            # When the first operand is FpBinary, only support squaring.
+            self.assertEqual(self.fp_binary_class(value=4.5, signed=True) ** 2,
+                             self.fp_binary_class(value=4.5, signed=True) * self.fp_binary_class(value=4.5, signed=True))
+            self.assertEqual(self.fp_binary_class(value=-4.5, signed=True) ** 2.0,
+                             self.fp_binary_class(value=-4.5, signed=True) * self.fp_binary_class(value=-4.5,
+                                                                                                 signed=True))
+            self.assertEqual(self.fp_binary_class(value=-4.5, signed=True) ** self.fp_binary_class(value=2.0, signed=True),
+                             self.fp_binary_class(value=-4.5, signed=True) * self.fp_binary_class(value=-4.5,
+                                                                                                  signed=True))
+            try:
+                self.fp_binary_class(value=4.5, signed=True) ** 2.125
+            except TypeError:
+                pass
+            except Exception as e:
+                self.fail(e)
+
+            # When the first operand is a native type, should work as normal
+            self.assertEqual(0.11111 ** self.fp_binary_class(16, 16, value=0.0625, signed=True),
+                             0.11111 ** 0.0625)
+            self.assertEqual(0.11111 ** self.fp_binary_class(16, 16, value=-0.0625, signed=True),
+                             0.11111 ** -0.0625)
 
         def testBitShifts(self):
             """Check effects of left & right shift operators."""

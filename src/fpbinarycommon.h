@@ -139,6 +139,7 @@ typedef struct
 extern PyObject *FpBinaryOverflowException;
 extern PyObject *py_zero;
 extern PyObject *py_one;
+extern PyObject *py_two;
 extern PyObject *py_minus_one;
 
 /* For pickling base objects */
