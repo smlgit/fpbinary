@@ -8,13 +8,13 @@
  *
  *****************************************************************************/
 
+#include "fpbinaryarrayfuncs.h"
 #include "fpbinarycomplexobject.h"
 #include "fpbinaryenums.h"
 #include "fpbinarylarge.h"
 #include "fpbinaryobject.h"
 #include "fpbinarysmall.h"
 #include "fpbinaryswitchable.h"
-#include "fpbinaryarrayfuncs.h"
 #include "fpbinaryversion.h"
 
 #define FPBINARY_MOD_NAME "fpbinary"
@@ -25,26 +25,25 @@ static PyObject *FpBinaryVersionString;
 
 static PyMethodDef fpbinarymod_methods[] = {
     {
-            .ml_name = "fpbinary_list_from_array",
-            .ml_meth = (PyCFunction) FpBinary_FromArray,
-            .ml_flags = METH_VARARGS | METH_KEYWORDS,
-            .ml_doc = FpBinary_FromArray_doc,
+        .ml_name = "fpbinary_list_from_array",
+        .ml_meth = (PyCFunction)FpBinary_FromArray,
+        .ml_flags = METH_VARARGS | METH_KEYWORDS,
+        .ml_doc = FpBinary_FromArray_doc,
     },
 
     {
-                .ml_name = "fpbinarycomplex_list_from_array",
-                .ml_meth = (PyCFunction) FpBinaryComplex_FromArray,
-                .ml_flags = METH_VARARGS | METH_KEYWORDS,
-                .ml_doc = FpBinaryComplex_FromArray_doc,
-        },
+        .ml_name = "fpbinarycomplex_list_from_array",
+        .ml_meth = (PyCFunction)FpBinaryComplex_FromArray,
+        .ml_flags = METH_VARARGS | METH_KEYWORDS,
+        .ml_doc = FpBinaryComplex_FromArray_doc,
+    },
 
-        {
-                    .ml_name = "array_resize",
-                    .ml_meth = (PyCFunction) FpBinary_ArrayResize,
-                    .ml_flags = METH_VARARGS | METH_KEYWORDS,
-                    .ml_doc = FpBinary_ArrayResize_doc,
-            },
-
+    {
+        .ml_name = "array_resize",
+        .ml_meth = (PyCFunction)FpBinary_ArrayResize,
+        .ml_flags = METH_VARARGS | METH_KEYWORDS,
+        .ml_doc = FpBinary_ArrayResize_doc,
+    },
 
     {NULL}, /* Sentinel */
 };
