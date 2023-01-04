@@ -7,6 +7,7 @@ import numpy as np
 import scipy.signal as signal
 import tests.test_utils as test_utils
 from fpbinary import FpBinary, OverflowEnum, RoundingEnum, FpBinaryOverflowException
+from fpbinary import fpbinary_list_from_array, array_resize
 
 if sys.version_info[0] >= 3:
     from tests.porting_v3_funcs import *
@@ -1485,6 +1486,155 @@ class AbstractTestHider(object):
                 np_resized = np_resize_func(np.array(operand_list, dtype=object), (12,1))
                 self.assertEqual(expected[i], np_resized[i])
                 self.assertEqual(expected[i].format, np_resized[i].format)
+
+        def test_create_from_list(self):
+            operand_list = [x * 0.125 for x in range(-1000, 1000)]
+            expected_list = [self.fp_binary_class(8, 6, signed=True, value=x) for x in operand_list]
+
+            # Explicit int and frac bits format
+            actual_list = fpbinary_list_from_array(operand_list, 8, 6)
+
+            for i in range(len(expected_list)):
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_list[i], actual_list[i]
+                ))
+
+            # Use of FpBinary instance for format
+            actual_list = fpbinary_list_from_array(operand_list, format_inst=expected_list[0])
+
+            for i in range(len(expected_list)):
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_list[i], actual_list[i]
+                ))
+
+            # Multi dimensional list
+            operand_list = [
+                [x * 0.125 for x in range(-1000, 1000)],
+                [x * 0.0625 for x in range(-1000, 1000)]
+            ]
+            expected_list = [
+                [self.fp_binary_class(8, 6, signed=True, value=x) for x in operand_list[0]],
+                [self.fp_binary_class(8, 6, signed=True, value=x) for x in operand_list[1]]
+                ]
+            actual_list = fpbinary_list_from_array(operand_list, 8, 6)
+
+            for row in range(2):
+                for i in range(len(expected_list[row])):
+                    self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                        expected_list[row][i], actual_list[row][i]
+                    ))
+
+        def test_list_resize(self):
+            operand_list = [self.fp_binary_class(16, 16, signed=True, value=x*0.125) for x in range(-1000, 1000)]
+            expected_list = np.array(
+                [x.resize((2, 1), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf)
+                 for x in copy.deepcopy(operand_list)],
+                dtype=object)
+            array_resize(operand_list, (2, 1), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf)
+
+            for i in range(len(expected_list)):
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_list[i], operand_list[i]
+                ))
+
+            # Multi dimensional list
+            operand_list = [
+                [self.fp_binary_class(16, 16, signed=True, value=x * 0.125) for x in range(-1000, 1000)],
+                [self.fp_binary_class(16, 16, signed=True, value=x * 0.0625) for x in range(-1000, 1000)]
+            ]
+
+            expected_list = [[], []]
+
+            for row in range(len(operand_list)):
+                for i in range(len(operand_list[row])):
+                    expected_list[row].append(copy.copy(operand_list[row][i]).resize(
+                        (1, 5), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf))
+
+            array_resize(operand_list, (1, 5), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf)
+
+            for row in range(len(expected_list)):
+                for i in range(len(expected_list[row])):
+                    self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                        expected_list[row][i], operand_list[row][i]
+                    ))
+
+        def test_numpy_create_from_array(self):
+            operand_array = np.array([x * 0.125 for x in range(-1000, 1000)])
+            expected_list = [self.fp_binary_class(16, 16, signed=True, value=x) for x in operand_array]
+            expected_numpy_array = np.array(expected_list, dtype=object)
+
+            # Explicit int and frac bits format
+            actual_list = fpbinary_list_from_array(operand_array, 16, 16)
+            actual_numpy_array = np.array(actual_list, dtype=object)
+
+            for i in range(len(expected_list)):
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_list[i], actual_list[i]
+                ))
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_numpy_array[i], actual_numpy_array[i]
+                ))
+
+            # Use of FpBinary instance for format
+            actual_list = fpbinary_list_from_array(operand_array, format_inst=expected_list[0])
+            actual_numpy_array = np.array(actual_list, dtype=object)
+
+            for i in range(len(expected_list)):
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_list[i], actual_list[i]
+                ))
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_numpy_array[i], actual_numpy_array[i]
+                ))
+
+            # Multi dimensional ndarray
+            operand_array = np.array([
+                [x * 0.125 for x in range(-1000, 1000)],
+                [x * 0.0625 for x in range(-1000, 1000)]
+            ])
+            expected_numpy_array = np.zeros(operand_array.shape, dtype=object)
+            expected_numpy_array[0,] = np.array(
+                [self.fp_binary_class(16, 16, signed=True, value=x) for x in operand_array[0,]])
+            expected_numpy_array[1,] = np.array(
+                [self.fp_binary_class(16, 16, signed=True, value=x) for x in operand_array[1,]])
+            actual_numpy_array = np.array(fpbinary_list_from_array(operand_array, 16, 16))
+
+            for i in range(len(expected_numpy_array.flat)):
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_numpy_array.flat[i], actual_numpy_array.flat[i]
+                ))
+
+        def test_numpy_array_resize(self):
+            operand_array = np.array([self.fp_binary_class(16, 16, signed=True, value=x*0.125) for x in range(-1000, 1000)])
+            expected_numpy_array = np.array(
+                [x.resize((1, 5), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf) for x in copy.deepcopy(operand_array)],
+                dtype=object)
+            array_resize(operand_array, (1, 5), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf)
+
+            for i in range(len(expected_numpy_array)):
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_numpy_array[i], operand_array[i]
+                ))
+
+            # Multi dimensional ndarray
+            operand_array = np.array([
+                [self.fp_binary_class(16, 16, signed=True, value=x * 0.125) for x in range(-1000, 1000)],
+                [self.fp_binary_class(16, 16, signed=True, value=x * 0.0625) for x in range(-1000, 1000)]
+            ])
+
+            expected_numpy_array = np.zeros(operand_array.shape, dtype=object)
+            expected_numpy_array[0,] = np.array(
+                [x.resize((1, 5), overflow_mode=OverflowEnum.wrap, round_mode=RoundingEnum.near_pos_inf)
+                 for x in copy.deepcopy(operand_array[0,])], dtype=object)
+            expected_numpy_array[1,] = np.array(
+                [x.resize((1, 5), overflow_mode=OverflowEnum.wrap, round_mode=RoundingEnum.near_pos_inf)
+                 for x in copy.deepcopy(operand_array[1,])], dtype=object)
+            array_resize(operand_array, (1, 5), overflow_mode=OverflowEnum.wrap, round_mode=RoundingEnum.near_pos_inf)
+
+            for i in range(len(expected_numpy_array.flat)):
+                self.assertTrue(test_utils.fp_binary_instances_are_totally_equal(
+                    expected_numpy_array.flat[i], operand_array.flat[i]
+                ))
 
         def test_numpy_convolve(self):
             coeffs_fp_list = [self.fp_binary_class(8, 8, signed=True, value=x) for x in range(-5, 4)]

@@ -147,7 +147,7 @@ static bool fpbinary_array_resize_nested(PyObject* array, PyObject* fpbinary_arg
 
         if (PySequence_Check(cur_item))
         {
-            result = fpbinary_from_array_nested(PySequence_GetItem(array, i), fpbinary_args, kwds);
+            result = fpbinary_array_resize_nested(cur_item, fpbinary_args, kwds);
         }
         else
         {

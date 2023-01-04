@@ -7,6 +7,7 @@ import numpy as np
 import scipy.signal as signal
 import tests.test_utils as test_utils
 from fpbinary import FpBinary, FpBinaryComplex, OverflowEnum, RoundingEnum, FpBinaryOverflowException
+from fpbinary import fpbinarycomplex_list_from_array, array_resize
 
 if sys.version_info[0] >= 3:
     from tests.porting_v3_funcs import *
@@ -727,6 +728,156 @@ class FpBinaryComplexTest(unittest.TestCase):
             np_resized = np_resize_func(np.array(operand_list, dtype=object), (12,1))
             self.assertEqual(expected[i], np_resized[i])
             self.assertEqual(expected[i].format, np_resized[i].format)
+
+    def test_create_from_list(self):
+        operand_list = [complex(x[0], x[1]) for x in np.linspace([100.0, -1.0], [10000.0, 2.0], 16)]
+        expected_list = [FpBinaryComplex(8, 6, value=x) for x in operand_list]
+
+        # Explicit int and frac bits format
+        actual_list = fpbinarycomplex_list_from_array(operand_list, 8, 6)
+
+        for i in range(len(expected_list)):
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_list[i], actual_list[i]
+            ))
+
+        # Use of FpBinary instance for format
+        actual_list = fpbinarycomplex_list_from_array(operand_list, format_inst=expected_list[0])
+
+        for i in range(len(expected_list)):
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_list[i], actual_list[i]
+            ))
+
+        # Multi dimensional list
+        operand_list = [
+            [complex(x[0], x[1]) for x in np.linspace([100.0, -1.0], [10000.0, 2.0], 16)],
+            [complex(x[0], x[1]) for x in np.linspace([-100.0, 1.0], [1000.0, 2.0], 16)]
+        ]
+        expected_list = [
+            [FpBinaryComplex(8, 6, value=x) for x in operand_list[0]],
+            [FpBinaryComplex(8, 6, value=x) for x in operand_list[1]]
+        ]
+        actual_list = fpbinarycomplex_list_from_array(operand_list, 8, 6)
+
+        for row in range(2):
+            for i in range(len(expected_list[row])):
+                self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                    expected_list[row][i], actual_list[row][i]))
+
+    def test_list_resize(self):
+        operand_list = [FpBinaryComplex(16, 16, value=complex(x[0], x[1])) for x in np.linspace([100.0, -1.0], [10000.0, 2.0], 16)]
+        expected_list = np.array(
+            [x.resize((2, 1), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf)
+             for x in copy.deepcopy(operand_list)],
+            dtype=object)
+        array_resize(operand_list, (2, 1), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf)
+
+        for i in range(len(expected_list)):
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_list[i], operand_list[i]
+            ))
+
+        # Multi dimensional list
+        operand_list = [
+            [FpBinaryComplex(16, 16, value=complex(x[0], x[1])) for x in np.linspace([100.0, -1.0], [10000.0, 2.0], 16)],
+            [FpBinaryComplex(16, 16, value=complex(x[0], x[1])) for x in np.linspace([-100.0, 1.0], [1000.0, 2.0], 16)]
+        ]
+
+        expected_list = [[], []]
+
+        for row in range(len(operand_list)):
+            for i in range(len(operand_list[row])):
+                expected_list[row].append(copy.copy(operand_list[row][i]).resize(
+                    (1, 5), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf))
+
+        array_resize(operand_list, (1, 5), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf)
+
+        for row in range(len(expected_list)):
+            for i in range(len(expected_list[row])):
+                self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                    expected_list[row][i], operand_list[row][i]
+                ))
+
+    def test_numpy_create_from_array(self):
+        operand_array = [complex(x[0], x[1]) for x in np.linspace([100.0, -1.0], [10000.0, 2.0], 16)]
+        expected_list = [FpBinaryComplex(16, 16, value=x) for x in operand_array]
+        expected_numpy_array = np.array(expected_list, dtype=object)
+
+        # Explicit int and frac bits format
+        actual_list = fpbinarycomplex_list_from_array(operand_array, 16, 16)
+        actual_numpy_array = np.array(actual_list, dtype=object)
+
+        for i in range(len(expected_list)):
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_list[i], actual_list[i]
+            ))
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_numpy_array[i], actual_numpy_array[i]
+            ))
+
+        # Use of FpBinary instance for format
+        actual_list = fpbinarycomplex_list_from_array(operand_array, format_inst=expected_list[0])
+        actual_numpy_array = np.array(actual_list, dtype=object)
+
+        for i in range(len(expected_list)):
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_list[i], actual_list[i]
+            ))
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_numpy_array[i], actual_numpy_array[i]
+            ))
+
+        # Multi dimensional ndarray
+        operand_array = np.array([
+            [complex(x[0], x[1]) for x in np.linspace([100.0, -1.0], [10000.0, 2.0], 16)],
+            [complex(x[0], x[1]) for x in np.linspace([-100.0, 1.0], [1000.0, 2.0], 16)]
+        ])
+        expected_numpy_array = np.zeros(operand_array.shape, dtype=object)
+        expected_numpy_array[0,] = np.array(
+            [FpBinaryComplex(16, 16, value=x) for x in operand_array[0,]])
+        expected_numpy_array[1,] = np.array(
+            [FpBinaryComplex(16, 16, value=x) for x in operand_array[1,]])
+        actual_numpy_array = np.array(fpbinarycomplex_list_from_array(operand_array, 16, 16))
+
+        for i in range(len(expected_numpy_array.flat)):
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_numpy_array.flat[i], actual_numpy_array.flat[i]
+            ))
+
+    def test_numpy_array_resize(self):
+        operand_array = np.array(
+            [FpBinaryComplex(16, 16, value=complex(x[0], x[1])) for x in np.linspace([100.0, -1.0], [10000.0, 2.0], 16)])
+        expected_numpy_array = np.array(
+            [x.resize((1, 5), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf) for x in
+             copy.deepcopy(operand_array)],
+            dtype=object)
+        array_resize(operand_array, (1, 5), overflow_mode=OverflowEnum.sat, round_mode=RoundingEnum.direct_neg_inf)
+
+        for i in range(len(expected_numpy_array)):
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_numpy_array[i], operand_array[i]
+            ))
+
+        # Multi dimensional ndarray
+        operand_array = np.array([
+            [FpBinaryComplex(16, 16, value=complex(x[0], x[1])) for x in np.linspace([100.0, -1.0], [10000.0, 2.0], 16)],
+            [FpBinaryComplex(16, 16, value=complex(x[0], x[1])) for x in np.linspace([-100.0, 1.0], [1000.0, 2.0], 16)]
+        ])
+
+        expected_numpy_array = np.zeros(operand_array.shape, dtype=object)
+        expected_numpy_array[0,] = np.array(
+            [x.resize((1, 5), overflow_mode=OverflowEnum.wrap, round_mode=RoundingEnum.near_pos_inf)
+             for x in copy.deepcopy(operand_array[0,])], dtype=object)
+        expected_numpy_array[1,] = np.array(
+            [x.resize((1, 5), overflow_mode=OverflowEnum.wrap, round_mode=RoundingEnum.near_pos_inf)
+             for x in copy.deepcopy(operand_array[1,])], dtype=object)
+        array_resize(operand_array, (1, 5), overflow_mode=OverflowEnum.wrap, round_mode=RoundingEnum.near_pos_inf)
+
+        for i in range(len(expected_numpy_array.flat)):
+            self.assertTrue(test_utils.fp_binary_complex_fields_equal(
+                expected_numpy_array.flat[i], operand_array.flat[i]
+            ))
 
     def test_numpy_convolve(self):
         coeffs_fp_list = [FpBinaryComplex(8, 8, value=complex(x[0], x[1]))
