@@ -748,7 +748,6 @@ fpbinary_resize(FpBinaryObject *self, PyObject *args, PyObject *kwds)
     if (!format_inst || !PyTuple_Check(format_inst))
     {
         PyErr_SetString(PyExc_TypeError, "Unsupported type for format.");
-        return false;
         return NULL;
     }
 
