@@ -2,6 +2,14 @@
 Changelog
 =========
 
+`v1.5.6 <//github.com/smlgit/fpbinary/releases/tag/v1.5.6>`_
+----------------------------------------------------------------
+
+**Enhancements:**
+
+* Add support for create and resize of fixed point objects in lists and arrays. `#22 <//github.com/smlgit/fpbinary/issues/22>`_
+
+
 `v1.5.5 <//github.com/smlgit/fpbinary/releases/tag/v1.5.5>`_
 ----------------------------------------------------------------
 
