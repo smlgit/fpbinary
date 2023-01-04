@@ -51,6 +51,7 @@ fpbinary_module = Extension('fpbinary',
                                      'src/fpbinaryobject.c',
                                      'src/fpbinarycomplexobject.c',
                                      'src/fpbinaryswitchable.c',
+                                     'src/fpbinaryarrayfuncs.c',
                                      'src/fpbinaryenums.c'],
                             extra_compile_args=extra_compile_args)
 

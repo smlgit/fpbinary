@@ -14,6 +14,7 @@
 #include "fpbinaryobject.h"
 #include "fpbinarysmall.h"
 #include "fpbinaryswitchable.h"
+#include "fpbinaryarrayfuncs.h"
 #include "fpbinaryversion.h"
 
 #define FPBINARY_MOD_NAME "fpbinary"
@@ -23,6 +24,12 @@ PyObject *FpBinaryOverflowException;
 static PyObject *FpBinaryVersionString;
 
 static PyMethodDef fpbinarymod_methods[] = {
+    {
+            .ml_name = "FpBinaryListFromArray",
+            .ml_meth = (PyCFunction) FpBinary_FromArray,
+            .ml_flags = METH_VARARGS | METH_KEYWORDS
+    },
+
     {NULL}, /* Sentinel */
 };
 
