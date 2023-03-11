@@ -2,6 +2,13 @@
 Changelog
 =========
 
+`v1.5.7 <//github.com/smlgit/fpbinary/releases/tag/v1.5.7>`_
+----------------------------------------------------------------
+
+**Bug fixes:**
+
+* Memory leak in FpBinaryComplex functions. `#23 <//github.com/smlgit/fpbinary/issues/23>`_
+
 `v1.5.6 <//github.com/smlgit/fpbinary/releases/tag/v1.5.6>`_
 ----------------------------------------------------------------
 
