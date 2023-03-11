@@ -740,18 +740,21 @@ forward_call_with_args(PyObject *obj, PyObject *method_name, PyObject *args,
     PyObject *callable = PyObject_GetAttr(obj, method_name);
     if (callable)
     {
+        PyObject* result = NULL;
+
         if (!args)
         {
             PyObject *dummy_tup = PyTuple_New(0);
-            PyObject *result = PyObject_Call(callable, dummy_tup, kwds);
-
+            result = PyObject_Call(callable, dummy_tup, kwds);
             Py_DECREF(dummy_tup);
-            return result;
         }
         else
         {
-            return PyObject_Call(callable, args, kwds);
+            result = PyObject_Call(callable, args, kwds);
         }
+
+        Py_DECREF(callable);
+        return result;
     }
 
     return NULL;

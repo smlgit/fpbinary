@@ -793,8 +793,12 @@ fpbinarycomplex_conjugate(PyObject *self)
                                             copy_method_name_str, NULL, NULL);
     PyObject *imag =
         FP_NUM_METHOD(cast_self->imag, nb_negative)(cast_self->imag);
-    FpBinary_ResizeWithFormatInstance(real, imag, ROUNDING_DIRECT_NEG_INF,
-                                      OVERFLOW_WRAP);
+    PyObject *resized = FpBinary_ResizeWithFormatInstance(
+            real, imag, ROUNDING_DIRECT_NEG_INF, OVERFLOW_WRAP);
+
+    /* Resizing creates a new ref */
+    Py_XDECREF(resized);
+
     return (PyObject *)fpbinarycomplex_from_params((FpBinaryObject *)real,
                                                    (FpBinaryObject *)imag);
 }
