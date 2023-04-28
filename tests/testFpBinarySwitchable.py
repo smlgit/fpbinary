@@ -50,6 +50,10 @@ class FpBianrySwitchableTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             fpNum = FpBinarySwitchable(fp_mode=False, float_value='sfasef')
 
+        # Check is ok with float value objects convertible to float
+        self.assertEqual(FpBinarySwitchable(fp_mode=False, float_value=np.float64(0.125)),
+                         0.125)
+
     def testBasicMathFpMode(self):
         # Negate
         fpNum = FpBinarySwitchable(fp_mode=True, fp_value=FpBinary(10, 16, signed=True, value=12.125))

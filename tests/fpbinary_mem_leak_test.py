@@ -21,6 +21,21 @@ def create_fpbinarycomplex_numpy_obj(quantity=1000000):
     ar = np.array([fpbinary.FpBinaryComplex(8, 8) for j in range(quantity)])
 
 
+def create_fpbinaryswitchable_obj_float_mode(quantity=1000000):
+    l = [fpbinary.FpBinarySwitchable(False, float_value=quantity / 0.3) for j in range(quantity)]
+
+
+def create_fpbinaryswitchable_obj_float_mode_npfloat(quantity=1000000):
+    l = [fpbinary.FpBinarySwitchable(False, float_value=np.float64(quantity / 0.3)) for j in range(quantity)]
+
+
+def create_fpbinaryswitchable_obj_fp_mode(quantity=1000000):
+    l = [fpbinary.FpBinarySwitchable(False,
+                                     fp_value=fpbinary.FpBinary(8, 8, True, quantity / 0.3),
+                                     float_value=quantity / 0.3)
+         for j in range(quantity)]
+
+
 def resize_fpbinary_obj(quantity=1000000):
     l = [fpbinary.FpBinary(8, 8) for j in range(quantity)]
     for obj in l:
@@ -90,6 +105,9 @@ funcs = {
     'fpbinarycomplex': create_fpbinarycomplex_obj,
     'fpbinarycomplex_float_param': create_fpbinarycomplex_value_param_obj,
     'fpbinarycomplex_numpy': create_fpbinarycomplex_value_param_obj,
+    'fpbinaryswitchable_float_mode': create_fpbinaryswitchable_obj_float_mode,
+    'fpbinaryswitchable_float_mode_npfloat': create_fpbinaryswitchable_obj_float_mode_npfloat,
+    'fpbinaryswitchable_fp_mode': create_fpbinaryswitchable_obj_fp_mode,
     'fpbinary_resize': resize_fpbinary_obj,
     'fpbinarycomplex_resize': resize_fpbinarycomplex_obj,
     'fpbinary_basic_arith': basic_arith_fpbinary,

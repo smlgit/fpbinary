@@ -291,22 +291,26 @@ fpbinaryswitchable_init(PyObject *self, PyObject *args, PyObject *kwds)
     }
     else
     {
-        if (FP_NUM_METHOD_PRESENT(float_value_in, nb_float))
-        {
-            FP_NUM_UNI_OP_INPLACE(float_value_in, nb_float);
-            dbl_val = PyFloat_AsDouble(float_value_in);
-        }
-        else if (!float_value_in)
+        if (!float_value_in)
         {
             /* If the user didn't give any args, default to zero */
             dbl_val = 0.0;
         }
         else
         {
-            PyErr_SetString(
-                PyExc_TypeError,
-                "Floating point mode value must be convertable to float.");
-            return -1;
+            PyObject* float_py = PyNumber_Float(float_value_in);
+            if (float_py)
+            {
+                dbl_val = PyFloat_AsDouble(float_value_in);
+                Py_DECREF(float_py);
+            }
+            else
+            {
+                PyErr_SetString(
+                                PyExc_TypeError,
+                                "Floating point mode value must be convertable to float.");
+                            return -1;
+            }
         }
     }
 

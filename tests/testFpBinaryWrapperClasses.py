@@ -87,6 +87,12 @@ class AbstractTestHider(object):
                 else:
                     self.fail('Failed on test case {}'.format(test_case))
 
+            # These parameter test cases should be ok
+
+            # Check castable to float objects work
+            self.assertEqual(self.fp_binary_class(8, 8, signed=True, value=np.float64(0.125)),
+                                                  0.125)
+
         def testBoolConditions(self):
             """Values used in boolean expressions should behave as true/false"""
             if self.fp_binary_class(2, 2, signed=True, value=0):

@@ -93,19 +93,19 @@ class FpBinaryComplexTest(unittest.TestCase):
 
     def testCreate(self):
         # On value only
-        expected_real = FpBinary(value=-6.54)
-        expected_imag = FpBinary(value=0.00156)
+        expected_real = FpBinary(value=-6.5634765625)
+        expected_imag = FpBinary(value=0.06965625)
         set_fp_binary_instances_to_best_format(expected_real, expected_imag)
-        fp_complex_num = FpBinaryComplex(value=-6.54+0.00156j)
-        test_utils.fp_binary_complex_fields_equal(fp_complex_num.real, expected_real)
-        test_utils.fp_binary_complex_fields_equal(fp_complex_num.imag, expected_imag)
+        fp_complex_num = FpBinaryComplex(value=-6.5634765625+0.06965625j)
+        self.assertTrue(test_utils.fp_binary_complex_fields_equal(fp_complex_num.real, expected_real))
+        self.assertTrue(test_utils.fp_binary_complex_fields_equal(fp_complex_num.imag, expected_imag))
 
         # On value with bits explicit
         expected_real = FpBinary(16, 16, value=-6.54)
         expected_imag = FpBinary(16, 16, value=0.00156)
         fp_complex_num = FpBinaryComplex(16, 16, value=-6.54 + 0.00156j)
-        test_utils.fp_binary_complex_fields_equal(fp_complex_num.real, expected_real)
-        test_utils.fp_binary_complex_fields_equal(fp_complex_num.imag, expected_imag)
+        self.assertTrue(test_utils.fp_binary_complex_fields_equal(fp_complex_num.real, expected_real))
+        self.assertTrue(test_utils.fp_binary_complex_fields_equal(fp_complex_num.imag, expected_imag))
 
         # On fp value only
         expected_real = FpBinary(value=-6.54)
@@ -113,8 +113,8 @@ class FpBinaryComplexTest(unittest.TestCase):
         fp_complex_num = FpBinaryComplex(real_fp_binary=expected_real,
                                          imag_fp_binary=expected_imag)
         set_fp_binary_instances_to_best_format(expected_real, expected_imag)
-        test_utils.fp_binary_complex_fields_equal(fp_complex_num.real, expected_real)
-        test_utils.fp_binary_complex_fields_equal(fp_complex_num.imag, expected_imag)
+        self.assertTrue(test_utils.fp_binary_complex_fields_equal(fp_complex_num.real, expected_real))
+        self.assertTrue(test_utils.fp_binary_complex_fields_equal(fp_complex_num.imag, expected_imag))
 
         # On bit_fields
         expected_real = FpBinary(value=-6.54)
@@ -123,8 +123,13 @@ class FpBinaryComplexTest(unittest.TestCase):
         fp_complex_num = FpBinaryComplex(real_bit_field=expected_real.bits_to_signed(),
                                          imag_bit_field=expected_imag.bits_to_signed(),
                                          format_inst=expected_real)
-        test_utils.fp_binary_complex_fields_equal(fp_complex_num.real, expected_real)
-        test_utils.fp_binary_complex_fields_equal(fp_complex_num.imag, expected_imag)
+        self.assertTrue(test_utils.fp_binary_complex_fields_equal(fp_complex_num.real, expected_real))
+        self.assertTrue(test_utils.fp_binary_complex_fields_equal(fp_complex_num.imag, expected_imag))
+
+        # Check castable to float objects work
+        FpBinaryComplex(value=np.complex64(-6.5634765625 + 0.06965625j))
+        FpBinaryComplex(value=np.float64(-6.5634765625) + np.float64(0.06965625)*1j)
+        FpBinaryComplex(value=np.float64(-6.5634765625))
 
     def testCreateParamsWrong(self):
         # These parameter test cases should raise an exception
