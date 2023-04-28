@@ -640,7 +640,32 @@ class FpBinaryComplexTest(unittest.TestCase):
         res = fpNum1.resize((-4, 6), round_mode=RoundingEnum.near_zero)
         self.assertEqual(res, -0.015625)
 
-    def testConjuagate(self):
+    def testResizeTotalBitsLTZero(self):
+        # These parameter test cases should raise an exception
+        params_test_cases = [
+
+            # total bits is less than 1
+            (4, -5),
+            (-3, 3),
+            (-7, 6),
+            (-3, 3),
+            (-7, 6),
+            (3, -3),
+            (7, -8),
+            (3, -78),
+            (7, -11),
+        ]
+
+        for test_case in params_test_cases:
+            try:
+                fpNum = FpBinaryComplex(5, 6, value=6.5 - 3.125j)
+                fpNum.resize(test_case)
+            except ValueError:
+                pass
+            else:
+                self.fail('Failed on test case {}'.format(test_case))
+
+    def testConjugate(self):
         self.assertEqual(FpBinaryComplex(5, 6, value=6.5 - 3.125j).conjugate(),
                          FpBinaryComplex(5, 6, value=6.5 + 3.125j))
         self.assertEqual(FpBinaryComplex(5, 6, value=6.5 + 3.125j).conjugate(),

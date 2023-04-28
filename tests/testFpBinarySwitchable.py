@@ -434,6 +434,33 @@ class FpBianrySwitchableTests(unittest.TestCase):
         fp_num.resize((2, 2), overflow_mode=OverflowEnum.wrap,
                       round_mode=RoundingEnum.direct_neg_inf)
 
+    def testResizeTotalBitsLTZero(self):
+        # These parameter test cases should raise an exception
+        params_test_cases = [
+
+            # total bits is less than 1
+            (4, -5),
+            (-3, 3),
+            (-7, 6),
+            (-3, 3),
+            (-7, 6),
+            (3, -3),
+            (7, -8),
+            (3, -78),
+            (7, -11),
+        ]
+
+        for test_case in params_test_cases:
+            try:
+                fp_num = FpBinarySwitchable(True,
+                                            fp_value=FpBinary(10, 10, signed=True, value=1.3125),
+                                            float_value=4.5)
+                fp_num.resize(test_case)
+            except ValueError:
+                pass
+            else:
+                self.fail('Failed on test case {}'.format(test_case))
+
     def testCopy(self):
         fp_num = FpBinarySwitchable(True, fp_value=FpBinary(10, 10, signed=True, value=1.3125))
         fp_num.value = fp_num - 1.0

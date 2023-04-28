@@ -1121,6 +1121,31 @@ class AbstractTestHider(object):
             fpNum.resize((large_int_bits, 0), round_mode=RoundingEnum.direct_neg_inf)
             self.assertEqual(fpNum - fpNum_high_order_pos_only, 13.0)
 
+        def testResizeTotalBitsLTZero(self):
+            # These parameter test cases should raise an exception
+            params_test_cases = [
+
+                # total bits is less than 1
+                (4, -5),
+                (-3, 3),
+                (-7, 6),
+                (-3, 3),
+                (-7, 6),
+                (3, -3),
+                (7, -8),
+                (3, -78),
+                (7, -11),
+            ]
+
+            for test_case in params_test_cases:
+                try:
+                    fpNum = self.fp_binary_class(5, 5, value=1.0)
+                    fpNum.resize(test_case)
+                except ValueError:
+                    pass
+                else:
+                    self.fail('Failed on test case {}'.format(test_case))
+
         def testIntConversionSmall(self):
             # =======================================================================
             # Signed to signed

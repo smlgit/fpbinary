@@ -760,6 +760,14 @@ fpbinary_resize(FpBinaryObject *self, PyObject *args, PyObject *kwds)
     new_int_bits = pylong_as_fp_int(new_int_bits_py);
     new_frac_bits = pylong_as_fp_int(new_frac_bits_py);
 
+    if (new_int_bits + new_frac_bits < 1)
+    {
+        PyErr_SetString(PyExc_ValueError, "The total number of bits in an "
+                                          "fpbinary instance must be greater "
+                                          "than 0.");
+        return NULL;
+    }
+
     if (FpBinarySmall_Check(self->base_obj) &&
         ((unsigned long long)(new_int_bits + new_frac_bits)) >
             FP_SMALL_MAX_BITS)
