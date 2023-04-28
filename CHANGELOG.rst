@@ -2,6 +2,15 @@
 Changelog
 =========
 
+`v1.5.8 <//github.com/smlgit/fpbinary/releases/tag/v1.5.8>`_
+----------------------------------------------------------------
+
+**Bug fixes:**
+
+* numpy float64 type causes kernel crash in fpBinarySwitchable. `#25 <//github.com/smlgit/fpbinary/issues/25>`_
+* Error in doc for RoundingEnum? `#26 <//github.com/smlgit/fpbinary/issues/26>`_
+* Dead kernel when using resize method incorrectly. `#27 <//github.com/smlgit/fpbinary/issues/27>`_
+
 `v1.5.7 <//github.com/smlgit/fpbinary/releases/tag/v1.5.7>`_
 ----------------------------------------------------------------
 
